@@ -1,0 +1,92 @@
+body {
+	font-family: georgia, 'times new roman', times, serif;
+}
+
+.header, a.header, a.header:active, a.header:link {
+	font-family: georgia, 'times new roman', times, serif;
+	font-size: 16px;
+	font-weight: bold;
+	color: #000000;
+	line-height:20px;
+	text-decoration: none;
+}
+		
+.tabtext, a.tabtext, a.tabtext:link {
+	font-family: georgia, 'times new roman', times, serif;
+	font-size: 16px;
+	color: #000000;
+	line-height:18px;
+	text-decoration: none;
+}		
+		
+a.tabtext:hover, a.tabtext:active {
+	font-family: georgia, 'times new roman', times, serif;
+	font-size: 16px;
+	color: #000000;
+	line-height:18px;
+	text-decoration: underline;
+}	
+		
+.example {
+	width:130px;
+}
+
+#upload{
+    display:none
+}
+
+div.tab {
+	float:left;
+	padding:5px 10px;
+	margin: 0 0 0 5px;
+	border: solid 1px #aaa;
+	border-radius: 10px 10px 0 0;
+}
+
+div.tab_top {
+	float:left;
+	padding:5px 10px;
+	margin: 0 0 0 5px;
+	border: solid 1px #aaa;
+	border-bottom: solid 1px #fff;
+	border-radius: 10px 10px 0 0;
+}
+
+div.tab_line {
+	float:left;
+	width:100%;
+	padding:5px 0px;
+	margin: 0 0 0 0;
+	border-top: solid 1px #fff;
+	border-bottom: solid 1px #aaa;
+}
+
+div.output_active {
+	position:absolute;
+	top:130px;
+	bottom:25px;
+	right:25px;
+	width:400px;
+	z-index:2;
+}
+
+div.output_inactive {
+	display:none;
+	position:absolute;
+	top:130px;
+	bottom:25px;
+	right:25px;
+	width:400px;
+	z-index:2;
+}
+
+
+
+	
+		
+/* Minimum width of 600 pixels. */
+@media screen and (min-width: 600px) {
+	div.menu {
+		background: #orange;
+	}
+}

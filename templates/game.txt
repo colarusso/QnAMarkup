@@ -1,0 +1,16 @@
+Title: Shall we play a game?
+Description: A sample QnA demonstrating the use of embedded media along with the "GOTO" command. Links to said media can be found in this project's QnA markup, accessible by hitting the "edit" link.
+
+Q(1): Shall we play a game?
+A: Sure.
+	Q(1.1): <img src="http://jasoneppink.com/wp-content/gallery/the-reaction-gif-moving-image-as-gesture/kermit.gif"><br><br>How about a game of chess?
+	A: Sounds good. I love chess.
+		Q(1.1.1): Your move. <br><br><iframe src="http://www.davidcolarusso.com/chess/" scrolling="no" seamless="seamless" style="overflow:hidden;width:260px;height:260px;border: solid 0px #eee;"></iframe>
+	A: How about thermonuclear war?
+		Q(1.1.2): <img src="http://i.imgur.com/WwpALFZ.gif"><br><br>The only way to win is not to play! Have you actually seen <a href="https://en.wikipedia.org/wiki/WarGames" target=_blank>War Games</a>?
+		A: Yes.
+			Q(1.1.2.1): <img src="http://www.reactiongifs.com/r/2013/06/I-dont-believe-you.gif"><br><br>Let's try again. GOTO:1
+		A: No.
+			Q(1.1.2.2): My apologies. Let me just say, thermonuclear war is the wrong answer. <br><br><img src ="http://i.giphy.com/uSHMDTUL7lKso.gif"> GOTO:1
+A: Not right now. 
+	Q(1.2): <img src="http://jasoneppink.com/wp-content/gallery/the-reaction-gif-moving-image-as-gesture/david-tennant-in-the-rain.gif"> <br><br> Please... :( GOTO:1
