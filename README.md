@@ -1,9 +1,6 @@
 QnAMarkup
 =========
-A QnA Markup editor and interpreter. You can see a live implementation at: [www.QnAMarkdown.org](http://www.qnamarkup.org) 
-
-###Syntax
-QnA Syntax is described in detail at http://www.qnamarkup.org/syntax/.
+A QnA Markup editor and interpreter. For more information, visit [this projects wiki](https://github.com/colarusso/QnAMarkup/wiki). You can see a live implementation at: [www.QnAMarkdown.org](http://www.qnamarkup.org)
 
 Install Instructions
 -----
