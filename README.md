@@ -6,7 +6,7 @@ Install Instructions
 -----
 1. Download this repo to a server running [php](http://php.net/).
 2. Edit `lib/config.php`, replacing the example URL and setting other variables as appropriate.
-3. That's it. You're ready to start created interactive QnAs.
+3. That's it. You're ready to start creating interactive QnAs.
 
 License
 ----
