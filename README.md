@@ -10,4 +10,4 @@ Install Instructions
 
 License
 ----
-MIT
+[MIT](https://github.com/colarusso/QnAMarkup/blob/master/LICENSE) 
