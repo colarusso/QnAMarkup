@@ -638,7 +638,7 @@ if ($wellformed ==1) {
 			$snippet_output_temp = $snippet_output_temp."<a href=\"javascript:void('');\" onClick=\"shoh('credits');\">credits</a> |";
 		}
 		if ($query_size < 4000) { 
-			$snippet_output_temp = $snippet_output_temp." <a href=\"".$home."?$query_string\" onClick=\"javascript:alert('You are about to edit a _copy_ of the original QnA File. Don\'t forget to save our changes!');\" target=_top>edit</a> |";
+			$snippet_output_temp = $snippet_output_temp." <a href=\"".$home."?$query_string\" onClick=\"javascript:alert('You are about to edit a copy of this QnA. Any edits will not change this instance.');\" target=_top>edit</a> |";
 		}		
 		$snippet_output_temp = $snippet_output_temp." <a href=\"".$home."\" target=_top>code your own</a></p></div>".$after."</div></div></FORM>";
 
