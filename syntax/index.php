@@ -21,7 +21,6 @@
 	}
 	</style>
 	<link rel="stylesheet" type="text/css" href="../css/generic.css">
-	<script src="../js/main.js"></script>
 </HEAD>
 
 <BODY BGCOLOR="#ffffff" BACKGROUND="" MARGINWIDTH="0" MARGINHEIGHT="0">
