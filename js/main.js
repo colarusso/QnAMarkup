@@ -43,6 +43,7 @@ function toggle_wrap(value) {
 	} else {
 		document.getElementById('markup').wrap = "off";	
 	}
+		document.getElementById('markup').value = document.getElementById('markup').value
 }	
 
 //show funtion
@@ -76,6 +77,8 @@ function tabtoggle(id) {
 	if (id == "tab01") {
 		show('codeblock');
 		show('wrap_box');
+		hide('bug_report');
+		show('bug_report');
 		hide('styleblock');
 		document.getElementById("tab01").style.borderBottom="1px solid #fff";
 		document.getElementById("tab02").style.borderBottom="1px solid #aaa";
@@ -83,6 +86,8 @@ function tabtoggle(id) {
 	} else if (id == "tab02") {
 		hide('codeblock');
 		hide('wrap_box');
+		hide('bug_report');
+		show('bug_report');
 		show('styleblock');
 		document.getElementById("tab01").style.borderBottom="1px solid #aaa";
 		document.getElementById("tab02").style.borderBottom="1px solid #fff";

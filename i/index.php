@@ -3,6 +3,7 @@
 	include( dirname(__FILE__) . '/../lib/functions.php');
 	enumerate_tree('0'); 
 ?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/HTML4/loose.dtd">
 <HTML xmlns="http://www.w3.org/1999/xhtml"
       xmlns:og="http://ogp.me/ns#"
       xmlns:fb="http://www.facebook.com/2008/fbml"> 
@@ -13,6 +14,7 @@
 	<meta name="apple-mobile-web-app-capable" content="no" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="black" /> 
 	<meta property="og:type" content="website"/>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <?php
 
 	if ($title_cl) {

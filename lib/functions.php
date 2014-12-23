@@ -423,6 +423,11 @@ function enumerate_tree($editor) {
 				$answers[$ia][3] = "target=\"_blank\""; # target
 			} else if (preg_match("/A\[([^\]]*)\]:/", $value, $href)) {
 				$answers[$ia][2] = $href[1]; #href			
+				#if (!preg_match("/\[javascript([^\]]*)\]:/", $value, $href)) { 
+				#	# you have to watch the target because 
+				#	#it can be used to define the scope of javascript functions
+				#	$answers[$ia][3] = "target=\"_top\""; # target
+				#} 
 			} else {
 				$answers[$ia][2] = "javascript:void('');"; #href						
 			}
@@ -574,7 +579,7 @@ if ($wellformed ==1) {
 		foreach ($questions as $value) {
 			$value[1] = stripslashes($value[1]); 
 			if ($i==0) { 
-				$snippet_output = $snippet_output."<FORM name=\"FORM\" id=\"FORM\"><div id=\"conversation\" style=\"margin:".($frame_pad)."px auto 0 auto;padding:0 ".$frame_pad."px;max-width:".$col_width."px\">".$before."<div id='QandA'><div style='padding:15px;background:#ddffdd;text-align:center;'>Loading QnA...</div></div>"; 
+				$snippet_output = $snippet_output."<FORM name=\"FORM\" id=\"FORM\"><div id=\"conversation\" style=\"margin:".($frame_pad)."px auto 0 auto;padding:0 ".$frame_pad."px;max-width:".$col_width."px\">".$before."<div id='QandA' class='QandA'><div style='padding:15px;background:#ddffdd;text-align:center;'>Loading QnA...</div></div>"; 
 				$snippet_output = $snippet_output."<div id='Choices' class='choices'>";
 				#$j=0;
 				#foreach ($answers as $valuetoo) {
@@ -588,7 +593,7 @@ if ($wellformed ==1) {
 				#	}
 				#	$j++;
 				#}
-				$snippet_output = $snippet_output."</div><div id=\"ondeck\" name=\"ondeck\">";	
+				$snippet_output = $snippet_output."</div><div id=\"rawmarkup\" style=\"display:none;\">$content</div><div id=\"ondeck\" name=\"ondeck\">";	
 				$original = $original."<div id=\"doc\" name=\"doc\" style=\"display:none;\"></div>";				
 			}
 
@@ -640,12 +645,12 @@ if ($wellformed ==1) {
 		if ($query_size < 4000) { 
 			$snippet_output_temp = $snippet_output_temp." <a href=\"".$home."?$query_string\" onClick=\"javascript:alert('You are about to edit a copy of this QnA. Any edits will not change this instance.');\" target=_top>edit</a> |";
 		}		
-		$snippet_output_temp = $snippet_output_temp." <a href=\"".$home."\" target=_top>code your own</a></p></div>".$after."</div></div></FORM>";
+		$snippet_output_temp = $snippet_output_temp." <a href=\"".$home."\" target=_top>code your own</a></p></div></FORM>".$after."</div></div>";
 
 		$js = file_get_contents( dirname(__FILE__) . '/../js/interactive.js', true);
 		$snippet_output_temp = $snippet_output_temp."\n".$js;
 		
-		$snippet_output = $snippet_output.$snippet_output_temp;
+		$snippet_output = $snippet_output.$snippet_output_temp."\n";
 		$snippet_output_output = htmlentities($snippet_output_output.$snippet_output_temp); 
 	}
 }

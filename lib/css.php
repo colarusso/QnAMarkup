@@ -3,8 +3,12 @@
 		font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
 	}
 
-	img{
-		max-width:100%;
+	#rawmarkup{
+		display:none;
+	}
+	
+	#QandA img{
+		width:100%;
 	}
 
 	div.main{
@@ -145,6 +149,9 @@
 	}	
 
 	input.xinput {
+		-webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
+		-moz-box-sizing: border-box;    /* Firefox, other Gecko */ 
+		box-sizing: border-box;         /* Opera/IE 8+ */
 		float:left;
 		width:100%;
 		font-family: <?php echo $font_family ?>;
@@ -153,7 +160,7 @@
 		background: #fff;
 		border-top-left-radius: 8px;
 		border-top-right-radius: 8px;
-		padding:<?php echo $line_height*0.5 ?>px <?php echo $line_height*0.5 ?>px <?php echo $line_height*0.6 ?>px <?php echo $line_height*0.5 ?>;
+		padding:<?php echo $line_height*0.5 ?>px <?php echo $line_height*0.5 ?>px <?php echo $line_height*0.6 ?>px <?php echo $line_height*0.5 ?>px;
 		border: solid 0px #888;
 		border-bottom: solid 1px #888;
 		text-align:left;

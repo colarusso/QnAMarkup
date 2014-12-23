@@ -3,19 +3,21 @@
 	include( dirname(__FILE__) . '/lib/functions.php');
 	enumerate_tree('1'); 
 ?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/HTML4/loose.dtd">
 <HTML xmlns="http://www.w3.org/1999/xhtml"
       xmlns:og="http://ogp.me/ns#"
       xmlns:fb="http://www.facebook.com/2008/fbml"> 
 <HEAD>
 	<meta http-equiv="Content-type" content="text/html;charset=UTF-8"/> 
 	<TITLE>QnA Markup</TITLE>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 	<meta property="og:title" content="QnA Markup Editor"/>
 	<meta property="og:type" content="website"/>
 	<meta property="og:url" content="<?php echo $home ?>"/>
 	<meta property="og:image" content="<?php echo $home."images/QnA_300.png" ?>"/>
 	<meta property="og:site_name" content="QnA Markup"/>
     <?php if ($fb_admin) { echo "\t<meta property=\"fb:admins\" content=\"$fb_admin\"/>\n"; } ?>
-	<meta property="og:description" content="A tool for turning structured text into interactive question and answer sessions."/>	
+	<meta property="og:description" content="An open source tool for turning structured text into an interactive set of questions and answers. Designed for people with no programing experience, it can be used to build expert systems and perform rules-based document construction."/>
 
 	<link rel="stylesheet" type="text/css" href="css/generic.css">
 	<link rel="stylesheet" type="text/css" href="css/main.css">
@@ -189,8 +191,7 @@ Link Color:
 	
 	<?php if ($bugs == 1) { echo "&nbsp;&nbsp;|&nbsp;&nbsp;"; } ?>
 	</div>
-	<?php if ($bugs == 1) { echo "<a href=\"https://github.com/colarusso/QnAMarkup/issues\" target=_blank>report bug/issue</a>"; } ?>
-</div>
+	<?php if ($bugs == 1) { echo " <span id=\"bug_report\" style=\"margin-left:5px;\"> <a href=\"https://github.com/colarusso/QnAMarkup/issues\" target=_blank>report bug/issue</a></span>"; } ?></div>
 </FORM>
 
 <div style="position:absolute;top:95px;right:25px;width:400px;z-index:1;">
@@ -209,7 +210,7 @@ Link Color:
 	<?php
 	} 
 	if ($query_size < 4000 and $wellformed == 1) { 
-		echo "<a href=\"i/?".$query_string."\" target=\"_blank\" class=\"header\">Output&nbsp;<img src=\"images/Icon_External_Link.png\" border=\"0px\"></a>";
+		echo "<a href=\"i/?".$query_string."\" target=\"_blank\" class=\"header\">Output&nbsp;<img src=\"images/Icon_External_Link.png\" border=\"0px\" width=\"12px\" height=\"12px\"></a>";
 	} else if ($query_size >= 4000 and $wellformed == 1) {
 		echo "<a href=\"javascript:alert('Your QnA is too big for the link feature. For an explanation, and other options, see the note under \'Link\' or \'Embed Code\' in the output pulldown.')\" class=\"header\">Output&nbsp;<img src=\"images/Icon_External_Link.png\" border=\"0px\"></a>";	
 	} else {
@@ -255,6 +256,7 @@ Link Color:
 	</p>
 	<p>Or cut-and-paste the text below.</p>
 	<textarea id="snippet_text" style="width:100%;height:200px;" wrap="off" onClick="this.select();"><?php echo $snippet_output_output ?></textarea>
+	<p>Note: in order to render correctly in Internet Explorer, the following needs to be added to the page's header &lt;meta http-equiv="X-UA-Compatible" content="IE=edge" /&gt; </p>
 
 </div>
 
@@ -289,6 +291,7 @@ Link Color:
 		echo "\t<meta property=\"og:url\" content=\"".$home.$query_string."\"/>\n";
 	}
 ?>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 	<link rel="apple-touch-icon" href="<?php echo $home."images/QnA_300.png" ?>"/> 
 	<link rel="stylesheet" href="//code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
   	<script src="//code.jquery.com/jquery-1.10.2.js"></script>

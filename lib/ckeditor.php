@@ -170,5 +170,6 @@ If you'd like to save your work and come back later, use the <em>save as</em> li
 	// EOF
 
 </script>
+<?php echo $analytics_code ?>
 </BODY>
 </HTML>
