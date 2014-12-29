@@ -658,10 +658,17 @@ if ($wellformed ==1) {
 }	
 
 function from_file($pointer) {
-	if(filter_var($pointer, FILTER_VALIDATE_URL)){ 
-		$content_tmp = 	@file_get_contents($pointer, true);
-		if (!$content_tmp) { 
- 	   		$content_tmp = "Error loading from remote location.";
+	global $whitelist;
+	if(filter_var($pointer, FILTER_VALIDATE_URL)){		
+		preg_match("/^http(s)*:\/\/([^\/]*)/", $pointer, $matches);
+		$pattern = "/(^|,)".preg_replace("/\//", "\/", $matches[0])."\//i";
+		if (preg_match($pattern , $whitelist)) {
+			$content_tmp = 	@file_get_contents($pointer, true);
+			if (!$content_tmp) { 
+				$content_tmp = "Error loading from remote location.";
+			}
+		} else {
+				$content_tmp = "Error loading. Domain not on whitelist.";			
 		}
 	} else if ($pointer) {
 		$content_tmp = @file_get_contents(dirname(__FILE__) . '/../templates/'.$pointer.'.txt', true);
