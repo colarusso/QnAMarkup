@@ -13,7 +13,7 @@ function nav_bar($home) {
 	<span style="float:right;">
 		<?php if (!preg_match("/^\/(syntax)\//i", $_SERVER["REQUEST_URI"])) { echo "<a href=".$home.">Home (editor)</a>&nbsp;&nbsp;"; } ?>
 		<a href="<?php echo $home ?>syntax/">Syntax</a>&nbsp;&nbsp;|&nbsp;&nbsp;
-		<a href="https://github.com/colarusso/QnAMarkup/wiki/Gallery" target="_blank">Gallery</a>&nbsp;&nbsp;
+		<a href="https://github.com/colarusso/QnAMarkup/wiki/Gallery/" target="_blank">Gallery</a>&nbsp;&nbsp;
 		<a href="https://github.com/colarusso/QnAMarkup/wiki/" target="_blank">Wiki</a>&nbsp;&nbsp;
 		<a href="https://github.com/colarusso/QnAMarkup" target="_blank">GitHub</a>
 	</span>
