@@ -133,21 +133,21 @@
 
 	
 	function swapGOTO(QH,JH) {
-		var regex = new RegExp("GOTO:(\d?)(\.\d+)*");
+		var regex = new RegExp("GOTO:(\d*)(\.\d+)*");
 		if (regex.test(document.getElementById(QH).innerHTML)) {
-			var Qtext = document.getElementById(QH).innerHTML.match(/(GOTO:(\d?)(.\s*\d+)*)/);
+			var Qtext = document.getElementById(QH).innerHTML.match(/(GOTO:(\d*)(.\s*\d+)*)/);
 			document.getElementById('QandA').innerHTML += "<div id="+JH+" style=\"float:left;width:100%;height:1px;\">&nbsp;</div>";
 			// Add question
 			// note I added () around the < to avoid a < followed by a ? which causes problems in php
-			var Qtexttrans = document.getElementById(QH).innerHTML.replace(/(<)?GOTO:(\d?)(.\s*\d+)*>?/,"");
+			var Qtexttrans = document.getElementById(QH).innerHTML.replace(/(<)?GOTO:(\d*)(.\s*\d+)*>?/,"");
 			Qtexttrans = Qtexttrans.replace(/\s*$/,"");
 			if (Qtexttrans != "") {
 				document.getElementById('transcript').value += "BOT: "+Qtexttrans+"\n";
 			}
-			if (document.getElementById(QH).innerHTML.match(/^GOTO:(\d?)(.\s*\d+)*/)) {
-				document.getElementById('QandA').innerHTML += document.getElementById(QH).innerHTML.replace(/(<)?GOTO:(\d?)(.\s*\d+)*>?/,"<"+Qtext+">");
+			if (document.getElementById(QH).innerHTML.match(/^GOTO:(\d*)(.\s*\d+)*/)) {
+				document.getElementById('QandA').innerHTML += document.getElementById(QH).innerHTML.replace(/(<)?GOTO:(\d*)(.\s*\d+)*>?/,"<"+Qtext+">");
 			} else {
-				document.getElementById('QandA').innerHTML += "<div class='frame'><div class='full'><div class='question_text'>"+ document.getElementById(QH).innerHTML.replace(/(<)?GOTO:(\d?)(.\s*\d+)*>?/,"<"+Qtext+">")+"</div></div><div class='question_arrow'></div></div>";						
+				document.getElementById('QandA').innerHTML += "<div class='frame'><div class='full'><div class='question_text'>"+ document.getElementById(QH).innerHTML.replace(/(<)?GOTO:(\d*)(.\s*\d+)*>?/,"<"+Qtext+">")+"</div></div><div class='question_arrow'></div></div>";						
 			}
 			// replace GOTO with text
 			label = Qtext[0].replace("GOTO:","");
