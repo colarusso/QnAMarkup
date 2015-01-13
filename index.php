@@ -28,7 +28,7 @@
 	<script src="js/main.js"></script>
 </HEAD>
 
-<BODY BGCOLOR="#ffffff" BACKGROUND="" MARGINWIDTH="0" MARGINHEIGHT="0" onLoad="startAT('1');">
+<BODY BGCOLOR="#ffffff" BACKGROUND="" MARGINWIDTH="0" MARGINHEIGHT="0" onLoad="startAT('<?php echo $Qpos ?>');">
 <FORM NAME="QNAFORM" ACTION="<?php echo $home ?>" METHOD="POST">
 <div id="loading" style="display:none;position:absolute;z-index:100;width:100%;">
 <div style="background:yellow;padding:8px 10px;margin:5 auto;width:100px;text-align:center;">
