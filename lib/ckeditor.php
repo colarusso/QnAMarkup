@@ -25,7 +25,7 @@
 <?php if ($i) { echo "<p style=\"background:#ddffdd;padding:15px;\">$i</p>"; } ?>
 <p><textarea name="t" id="t"><?php echo $t ?></textarea></p>
 <p>
-If you'd like to save your work and come back later, use the <em>save as</em> link to save this document to your computer. When you're ready to work on it again, visit: <?php echo "<a href=\"".$home."doc/\">$home"."doc/</a>" ?> and load your file.
+If you'd like to save your work and come back later, use the <em>save as</em> link to save this document to your computer. When you're ready to work on it again, visit: <?php echo "<a href=\"".$home."doc/\">$home"."doc/</a>" ?> and load your file. Alternatively, you should be able to edit the saved file in most word processors, such as MS Word. However, in that case, you may lose some of the formatting above.
 </p>
 <p>This page provides a WYSIWYG editor for use in conjunction with <a href="<?php echo $home ?>syntax/#docs">QnA-assisted document construction</a>.</p>
 <div class=footer style="margin:30px 0 0 0;padding:15px 3px;border-top: solid 1px #aaa;">
