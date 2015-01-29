@@ -1,0 +1,9 @@
+Q: Will you spend more time in transit than at your destination?
+A: Yes.
+	Q: Is your trip motivated by love?
+	A: Yes.
+	  Q: Yes!
+	A: No.
+		Q: Probably not
+A: No.
+	Q: Maybe
