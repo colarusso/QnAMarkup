@@ -1,0 +1,10 @@
+Q: Is the digraph after C?
+A: Yes.
+	Q: E before I
+A: No.
+	Q: Is the digraph an A sound as in neighbor or weigh?
+	A: Yes.
+		Q:GOTO:1.1
+	A: No.
+		Q: Probably I before E, but there could be an exception. English is WEIRD!
+		A:[http://steve.wagar.com/ibeforee.htm] See for yourself.
