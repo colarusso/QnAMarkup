@@ -6,7 +6,7 @@ Q(1):What do you want to do?
 A:Predict something (Not necessarily in the future, i.e., this covers things like predicting a person's age or gender)
 	Q(1.1): Are you predicting something in the future based on past observations?
 	A: Yes
-		Q(1.1.1): Do there appear to be structural breaks in the time series of teh response variable?
+		Q(1.1.1): Do there appear to be structural breaks in the time series of the response variable?
 		A: No
 			Q(1.1.1.1): Does the time series of the response variable appear to be composed of a trend and various seasonal patterns?
 			A: Yes
