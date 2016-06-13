@@ -1,0 +1,151 @@
+Title:A Decision Process for Selecting Statistical Techniques
+Before:<h2>A Decision Process for Selecting Statistical Techniques</h2>
+Description: Adapted from <a href="http://www.coppelia.io/2015/09/a-decision-process-for-selecting-statistical-techniques/" target="_blank">Simon Raper's flowchart from coppelia.io</a>. h/t  <a href="randal_olson" target="_blank">h@randal_olson</a> see <a href="http://www.coppelia.io/2015/09/a-decision-process-for-selecting-statistical-techniques/" target="_blank">this Tweet in particular</a>. You can edit this flowchart on GitHub <a href="" target="_blank">here</a>.
+
+Q(1):What do you want to do?
+A:Predict something (Not necessarily in the future, i.e., this covers things like predicting a person's age or gender)
+	Q(1.1): Are you predicting something in the future based on past observations?
+	A: Yes
+		Q(1.1.1): Do there appear to be structural breaks in the time series of teh response variable?
+		A: No
+			Q(1.1.1.1): Does the time series of the response variable appear to be composed of a trend and various seasonal patterns?
+			A: Yes
+				Q(1.1.1.1.1): Are you using other non-seasonal time series to explain additional patterns you see in the response variable?
+				A: Yes
+					Q(1.1.1.1.1.1):GOTO:1.1.1.1.2.1
+				A: No
+					Q(1.1.1.1.1.2): Are you using other seasonal time series as explanatory variables?
+					A: No
+						Q(1.1.1.1.1.2.1): Do you need something where you can visualize the split between trend, seasonality and noise?
+						A: No
+							Q(1.1.1.1.1.2.1.1): ARIMA Exponential smoothing (with trend and seasonality) Example: arima unction in R Holt-Winters and ets functions in R (forecast package) (time series analysis)
+						A: Yes
+							Q(1.1.1.1.1.2.1.2): Time serise decomposition. Example: stl and decompose functions in R (time series analysis)
+					A: Yes
+						Q(1.1.1.1.1.2.2): VAR (vector autoregression) (time series analysis)
+			A: No
+				Q(1.1.1.1.2): Are you using other time series to explain the pattern you see in the response variable? 
+				A: Yes
+					Q(1.1.1.1.2.1): Transfer function models (time series analysis)
+				A: No
+					Q(1.1.1.1.2.2): Simple exponential smoothing (time series analysis)
+		A: Yes
+			Q(1.1.1.2): Use SUPW or fixed regressor  bootstrap tests to test for location of structural breaks and then split the sample and proceed with the most recent segment GOTO:1.1.1.1
+	A: No
+		Q(1.1.2): Do you need to explain, measure or understand the role of the variables you are using to make the prediction? 
+		A: No
+			Q(1.1.2.1): Are you looking for a solution that produces an equation that you can easily implement?
+			A: No
+				Q(1.1.2.1.1): Are you?
+				A: Having little success with simpler technique or making incremental improvements to an existing model
+					Q(1.1.2.1.1.1): Support vector machines Neural networks Ensemble methods
+				A: Just starting and therefore looking for something you can easily understand or explain
+					Q(1.1.2.1.1.2): Naive Bayes classifier K nearest neighbours CRt Linear discriminant analysis Regression (linear, logistic, multinomial) Lasso Ridge Regressions (supervised machine learning)
+				A: Working with a large number of inputs
+					Q(1.1.2.1.1.3): Use dimension reduction and.pr feature selection techniques to reduce inputs (if you are using cross validation, make sure you embed this step in the crossvalidation process) GOTO:1.1.2.1.1
+			A: Yes
+				Q(1.1.2.1.2): Regression (linear, logistic, multinomial) Lasso Ridge Regressions (supervised machine learning)
+		A: Yes
+			Q(1.1.2.2):GOTO:3
+A:Understand what causes something
+	Q(1.2): Is the thing you are investigating part of a complex system involving feedback loops?
+	A: No
+		Q(1.2.1): Do you need to measure the contributions of a cause to an outcome?
+		A: Yes
+			Q(1.2.1.1):GOTO:3
+		A: No
+			Q(1.2.1.2):GOTO:2
+	A: Yes
+		Q(1.2.2): Is it necessary to model this system in such a way that individuals behave in different ways?
+		A: No
+			Q(1.2.2.1): Systems dynamics model (simulation)
+		A: Yes
+			Q(1.2.2.2): Agent based model (simulation)
+A:Search for patterns in the data
+	Q(1.3): What kind of patterns? 
+	A: Patterns caused by hidden (latent) factors
+		Q(1.3.1): What kind of latent variable do we thing explains the data?
+		A: Continuous
+			Q(1.3.1.1): Factor analysis (multivariate analysis)
+		A: Categorical
+			Q(1.3.1.2): Latent class analysis (multivariate analysis)
+	A: Natural groupings in the data
+		Q(1.3.2): What kind of data is it? 
+		A: Tabular
+			Q(1.3.2.1): How do you want to explore the data?
+			A: Visually
+				Q(1.3.2.1.1): What kind of variables make up the data?
+				A: A mixture of categorical and continuous
+					Q(1.3.2.1.1.1): Self organising maps (multivariate analysis)
+				A: Categorical
+					Q(1.3.2.1.1.2): Multiple correspondence analysis Self organizing maps (multivariate analysis)
+				A: Continuous 
+					Q(1.3.2.1.1.3): What kind of metric captures the similarity between the data points?
+					A: Non Euclidean
+						Q(1.3.2.1.1.3.1): Multidimensional scaling Self organizing maps (multivariate analysis)
+					A: Euclidean
+						Q(1.3.2.1.1.3.2): Prinicpal Componetnts Plot Self organising Maps (multivariate analysis)
+			A: In an automated way
+				Q(1.3.2.1.2): Is the data set large?
+				A: No
+					Q(1.3.2.1.2.1): Do you need to be able to examine the hierarchical structure of clusters?
+					A: No
+						Q(1.3.2.1.2.1.1): Hierarchucal clustering (unsupervised machine learning)
+					A: Yes
+						Q(1.3.2.1.2.1.2):GOTO:2
+				A: Yes
+					Q(1.3.2.1.2.2): Do you need to be able to examine the hierarchical structure of clusters?
+					A: No
+						Q(1.3.2.1.2.2.1):GOTO:2
+					A: Yes
+						Q(1.3.2.1.2.2.2): BIRCH clustering (unsupervised machine learning)
+		A: Network
+			Q(1.3.2.2): How do you want to explore the data?
+			A: Visually 
+				Q(1.3.2.2.1): Force directed graphs
+			A: In an automated way
+				Q(1.3.2.2.2): Network analysis
+		A: Unstructured
+			Q(1.3.2.3): What kind of unstructured data?
+			A: Text
+				Q(1.3.2.3.1): Hidden Markov model Latent Dirichlet allocation
+	A: Relationships between the variables
+		Q(1.3.3): What kind of relationships are you interested in?
+		A: Correlations
+			Q(1.3.3.1): What are the correlations between? 
+			A: Pairs of linear combinations of variables
+				Q(1.3.3.1.1): Canonical correlation analysis
+			A: Pairs of variables
+				Q(1.3.3.1.2): Correlation analysis
+		A: Conditional dependencies
+			Q(1.3.3.2):Bayesian network
+
+Q(2): There be dragons! <a href="https://en.wikipedia.org/wiki/File:M%C3%BCnster_Thier_2.jpg" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/0/0a/M%C3%BCnster_Thier_2.jpg" width="100%"/ border="0"></a>
+
+Q(3):K-meams clustering (unsupervised machine learning)
+
+Q(4):Are there prior beliefs about the contribution of the drivers that need to be built in?
+A: No
+	Q(4.1): When you think about how multiple drivers affect the response variable does it fit the pattern y= f(a + b<sub>1</sub>x<sub>1</sub> + b<sub>2</sub>x<sub>2</sub>...) i.e., is the response variable a function of some linear combination of the drivers?
+	A: No
+		Q(4.1.1):GOTO:4.2
+	A: Yes
+		Q(4.1.2):Is the data hierarchical in such a way that you'd expect their to be some correlation between the predictions at each node in the hierarchy? For example, you'd expect exam results to be clustered around class, schools and regions.
+		A: No
+			Q(4.1.2.1): What type of variable are you predicting?
+			A: Categories
+				Q(4.1.2.1.1): Multinominal regression model (regression family)
+			A: Counts
+				Q(4.1.2.1.2): Log-linear regression model (regression family)
+			A: Binary
+				Q(4.1.2.1.3): Logistic regession model (regression family)
+			A: Continuous
+				Q(4.1.2.1.4): Linear regression model (regression family)
+		A: Yes
+			Q(4.1.2.2): What type of variables are you predicting? 
+			A: Continuous
+				Q(4.1.2.2.1): Linear mixed effext model (regression family)
+			A: Binary or counts
+				Q(4.1.2.2.2): Generalised mized effects model (regression family)
+A: Yes
+	Q(4.2): Bayesian models
