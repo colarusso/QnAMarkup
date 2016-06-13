@@ -1,6 +1,6 @@
 Title:A Decision Process for Selecting Statistical Techniques
 Before:<h2>A Decision Process for Selecting Statistical Techniques</h2>
-Description: Adapted from <a href="https://twitter.com/CoppeliaMLA" target="_blank">Simon Raper</a>'s <a href="http://www.coppelia.io/2015/09/a-decision-process-for-selecting-statistical-techniques/" target="_blank">flowchart from coppelia.io</a>. h/t  <a href="randal_olson" target="_blank">@randal_olson</a> see <a href="http://www.coppelia.io/2015/09/a-decision-process-for-selecting-statistical-techniques/" target="_blank">this Tweet in particular</a>. You can edit this flowchart on GitHub <a href="https://github.com/colarusso/QnAMarkup/blob/gh-pages/examples/source/WhatStats.txt" target="_blank">here</a>.
+Description: Adapted from <a href="https://twitter.com/CoppeliaMLA" target="_blank">Simon Raper</a>'s <a href="http://www.coppelia.io/2015/09/a-decision-process-for-selecting-statistical-techniques/" target="_blank">flowchart from coppelia.io</a>. h/t  <a href="randal_olson" target="_blank">@randal_olson</a> see <a href="http://www.coppelia.io/2015/09/a-decision-process-for-selecting-statistical-techniques/" target="_blank">this Tweet</a> in particular. You can edit this flowchart on GitHub <a href="https://github.com/colarusso/QnAMarkup/blob/gh-pages/examples/source/WhatStats.txt" target="_blank">here</a>.
 
 Q(1):What do you want to do?
 A:Predict something (Not necessarily in the future, i.e., this covers things like predicting a person's age or gender)
