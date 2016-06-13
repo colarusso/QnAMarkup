@@ -20,7 +20,7 @@ A:Predict something (Not necessarily in the future, i.e., this covers things lik
 						A: No
 							Q(1.1.1.1.1.2.1.1): ARIMA Exponential smoothing (with trend and seasonality) Example: arima unction in R Holt-Winters and ets functions in R (forecast package) (time series analysis)
 						A: Yes
-							Q(1.1.1.1.1.2.1.2): Time serise decomposition. Example: stl and decompose functions in R (time series analysis)
+							Q(1.1.1.1.1.2.1.2): Time series decomposition. Example: stl and decompose functions in R (time series analysis)
 					A: Yes
 						Q(1.1.1.1.1.2.2): VAR (vector autoregression) (time series analysis)
 			A: No
@@ -40,9 +40,9 @@ A:Predict something (Not necessarily in the future, i.e., this covers things lik
 				A: Having little success with simpler technique or making incremental improvements to an existing model
 					Q(1.1.2.1.1.1): Support vector machines Neural networks Ensemble methods
 				A: Just starting and therefore looking for something you can easily understand or explain
-					Q(1.1.2.1.1.2): Naive Bayes classifier K nearest neighbours CRt Linear discriminant analysis Regression (linear, logistic, multinomial) Lasso Ridge Regressions (supervised machine learning)
+					Q(1.1.2.1.1.2): Naive Bayes classifier K nearest neighbors CRT Linear discriminant analysis Regression (linear, logistic, multinomial) Lasso Ridge Regressions (supervised machine learning)
 				A: Working with a large number of inputs
-					Q(1.1.2.1.1.3): Use dimension reduction and.pr feature selection techniques to reduce inputs (if you are using cross validation, make sure you embed this step in the crossvalidation process) GOTO:1.1.2.1.1
+					Q(1.1.2.1.1.3): Use dimension reduction and.pr feature selection techniques to reduce inputs (if you are using cross validation, make sure you embed this step in the cross validation process) GOTO:1.1.2.1.1
 			A: Yes
 				Q(1.1.2.1.2): Regression (linear, logistic, multinomial) Lasso Ridge Regressions (supervised machine learning)
 		A: Yes
@@ -76,7 +76,7 @@ A:Search for patterns in the data
 			A: Visually
 				Q(1.3.2.1.1): What kind of variables make up the data?
 				A: A mixture of categorical and continuous
-					Q(1.3.2.1.1.1): Self organising maps (multivariate analysis)
+					Q(1.3.2.1.1.1): Self organizing maps (multivariate analysis)
 				A: Categorical
 					Q(1.3.2.1.1.2): Multiple correspondence analysis Self organizing maps (multivariate analysis)
 				A: Continuous 
@@ -84,13 +84,13 @@ A:Search for patterns in the data
 					A: Non Euclidean
 						Q(1.3.2.1.1.3.1): Multidimensional scaling Self organizing maps (multivariate analysis)
 					A: Euclidean
-						Q(1.3.2.1.1.3.2): Prinicpal Componetnts Plot Self organising Maps (multivariate analysis)
+						Q(1.3.2.1.1.3.2): Principal Components Plot Self organizing Maps (multivariate analysis)
 			A: In an automated way
 				Q(1.3.2.1.2): Is the data set large?
 				A: No
 					Q(1.3.2.1.2.1): Do you need to be able to examine the hierarchical structure of clusters?
 					A: No
-						Q(1.3.2.1.2.1.1): Hierarchucal clustering (unsupervised machine learning)
+						Q(1.3.2.1.2.1.1): Hierarchical clustering (unsupervised machine learning)
 					A: Yes
 						Q(1.3.2.1.2.1.2):GOTO:2
 				A: Yes
@@ -120,9 +120,9 @@ A:Search for patterns in the data
 		A: Conditional dependencies
 			Q(1.3.3.2):Bayesian network
 
-Q(2): There be dragons! <a href="https://en.wikipedia.org/wiki/File:M%C3%BCnster_Thier_2.jpg" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/0/0a/M%C3%BCnster_Thier_2.jpg" width="100%"/ border="0"></a>
+Q(2): Here be dragons! <a href="https://en.wikipedia.org/wiki/File:M%C3%BCnster_Thier_2.jpg" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/0/0a/M%C3%BCnster_Thier_2.jpg" width="100%"/ border="0"></a>
 
-Q(3):K-meams clustering (unsupervised machine learning)
+Q(3):K-means clustering (unsupervised machine learning)
 
 Q(4):Are there prior beliefs about the contribution of the drivers that need to be built in?
 A: No
@@ -138,14 +138,14 @@ A: No
 			A: Counts
 				Q(4.1.2.1.2): Log-linear regression model (regression family)
 			A: Binary
-				Q(4.1.2.1.3): Logistic regession model (regression family)
+				Q(4.1.2.1.3): Logistic regression model (regression family)
 			A: Continuous
 				Q(4.1.2.1.4): Linear regression model (regression family)
 		A: Yes
 			Q(4.1.2.2): What type of variables are you predicting? 
 			A: Continuous
-				Q(4.1.2.2.1): Linear mixed effext model (regression family)
+				Q(4.1.2.2.1): Linear mixed effect model (regression family)
 			A: Binary or counts
-				Q(4.1.2.2.2): Generalised mized effects model (regression family)
+				Q(4.1.2.2.2): Generalized mixed effects model (regression family)
 A: Yes
 	Q(4.2): Bayesian models
