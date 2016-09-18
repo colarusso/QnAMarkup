@@ -7,14 +7,14 @@ A: Yes.
 		Q(1.1.1): Have you been naughty or nice?
 		A: Naughty
 			DOC(1.1.1.1): I am sorry that I have been naughty. I will work hard to be nice in the new year.<br><br>
-			Q(1.1.1.1):GOTO:2
+			Q(1.1.1.1):GOTO:whatiwant
 		A: Nice
-			Q(1.1.1.2):GOTO:2			
+			Q(1.1.1.2):GOTO:whatiwant		
 A: No.
 	Q(1.2): That's cool. Have a good day.
 
-Q(2): What would you like for Christmas?
-X:whatiwant
+Q(whatiwant): What would you like for Christmas?
+X:
 	DOC(2.1):	I would like <x>whatiwant</x> for Christmas. I hope all is well with you up north.<br><br> 
 			Sincerely,<br>
 			<x>myname</x> 
