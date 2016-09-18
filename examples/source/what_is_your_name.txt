@@ -1,3 +1,3 @@
-Q(1): What is your name?
-X:name
+Q(name): What is your name?
+X:
 	Q(1.1): Nice to meet you <x>name</x>.
