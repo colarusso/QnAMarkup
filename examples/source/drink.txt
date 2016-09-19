@@ -1,7 +1,7 @@
 Q(drink): Coffee or tea?
-A: Coffee
+A(coffee): Coffee
 	Q(1.1):GOTO:extras
-A: Tea
+A(tea): Tea
 	Q(1.2):GOTO:extras
 
 Q(extras): Milk and sugar?
