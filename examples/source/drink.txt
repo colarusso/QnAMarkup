@@ -5,9 +5,9 @@ A: Tea
 	Q(1.2):GOTO:extras
 
 Q(extras): Milk and sugar?
-A(milk and sugar): Yes, milk and sugar.
+A(milk and sugar): Yes. Milk and sugar.
 	Q(2.1):GOTO:gotit
-A(nothing): No, I take it black.
+A(nothing): No. I take it black.
 	Q(2.2):GOTO:gotit
 A(milk): Milk only.
 	Q(2.3):GOTO:gotit
@@ -15,3 +15,4 @@ A(sugar): Sugar only.
 	Q(2.4):GOTO:gotit
 
 Q(gotit): Got it. You like <x>drink</x> with <x>extras</x>. 
+
