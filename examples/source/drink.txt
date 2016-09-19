@@ -7,7 +7,7 @@ A: Tea
 Q(extras): Milk and sugar?
 A(milk and sugar): Yes. Milk and sugar.
 	Q(2.1):GOTO:gotit
-A(nothing): No. I take it black.
+A(nothing added): No. I take it black.
 	Q(2.2):GOTO:gotit
 A(milk): Milk only.
 	Q(2.3):GOTO:gotit
