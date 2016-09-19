@@ -1,0 +1,15 @@
+Before: 
+<input type="hidden" name="name" value="Letter to Santa"/>
+<input type="hidden" name="docx_uri" value="http://www.qnamarkup.org/docxmerge/templates/Santa-letter.docx"/>
+
+Q(1): Would you like to write a letter to Santa? 
+A: Yes.
+	Q(myname): What is your name?
+	X:
+		Q(1.1.1):GOTO:whatiwant		
+
+Q(whatiwant): What would you like for Christmas? 
+X:
+	Q(2.1):Alright, are you ready to see your letter?
+	A[javascript:submit2('http://colarusso.pythonanywhere.com/','GET','','','','json_doc')]: Yes.
+		Q(2.1.1): Thank you.
