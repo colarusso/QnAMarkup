@@ -14,6 +14,7 @@
 	});
 
 	function answerQ(lb,restart) {
+		currentQ = label;
 		label = lb;
 		Dhtml = 'D-'+label;
 		Qhtml = 'Q-'+label;
@@ -43,18 +44,28 @@
 			if (restart == undefined) {
 				document.getElementById('QandA').innerHTML += "<div class='frame'><div class='full'><div class='ans_text'>"+document.getElementById(Ahtml).innerHTML+"</div></div><div class='ans_arrow'></div></div></div></div>";
 				// insert answer from button
-				if(document.getElementById(Ahtml).innerHTML != "") { document.getElementById('transcript').value += "USER: "+document.getElementById(Ahtml).innerHTML; }
+				if (document.getElementById(valueis(currentQ))) {
+					document.getElementById(valueis(currentQ)).outerHTML='';
+				}
+				if (document.getElementById(Xihtml)) {
+					document.getElementById('QandA').innerHTML = "<textarea style=\"display:none;\" id=\""+valueis(currentQ)+"\" name=\""+valueis(currentQ)+"\">"+document.getElementById(Xihtml).value+"</textarea>\n" + document.getElementById('QandA').innerHTML				
+				} else {
+					document.getElementById('QandA').innerHTML = "<textarea style=\"display:none;\" id=\""+valueis(currentQ)+"\" name=\""+valueis(currentQ)+"\">"+document.getElementById(Xhtml).innerHTML+"</textarea>\n" + document.getElementById('QandA').innerHTML
+				}
 				if (document.getElementById('QandA').innerHTML.match(regexp)) {
 				 	var duplicatevars = new RegExp("id=\""+document.getElementById(Xhtml).innerHTML+"(.)*"+document.getElementById(Xhtml).innerHTML+"\"","g");
 					document.getElementById('QandA').innerHTML = document.getElementById('QandA').innerHTML.replace(duplicatevars, "");
 					document.getElementById('QandA').innerHTML = document.getElementById('QandA').innerHTML.replace(/\<variable\>(\<\/variable\>)?/, "<input type=hidden id=\""+document.getElementById(Xhtml).innerHTML+"\" name=\""+document.getElementById(Xhtml).innerHTML+"\" value=\""+document.getElementById(Xihtml).value+"\"/>"+document.getElementById(Xihtml).value);
-					document.getElementById('transcript').value = document.getElementById('transcript').value.replace(/\<variable\>(\<\/variable\>)?/, document.getElementById(Xihtml).value+"\n");
+					//document.getElementById('transcript').value = document.getElementById('transcript').value.replace(/\<variable\>(\<\/variable\>)?/, document.getElementById(Xihtml).value+"\n");
 					var thisvariable = new RegExp("<(X|x)>"+document.getElementById(Xhtml).innerHTML+"<\/(X|x)>","g");
-					document.getElementById('ondeck').innerHTML = document.getElementById('ondeck').innerHTML.replace(thisvariable, document.getElementById(document.getElementById(Xhtml).innerHTML).value);
-					document.getElementById('doc').innerHTML = document.getElementById('doc').innerHTML.replace(thisvariable, document.getElementById(document.getElementById(Xhtml).innerHTML).innerHTML);
+					//document.getElementById('doc').innerHTML = document.getElementById('doc').innerHTML.replace(thisvariable, document.getElementById(document.getElementById(Xhtml).innerHTML).innerHTML);
+					//document.getElementById('ondeck').innerHTML = document.getElementById('ondeck').innerHTML.replace(thisvariable, document.getElementById(valueis(currentQ)).innerHTML);
 					console.log("thisvariable: "+thisvariable);
-					console.log("Variable name: "+document.getElementById(Xhtml).innerHTML);
-					console.log("Variable value: "+document.getElementById(document.getElementById(Xhtml).innerHTML).value);
+					console.log("Variable name: "+valueis(currentQ));
+					//console.log("Variable value: "+document.getElementById(valueis(currentQ)).innerHTML);
+					if(document.getElementById(Ahtml).innerHTML != "") { document.getElementById('transcript').value += "USER: "+document.getElementById(Xihtml).value+"\n"; }
+				} else {
+					document.getElementById('transcript').value += "USER: "+document.getElementById(Ahtml).innerHTML+"\n";
 				}
 				document.getElementById('Choices').innerHTML = '';
 				setTimeout(function() {renderQnA(Qhtml,Jhtml,Dhtml,restart)}, 300);
@@ -77,13 +88,14 @@
 		if (GOTOfired == 0) {
 			document.getElementById('QandA').innerHTML += "<div id="+Jht+" style=\"float:left;width:100%;height:1px;\">&nbsp;</div>";
 		}
-		document.getElementById('QandA').innerHTML += "<div class='frame'><div class='full'><div class='question_text'>"+ document.getElementById(Qhtml).innerHTML+"</div></div><div class='question_arrow'></div></div>";		
+		console.log(Qhtml);
+		document.getElementById('QandA').innerHTML += "<div class='frame'><div class='full'><div class='question_text'>"+swapvar(document.getElementById(Qhtml).innerHTML)+"</div></div><div class='question_arrow'></div></div>";		
 
 		document.getElementById('QandA').innerHTML = document.getElementById('QandA').innerHTML.replace(/(\<br\>){2}/gi,"</div></div><div class='question_arrow'></div></div></div></div><div class='frame'><div class='full'><div class='question_text'>");
 		document.getElementById('QandA').innerHTML = document.getElementById('QandA').innerHTML.replace(/(\<br\> \<br\>)/gi,"<br><br>");
 
 		// add question 
-		document.getElementById('transcript').value += "BOT: "+ document.getElementById(Qhtml).innerHTML;
+		document.getElementById('transcript').value += swapvar("BOT: "+ document.getElementById(Qhtml).innerHTML);
 		document.getElementById('transcript').value = document.getElementById('transcript').value.replace(/(\<br\>){2}/gi,"\nBOT: ");
 				
 		if (document.getElementById(Dhtml)) {
@@ -142,12 +154,12 @@
 			var Qtexttrans = document.getElementById(QH).innerHTML.replace(/(<)?GOTO:(\d*)(.\s*\d+)*>?/,"");
 			Qtexttrans = Qtexttrans.replace(/\s*$/,"");
 			if (Qtexttrans != "") {
-				document.getElementById('transcript').value += "BOT: "+Qtexttrans+"\n";
+				document.getElementById('transcript').value += swapvar("BOT: "+Qtexttrans+"\n");
 			}
 			if (document.getElementById(QH).innerHTML.match(/^GOTO:(\d*)(.\s*\d+)*/)) {
 				document.getElementById('QandA').innerHTML += document.getElementById(QH).innerHTML.replace(/(<)?GOTO:(\d*)(.\s*\d+)*>?/,"<"+Qtext+">");
 			} else {
-				document.getElementById('QandA').innerHTML += "<div class='frame'><div class='full'><div class='question_text'>"+ document.getElementById(QH).innerHTML.replace(/(<)?GOTO:(\d*)(.\s*\d+)*>?/,"<"+Qtext+">")+"</div></div><div class='question_arrow'></div></div>";						
+				document.getElementById('QandA').innerHTML += "<div class='frame'><div class='full'><div class='question_text'>"+ swapvar(document.getElementById(QH).innerHTML.replace(/(<)?GOTO:(\d*)(.\s*\d+)*>?/,"<"+Qtext+">"))+"</div></div><div class='question_arrow'></div></div>";						
 			}
 			// replace GOTO with text
 			label = Qtext[0].replace("GOTO:","");
@@ -265,6 +277,20 @@
         	}
     	}
 	}
+	
+	function swapvar(input) {
+		var output; 
+		for(var i = 0; i < QVnames.length; i++) {
+			if (document.getElementById(QVnames[i][1])) {
+				var item = QVnames[i][1].replace(/\./g,"\\.");
+				var varegx = new RegExp("<x>"+item+"<\/x>","gi");
+				console.log(QVnames[i][1]);
+				input = input.replace(varegx,document.getElementById(QVnames[i][1]).innerHTML);
+			} 
+		}
+		output = input
+		return output
+	}
 
 	function transcript(output) {
 		if (output == 1) {
@@ -276,8 +302,25 @@
 	}		
 	
 	function doc() {
-		return document.getElementById('doc').innerHTML;
+		return swapvar(document.getElementById('doc').innerHTML);
 	}	
+	
+	function json_str() {
+		var json_list = "{";
+		for(var i = 0; i < QVnames.length; i++) {
+			if (document.getElementById(QVnames[i][1])) {
+				json_list = json_list+'"'+QVnames[i][1]+'":"'+document.getElementById(QVnames[i][1]).innerHTML+'"';
+			} else {
+				json_list = json_list+'"'+QVnames[i][1]+'":"'+'"';
+			}
+			if (i+1 < QVnames.length) { 
+				json_list = json_list+",";
+			} else {
+				json_list = json_list+"}";
+			}
+		}
+		return json_list;
+	}
 
 	function mail2(to,subject,body) {
 		to = encodeURIComponent(to);
@@ -286,14 +329,20 @@
 		window.location.href = "mailto:"+to+"?subject="+subject+"&body="+body;
 	}
 	
-	function submit2(action,method,docAs,instructions,transcriptAs) {
+	function submit2(action,method,docAs,instructions,transcriptAs,jsonAs,target) {
 		document.FORM.action = action;
-		document.FORM.method = method; 
+		document.FORM.method = method;
+		if (target) {
+			document.FORM.target = target;
+		} else {
+			document.FORM.target = "_self";		
+		}
+		
 		if (docAs) {
 			var doctext = document.createElement("textarea");
 			doctext.style.display ='none';
 			doctext.name= docAs;
-			doctext.value= document.getElementById('doc').innerHTML;
+			doctext.value= swapvar(document.getElementById('doc').innerHTML);
 			document.getElementById('FORM').appendChild(doctext);
 			if (instructions) {
 				var instructtext = document.createElement("textarea");
@@ -311,6 +360,14 @@
 			ttext.name= transcriptAs;
 			ttext.value= document.getElementById('transcript').value;
 			document.getElementById('FORM').appendChild(ttext);
+		}
+		if (jsonAs) {
+			var json = document.createElement("textarea");
+			json.type='hidden';
+			json.style.display ='none';
+			json.name= jsonAs;
+			json.value= json_str();
+			document.getElementById('FORM').appendChild(json);
 		}
 		document.getElementById('ondeck').innerHTML = "";
 		document.FORM.submit();

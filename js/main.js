@@ -200,7 +200,7 @@ if (window.requestFileSystem) {
 // grab the content of the form field and place it into a variable
     var textToWrite = document.getElementById(tosave).value;
 //  create a new Blob (html5 magic) that conatins the data from your form feild
-    var textFileAsBlob = new Blob([textToWrite], {type:'text/plain'});
+    var textFileAsBlob = new Blob([textToWrite], {encoding:"UTF-8",type:"text/plain;charset=UTF-8"});
 	
 // Specify the name of the file to be saved
     var fileNameToSaveAs = name;

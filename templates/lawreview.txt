@@ -2,8 +2,8 @@ Title: How to Title a Law Journal Article/Note
 Description: A sample QnA demonstrating the use user-defined variables and document construction.
 Before: <center><h2>How to Title a Law Journal Article/Note</h2></center>
 
-Q(1): What is your working title?
-X:mytitle
+Q(mytitle): What is your working title?
+X:
 	Q(1.1): Hum... Is there a pun in there?
 	A: Yes.
 		Q(1.1.1):GOTO:2
@@ -16,7 +16,7 @@ X:mytitle
 			A: Yes.
 				Q(1.1.2.2.1):GOTO:2
 			A: No. 
-				Q(1.1.2.2.2): Well that won't do. Think hard. GOTO:1
+				Q(1.1.2.2.2): Well that won't do. Think hard. GOTO:mytitle
 
 DOC(2): <b><x>mytitle</x></b>		
 Q(2):<em>Sine qua non</em>. Feel enTITLED to use "<x>mytitle</x>." Would you like to start writing?

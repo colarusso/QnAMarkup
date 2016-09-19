@@ -180,8 +180,6 @@ Link Color:
 
 </div> 
 
-
-
 <div style="position:absolute;height:30px;bottom:25px;left:25px;right:460px;">
 	<span style="float:right;">
 		<input type=submit value="Update Outputs" onClick="sending=1;loading('');"/>&nbsp;&nbsp;
@@ -191,7 +189,7 @@ Link Color:
 	
 	<?php if ($bugs == 1) { echo "&nbsp;&nbsp;|&nbsp;&nbsp;"; } ?>
 	</div>
-	<?php if ($bugs == 1) { echo " <span id=\"bug_report\" style=\"margin-left:5px;\"> <a href=\"https://github.com/colarusso/QnAMarkup/issues\" target=_blank>report bug/issue</a></span>"; } ?></div>
+	<span id="bug_report" style="margin-left:5px;"><?php if ($bugs == 1) { echo " <a href=\"https://github.com/colarusso/QnAMarkup/issues\" target=_blank>report bug/issue</a>"; } ?></span></div>
 </FORM>
 
 <div style="position:absolute;top:95px;right:25px;width:400px;z-index:1;">

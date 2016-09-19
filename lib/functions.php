@@ -6,6 +6,9 @@
 # add meta data to engine and standalone
 # what are \n added on edit this link?
 
+# Set Error Reporting
+error_reporting(0);
+
 # Load common configuration file
 include 'config.php';
 
@@ -229,10 +232,10 @@ function enumerate_tree($editor) {
 	# ----------------------------------		
 	# See if the targets of any GOTO statements are 0 or > than 1. 
 	# If they are, replace them with GOTO:???? or GOTO:???		
-	preg_match_all("/GOTO:\s?\d+[\.\d+]*/", $content, $gotos);
+	preg_match_all("/GOTO:\s?([a-z0-9\._-]*)\s*(\n|$)/", $content, $gotos);
 	foreach ($gotos[0] as $gvalue) {
 		$regex = preg_replace("/GOTO:/", "", $gvalue);
-		$regex = preg_replace("/\s/", "", $regex);
+		$regex = preg_replace("/(\s|\n)/", "", $regex);
 		$regex_label = preg_replace("/\./", "\.", $regex);
 		$regex = "/(^|\n)+\t*(Q\($regex_label\):)/i";
 		# If they point at nothing 
@@ -251,7 +254,7 @@ function enumerate_tree($editor) {
 	# ----------------------------------
 	
 	# Define regex for non-header tags
-	$regex = '/(^|\n)\t*((Q\(?(\d?)(.\s*\d+)*\)?|X|DOC\(?(\d?)(.\s*\d+)*\)?):|A((\[[^\]]*\])+:|:(\[[^\]]*\])?))/';
+	$regex = '/(^|\n)\t*((Q(\((.*)\))?|X|DOC\(?(\d?)(.\s*\d+)*\)?):|A((\(.*\))|)((\[[^\]]*\])+:|:(\[[^\]]*\])?))/';
 	# Split content based no header tags. 
 	$text = preg_split($regex, $content);
 	# Get non-header tag contents. 	
@@ -307,7 +310,7 @@ function enumerate_tree($editor) {
 		$nested = preg_match_all("/\t/",$value,$mo);		
 		
 		# For Q tags
-		if (preg_match("/Q\(?(\d?)(.\s*\d+)*\)?:/", $value)) {
+		if (preg_match("/Q(\((.*)\))?:/", $value)) {
 			# For Q tags that start a line w/o indents
 			if ($nested == 0) {
 				$lastnest = -1;
@@ -321,14 +324,17 @@ function enumerate_tree($editor) {
 				$label = $label.".".$numberline[$j];
 				$j++;
 			}
-			
+
 			# If a Q target number is changing since submit, change any GOTO statements that point to it. 
 			# We add in the "hold:" to stop subsequent changes to updated GOTO calls. 
 			$regex_label = preg_replace("/\./", "\.", $label);
 			$regex = "/Q\($regex_label\):/";
+			preg_match('/Q\((.*)\):/', $value, $matches);			
+			$regex_label_2 = preg_replace("/\./", "\.", $matches[1]);
+			$regex_2 = "/Q\($regex_label_2\):/";
 			$regex_goto = preg_replace("/Q|\(|\)|:|\n|\t/", "", $value);
 			$regex_goto = "/GOTO:\s?$regex_goto/";
-			if (preg_match($regex, $value) != 1 AND $regex_goto != "/GOTO:\s?/") {
+			if (preg_match($regex, $value) != 1 AND preg_match($regex_2, $value) != 1 AND $regex_goto != "/GOTO:\s?/") {
 				$l = 0;
 				foreach ($text as $tvalue) {
 					# I've added the ":hold" to be sure that the GOTO isn't changed on 
@@ -339,8 +345,18 @@ function enumerate_tree($editor) {
 			}
 
 			# Update Q target ID with current label
-			$value = preg_replace("/Q\(?(\d?)(.\s*\d+)*\)?:/", "Q($label):", $value);
-			
+			$qvarname[$iq][0] = $label;
+			# be sure to replace things that look like the number id but not those that don't (custom ids must include letters)
+			preg_match('/Q\(((\d*)(\.\d)*)?\):/', $value, $matches);
+			if ($matches[1] != "" or preg_match('/Q\(\):/', $value) or preg_match('/Q:/', $value) ) {
+				$value = preg_replace("/Q(\((.*)\))?:/", "Q($label):", $value);
+				$qvarname[$iq][1] = $label;				
+			} else {
+				preg_match('/Q\((.*)\):/', $value, $matches);			
+				$qvarname[$iq][1] = $matches[1];							
+			}
+
+
 			# If Q is not indented once from the last nest, throw an error.
 			if (($nested+(-1)*$lastnest) != 1) {
 				$wellformed = 0;
@@ -351,13 +367,14 @@ function enumerate_tree($editor) {
 			}
 
 			# If the preceding tag was a Q, make sure this Q is on a new line (i.e., $lastnest == -1)
-			if (preg_match("/Q\(?(\d?)(.\s*\d+)*\)?:/", $lastvalue) AND $lastnest != -1) {
+			if (preg_match("/Q(\((.*)\))?:/", $lastvalue) AND $lastnest != -1) {
 				$wellformed = 0;
 				$near = $value.substr($text[$i], 0, 50)."...";
 				$near = preg_replace("/</", "&lt;", $near);
 				$near = preg_replace("/>/", "&gt;", $near);
 				$errormsg = $errormsg."<li class=\"error\">Mismatched Q and Q. Error near:<br><code>$near</code></li>";
 			}
+			
 			
 			# GOTO Errors
 			if (preg_match("/GOTO:\?\?\?\?/i", $text[$i])) {
@@ -372,7 +389,7 @@ function enumerate_tree($editor) {
 				$near = preg_replace("/</", "&lt;", $near);
 				$near = preg_replace("/>/", "&gt;", $near);
 				$errormsg = $errormsg."<li class=\"error\">The target of a GOTO showed up more than once. So we weren't sure what to do other than disable the call. Look for \"GOTO:???\" near:<br><code>$near</code></li>";			
-			} else if (preg_match("/GOTO:/i", $text[$i]) and preg_match("/(GOTO:(hold:)?(\d?)(.\s*\d+)*\s*)$/i", $text[$i]) == 0) {
+			} else if (preg_match("/GOTO:/i", $text[$i]) and preg_match("/(GOTO:(hold:)?([a-z0-9\._-]*)\s*)$/i", $text[$i]) == 0) {
 				$wellformed = 0;
 				$near = $value.substr($text[$i], 0, 50)."...";
 				$near = preg_replace("/</", "&lt;", $near);
@@ -380,13 +397,27 @@ function enumerate_tree($editor) {
 				$errormsg = $errormsg."<li class=\"error\">Poorly-formed GOTO call. Error near:<br><code>$near</code></li>";
 			}
 			
+			# If variable_name containes unallowed characters.
+			if (preg_match_all("/^(([a-z0-9\._-]*)|((\d*)(\.\d)*))$/i", $qvarname[$iq][1], $mx) != 1) {
+				$wellformed = 0;
+				$near = $value.substr($text[$i], 0, 50)."...";
+				$errormsg = $errormsg."<li class=\"error\">Variable names must contain only letters, numbers, periods, underscores, or dashes. Error near:<br><code>$near</code></li>";
+			} 
+			
+			# If variable_name is not unique, throw an error
+			if (preg_match_all("/Q\(".$qvarname[$iq][1]."\):/", $content, $mx) > 1) {
+				$wellformed = 0;
+				$near = $value.substr($text[$i], 0, 50)."...";
+				$errormsg = $errormsg."<li class=\"error\">Variable names must be unique (not repeated). Error near:<br><code>$near</code></li>";
+			} 
+
 			# Read updated content into questions array
 			$questions[$iq][0] = $label;
 			$questions[$iq][1] = $text[$i];
 			$iq++;
 
 		# For A tags
-		} else if (preg_match("/A((\[[^\]]*\])+:|:(\[[^\]]*\])?)/", $value)) {
+		} else if (preg_match("/A(\((.*)\))?((\[[^\]]*\])+:|:(\[[^\]]*\])?)/", $value)) {
 			# Build Q ID, assign to label
 			$numberline[$nested]++;
 			$label = $Qnode;
@@ -396,6 +427,9 @@ function enumerate_tree($editor) {
 				$j++;
 			}
 			$label = $label.".".$numberline[$nested];
+
+			# Update a target ID with current label
+			#$value = preg_replace("/A(\((.*)\))?((\[[^\]]*\])+:|:(\[[^\]]*\])?)/", "A($numberline[$nested])$3", $value);
 
 			# If this A tag isn't lined up with previous tag, throw an error
 			if (($nested+(-1)*$lastnest) > 0) {
@@ -418,11 +452,11 @@ function enumerate_tree($editor) {
 			# Read content into answers array 
 			$answers[$ia][0] = $label; #id 
 			$answers[$ia][1] = $text[$i]; #content
-			if (preg_match("/A:\[([^\]]*)\]/", $value, $href)) {
-				$answers[$ia][2] = $href[1]; #href
+			if (preg_match("/A(\((.*)\))?:\[([^\]]*)\]/", $value, $href)) {
+				$answers[$ia][2] = $href[3]; #href
 				$answers[$ia][3] = "target=\"_blank\""; # target
-			} else if (preg_match("/A\[([^\]]*)\]:/", $value, $href)) {
-				$answers[$ia][2] = $href[1]; #href			
+			} else if (preg_match("/A(\((.*)\))?\[([^\]]*)\]:/", $value, $href)) {
+				$answers[$ia][2] = $href[3]; #href			
 				#if (!preg_match("/\[javascript([^\]]*)\]:/", $value, $href)) { 
 				#	# you have to watch the target because 
 				#	#it can be used to define the scope of javascript functions
@@ -430,6 +464,12 @@ function enumerate_tree($editor) {
 				#} 
 			} else {
 				$answers[$ia][2] = "javascript:void('');"; #href						
+			}
+			preg_match('/A(\((.*)\))?((\[[^\]]*\])+:|:(\[[^\]]*\])?)/', $value, $matches);
+			if ($matches[2] != "") {
+				$answers[$ia][4] = $matches[2]; #variable name
+			} else {
+				$answers[$ia][4] = trim($text[$i]); #variable	
 			}
 			$ia++;
 
@@ -455,20 +495,15 @@ function enumerate_tree($editor) {
 			}
 			
 			# If X tag contains spaces or special characters, throw an error
-			if (!preg_match("/^[a-zA-Z0-9]+\s*$/", $text[$i])) {
+			#if (!preg_match("/^[a-zA-Z0-9\.]+\s*$/", $text[$i])) { #pre v 1
+			if (!preg_match("/^\s*$/", $text[$i])) {
 				$text[$i] = preg_replace("/\s/", "", $text[$i]);
 				$wellformed = 0;
 				$near = $value.substr($text[$i], 0, 50)."...";
 				$near = preg_replace("/</", "&lt;", $near);
 				$near = preg_replace("/>/", "&gt;", $near);
-				$errormsg = $errormsg."<li class=\"error\">Variable names must contain a combination of letters and numbers, no spaces, punctuation, or special characters. Error near:<br><code>$near</code></li>";
-			
-			# If X tag is not unique, throw an error
-			} else if (preg_match_all("/X:\s?".$text[$i]."\s?/", $content, $mx) > 1) {
-				$wellformed = 0;
-				$near = $value.substr($text[$i], 0, 50)."...";
-				$errormsg = $errormsg."<li class=\"error\">Variable names must be unique (not repeated). Error near:<br><code>$near</code></li>";
-			} 
+				$errormsg = $errormsg."<li class=\"error\">Starting in September 2016, the space after an X (variable) tag must be left blank. Variable names are now pulled from the parent question's target_id. That is, the number or letters in parentheses between the \"Q\" and \":\". For example: <p><code>Q(<font color=red><em>target_id</em></font>):</code></p> Error near:<br><code>$near</code></li>";
+			}			
 
 			# If there is more than one X in this answer set			
 			$xcount[$nested] = $xcount[$nested]+1;
@@ -483,7 +518,7 @@ function enumerate_tree($editor) {
 			$answers[$ia][1] = "<variable>"; #content
 			$answers[$ia][2] = "javascript:void('');"; #href	
 			$text[$i] = preg_replace("/\s*$/", "", $text[$i]);					
-			$answers[$ia][4] = $text[$i]; #variable name 
+			$answers[$ia][4] = $label; #variable name 
 			$ia++;
 			
 		# For DOC tags
@@ -543,6 +578,14 @@ function enumerate_tree($editor) {
 	$regex = "/GOTO:hold:/i";
 	$code = preg_replace($regex, "GOTO:", $code);
 
+	foreach ($qvarname as $qpair) {
+		$regex_clean = preg_replace("/\./", "\.", $qpair[0]);
+		$regex = "/((^|\n)+\t*)(Q\(($regex_clean)\):)/i";
+		$code = preg_replace($regex, "$1Q($qpair[1]):", $code);	
+		$regex = "/GOTO:\s?$regex_clean(\s*(\n|$))/i";
+		$code = preg_replace($regex, "GOTO:$qpair[1]$1", $code);	
+	}
+	
 	if (!$questions) {
 		$wellformed = 0;
 		$near = $value.substr($text[$i-1], 0, 50)."...";
@@ -577,7 +620,18 @@ if ($wellformed ==1) {
 			
 		$i=0;
 		foreach ($questions as $value) {
-			$value[1] = stripslashes($value[1]); 
+			$value[1] = stripslashes($value[1]);
+			preg_match('/GOTO:\s?([a-z0-9\._-]*)\s*$/', $value[1], $matches);
+			$regex_clean = preg_replace("/\./", "\.", $matches[1]);
+			$regex = "/GOTO:\s?$regex_clean(\s*$)/i";
+			foreach($qvarname as $keypair) {
+					#print "$keypair[1] == $matches[1]\n";
+					if ($matches[1] == $keypair[1]) {
+						$value[1] = preg_replace($regex, "GOTO:$keypair[0]", $value[1]);
+						#$value[1] = "hey";
+					}
+			}
+			#$value[1] = "$matches[1] | $value[1]";
 			if ($i==0) { 
 				$snippet_output = $snippet_output."<FORM name=\"FORM\" id=\"FORM\"><div id=\"conversation\" style=\"margin:".($frame_pad)."px auto 0 auto;padding:0 ".$frame_pad."px;max-width:".$col_width."px\">".$before."<div id='QandA' class='QandA'><div style='padding:15px;background:#ddffdd;text-align:center;'>Loading QnA...</div></div>"; 
 				$snippet_output = $snippet_output."<div id='Choices' class='choices'>";
@@ -602,7 +656,7 @@ if ($wellformed ==1) {
 				$original = $original."<div id='D-$value[0]' name='D-$value[2]' style='display:none;'>$value[3]</div>";
 			} 
 			
-			if (preg_match("/^GOTO:\d+(\.\d+)*\s*$/i", $value[1])) {
+			if (preg_match("/^GOTO:\s?([a-z0-9\._-]*)\s*$/i", $value[1])) {
 				$original = $original."<div id='Q-$value[0]' name='Q-$value[0]' style='display:none;'>$value[1]</div>";
 			} else if (preg_match("/^\<variable\>$/", $value[1])) {
 				$original = $original."<div id='Q-$value[0]' name='Q-$value[0]' style='display:none;'>input $value[1]</div>";
@@ -620,7 +674,23 @@ if ($wellformed ==1) {
 			$original = $original."<div id='A-target-$value[0]' name='A-target-$value[0]' style='display:none;'>$value[3]</div>";
 			$original = $original."<div id='X-$value[0]' name='X-$value[0]' style='display:none;'>$value[4]</div>";
 		}
-
+		
+		$original = $original."\n<script>\n\tvar QVnames = [";
+		$inc = 0;
+		foreach ($qvarname as $value) {
+			$original = $original."['$value[0]','$value[1]']";
+			$inc++;
+			if (count($qvarname) == $inc) {
+				$original = $original;
+			} else {
+				$original = $original.",";	
+			}
+		}
+		$original = $original."];\n";		
+		$original = $original."\tfunction indexis(variablename) {\n\t\tfor(var i = 0; i < QVnames.length; i++) {\n\t\t\tif(QVnames[i][1] === variablename) {\n\t\t\t\treturn QVnames[i][0];\n\t\t\t}\n\t\t}\n\t}\n";
+		$original = $original."\tfunction valueis(variablekey) {\n\t\tfor(var i = 0; i < QVnames.length; i++) {\n\t\t\tif(QVnames[i][0] === variablekey) {\n\t\t\t\treturn QVnames[i][1];\n\t\t\t}\n\t\t}\n\t}\n";
+		$original = $original."</script>\n";
+		
 		$snippet_output = $snippet_output.$original."</div>";
 		$snippet_output = $snippet_output."<textarea id=\"original\" name=\"original\" style=\"display:none;\" disabled=\"disabled\">".$original."</textarea>";
 		$snippet_output = $snippet_output."<textarea id=\"transcript\" name=\"transcript\" style=\"display:none;\" disabled=\"disabled\"></textarea>";

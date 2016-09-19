@@ -68,9 +68,9 @@ If you're pressed for time, start with the <a href="#body">Body</a> section. Tha
 <h3>Sections</h3>
 <ul>
 	<li><a href="#header">Header</a><!--(364 words) assuming 180 words/min => -->  (~2 min. to read)</li>
-	<li><a href="#body">Body</a> <!-- (1,425 words) --> (~8 min. to read)</li>
-	<li><a href="#scripts">Predefined Javascript Functions</a> <!--(454 words)--> (~2.5 min. to read)</li>
-	<li><a href="#docs">Document Parsers &amp; Editors</a> <!--(457 words)--> (~2.5 min. to read)</li>
+	<li><a href="#body">Body</a> <!-- (1,658 words) --> (~9.5 min. to read)</li>
+	<li><a href="#scripts">Predefined Javascript Functions</a> <!--(525 words)--> (~3 min. to read)</li>
+	<li><a href="#docs">Document Parsers &amp; Editors</a> <!--(731 words)--> (~4 min. to read)</li>
 	<li><a href="#remote">Loading a Remote QnA</a> <!--(457 words)--> (~1 min. to read)</li>  
 </ul><br> 
 </div>
@@ -102,14 +102,14 @@ If you're pressed for time, start with the <a href="#body">Body</a> section. Tha
 
 <h2>Body<a name="body" href="#body" class="anchor"></a></h2>
 <p>
-The <em>Body</em> is where you define questions and answers along with the text of any would-be documents. This content can be plain text, or it can be formated as <a href="http://www.w3schools.com/html/default.asp" target="_blank">HTML</a>. The output will be an interactive HTML document. Consequently, if you would like to include comments (text that doesn't show up in your output), you can hide them like this: <code>&lt;!--  <font color=black>comment text here</font> --&gt;</code>, just <a href="http://www.w3schools.com/html/html_comments.asp" target="_blank">as you would in HTML</a>. To get a good feel for what's possible in QnA, read through the following tag descriptions. 
+The <em>Body</em> is where you define questions and answers along with the text of any would-be documents. This content can be plain text, or it can be formated as <a href="http://www.w3schools.com/html/default.asp" target="_blank">HTML</a>. The output of a QnA is an interactive HTML document. Consequently, if you would like to include comments (text that doesn't show up in your output), you can hide them like this: <code>&lt;!--  <font color=black>comment text here</font> --&gt;</code>, just <a href="http://www.w3schools.com/html/html_comments.asp" target="_blank">as you would in HTML</a>. To get a good feel for what's possible in QnA, read through the following tag descriptions. 
 </p>
-	<h2><code>Q: <font color=black><em>text/html</em></font></code><a name="q" href="#q" class="anchor"></a></h2>
+	<h2><code>Q<font color=purple>(<font color=red><em>variable_name</em></font>)</font>: <font color=black><em>text/html</em></font></code><a name="q" href="#q" class="anchor"></a></h2>
 	<ul>
 		The content of <code>Q</code> (question) tags are rendered inside left-aligned text bubbles. The first <code>Q</code> tag's content is visible after loading. The content of other <code>Q</code> tags become visible after a user selects its preceding <code>A</code> tag.  
 
 <a name="first"></a>
-<p>For example, the first question below is displayed after loading, along with its possible answers (those <code>A</code> tags lined up below its <code>Q</code>). After a user selects an answer, the content of the <code>Q</code> following that answer is displayed, along with its possible answers (if any).</p>
+<p>For example, the first question below is displayed after loading, along with its possible answers (those <code>A</code> tags in a vertical line below its <code>Q</code>). After a user selects an answer, the content of the <code>Q</code> following that answer is displayed, along with its possible answers (if any).</p>
 
 <table width=100% bgcolor="#eeeeee"><tr><td valign=top><pre style="padding:0 10px 10px 10px;">Q: <font color=black>first question</font>
 A: <font color=black>first answer to first question</font> 
@@ -127,50 +127,51 @@ A: <font color=black>second answer to first question</font>
 		</p>
 
 		<p>After rendering, by <a href="../" target=
-		_blank">an interpreter</a> every <code>Q</code> tag will have a unique <em>target ID</em> placed in a parenthetical between its Q and colon based on its relation to other <code>Q</code> tags. These ID values are updated with every rendering and can be used in conjunction with the <code>GOTO</code> tag to get users to <code>Q</code> tags that would otherwise be inaccessible to them given the linear nesting of questions and answers. A discussion of the <code>GOTO</code> tag can be found <a href="#goto">below</a>.
-<pre style="background:#eee;padding:10px;">Q(1): 
+		_blank">an interpreter</a> every <code>Q</code> tag will have a unique <code><font color=red><em>variable_name</em></font></code> placed in a parenthetical between its Q and colon based on its relation to other <code>Q</code> tags. If left in the default form of alternating numbers and periods (e.g., <em>1.1.1.3.4</em>), these <code><font color=red><em>variable_name</em></font></code>s are updated with every rendering. You can, however, change these default names to any unique combination of letters, numbers, periods, dashes, and underscores (e.g., <em>my_cool_vaiable</em>). Regardless of the format, <code><font color=red><em>variable_name</em></font></code>s can be used in conjunction with the <code>GOTO</code> tag to direct users to <code>Q</code> tags that would otherwise be inaccessible given the linear nesting of questions and answers. A discussion of the <code>GOTO</code> tag can be found <a href="#goto">below</a>.
+<pre style="background:#eee;padding:10px;">Q<font color=purple>(<font color=red>1</font>)</font>: 
 A: 
-	Q(1.1):
+	Q<font color=purple>(<font color=red>1.1</font>)</font>:
 A: 
-	Q(1.2):
-Q(2):</pre>
+	Q<font color=purple>(<font color=red>1.2</font>)</font>:
+Q<font color=purple>(<font color=red>2</font>)</font>:</pre>
 </p>
 
 	<p><b>Formatting:</b></p>
 
 	<p>QnA outputs HTML files. So you can format questions in their text bubbles using standard <a href="http://www.w3schools.com/html/default.asp" target="_blank">HTML</a>. If, however, you would like the text of a question to display in multiple text bubbles, use <code>&lt;br&gt;&lt;br&gt;</code> to create a bubble break. This will split the current text bubble in two at the point where it is included. You may recognize this as two <a href="http://www.w3schools.com/tags/tag_br.asp" target="_blank">HTML line breaks</a>. If you want to place two HTML line breaks in a bubble without triggering a bubble break, simply add a space between the two tags (<code>&lt;br&gt; &lt;br&gt;</code>), and they will not create a bubble break. 
 	</ul>
-<h2><code>GOTO:<font color=red><em>target_id</em></font></code><a name="goto" href="#goto" class="anchor"></a></h2>
+<h2><code>GOTO:<font color=red><em>variable_name</em></font></code><a name="goto" href="#goto" class="anchor"></a></h2>
 	<ul>
 	<p>
-	The <code>GOTO</code> tag moves a user to the location targeted by its <em>target_id</em>.</p>
+	The <code>GOTO</code> tag moves a user to the location targeted by its <code><font color=red><em>variable_name</em></font></code>.</p>
 	
 <a name="sox"></a>
 <p> For example, given the QnA below, a user answering "Red Sox" will find themselves presented with the reply "Cool." Whereas, a user answering "Yankees" will find him/herself presented with the text "Seriously..." followed by the original question, "Red Sox or Yankees?"
 	</p>
-<table width=100% bgcolor="#eeeeee"><tr><td valign=top><pre style="padding:0 10px 10px 10px;">Q(1): <font color=black>Red Sox or Yankees?</font>
+<table width=100% bgcolor="#eeeeee"><tr><td valign=top><pre style="padding:0 10px 10px 10px;">Q<font color=purple>(<font color=red>1</font>)</font>: <font color=black>Red Sox or Yankees?</font>
 A: <font color=black>Red Sox</font>
-	Q(1.1):GOTO:<font color=red>2</font> 
+	Q<font color=purple>(<font color=red>1.1</font>)</font>:GOTO:<font color=red>2</font> 
 A: <font color=black>Yankees</font>
-	Q(1.2): <font color=black>Seriously...</font> GOTO:<font color=red>1</font>
-Q(2): <font color=black>Cool.</font></pre>
+	Q<font color=purple>(<font color=red>1.2</font>)</font>: <font color=black>Seriously...</font> GOTO:<font color=red>1</font>
+Q<font color=purple>(<font color=red>2</font>)</font>: <font color=black>Cool.</font></pre>
 </p></td><td width=300px valign=top>
 <iframe src="<?php echo $home ?>i/?source=http://colarusso.github.io/QnAMarkup/examples/source/sox.txt&sharing=2" style="width:100%;height:300px;border: solid 1px #555;"></iframe>
 </td></tr>
 <tr><td colspan=2 bgcolor="#666666">&nbsp; <a href="<?php echo $home ?>?source=http://colarusso.github.io/QnAMarkup/examples/source/sox.txt&sharing=2" class="foot" target="_QnA">edit this QnA in an new window</a></td></tr>
 </table>	
 <p>
-<code>GOTO</code> calls can only appear at the end of a <code>Q</code> tag, and there can only be one <code>GOTO</code> call per tag. It is not allowed in <code>A</code> tags.
+<code>GOTO</code> calls can only appear at the end of a <code>Q</code> tag, and there can only be one <code>GOTO</code> call per tag. They are not allowed in <code>A</code> tags.
 </p>
-<p>If the target of a <code>GOTO</code> is removed or the <code><font color=red><em>target_id</em></font></code> shows up more than once before the ids are  recalculated: the <code>GOTO</code> is declared ambiguous; an error is thrown; and <code>GOTO:<font color=red><em>target_id</em></font></code> becomes something like <code>GOTO:???</code>. If the target of a <code>GOTO</code> is renumbered, the <code>GOTO</code> is renumbered as well.</p>  
+<p>If the target of a <code>GOTO</code> is removed or the <code><font color=red><em>variable_name</em></font></code> shows up more than once before the ids are  recalculated: the <code>GOTO</code> is declared ambiguous; an error is thrown; and <code>GOTO:<font color=red><em>variable_name</em></font></code> becomes something like <code>GOTO:???</code>. If the target of a <code>GOTO</code> is renumbered, in most cases, the <code>GOTO</code> is renumbered as well.</p>  
 <p>Note: <code>DOC:</code> tags (<a href="#doc">described below</a>) are included when a user is moved to a target location.</p>
 	</ul>
 
-<h2><code>A: <font color=black><em>some text/html</em></font></code>, 
+<h2><a name="a" href="#a" class="anchor"></a>
+	<code>A<font color=purple>(<font color=red><em>variable_value</em></font>)</font>: <font color=black><em>some text/html</em></font></code>, 
 	
-	<code>A<font color=purple>[<font color=red><em>href</em></font>]</font>: <font color=black><em>some text/html</em></font></code>,  or 
+	<code>A<font color=purple>(<font color=red><em>variable_value</em></font>)[<font color=red><em>href</em></font>]</font>: <font color=black><em>some text/html</em></font></code>,  or 
 	
-	<code>A:<font color=purple>[<font color=red><em>href</em></font>]</font> <font color=black><em>some text/html</em></font></code><a name="a" href="#a" class="anchor"></a></h2>
+	<code>A<font color=purple>(<font color=red><em>variable_value</em></font>)</font>:<font color=purple>[<font color=red><em>href</em></font>]</font> <font color=black><em>some text/html</em></font></code></h2>
 	
 	<ul>		<p>
 			The <code>A</code> tag is rendered as a button following the preceding question's text. By default, clicking on this button will replace all buttons with a right-aligned word bubble containing the contents of the selected button and followed by the text of the next nested question in a left-aligned text bubble.
@@ -187,8 +188,46 @@ A:
 		A:
 </pre>
 
+			<p><b>Advanced Usage:</b></p>
+			<ul><p>
 			<p>
-			<b>Advanced Usage:</b>
+			<a name="a" href="#variables" class="anchor"></a>
+			<b>Variables</b>
+			</p>
+			Answers are stored in variables with names defined by <code><font color=red><em>variable_name</em></font></code> in the parent <code>Q</code> tag. By default, answer values are equal to the text/html in the <code>A</code> tag. However, if the <code>A</code> tag is written with parentheses (e.g., <code>A<font color=purple>()</font>:</code>) the contents of these parentheses are used as the answer.
+			</p>
+			<p>You can access an answer's values by enclosing its <code><font color=red><em>variable_name</em></font></code> like so: <code>&lt;x&gt;<font color=red><em>variable_name</em></font>&lt;/x&gt;</code>. Instances of such enclosures will be replaced with that variable's value. For example, consider the following. </p>
+<table width=100% bgcolor="#eeeeee"><tr><td valign=top><pre style="padding:0 10px 10px 10px;">Q<font color=purple>(<font color=red>drink</font>)</font>: <font color=black>Coffee or tea?</font>
+A: <font color=black>coffee</font>
+	Q<font color=purple>(<font color=red>1.1</font>)</font>:GOTO:<font color=red>extras</font>
+A: <font color=black>tea</font>
+	Q<font color=purple>(<font color=red>1.2</font>)</font>:GOTO:<font color=red>extras</font>
+
+Q<font color=purple>(<font color=red>extras</font>)</font>: <font color=black>Milk and sugar?</font>
+A<font color=purple>(<font color=red>milk and sugar</font>)</font>: <font color=black>Yes. Milk and sugar.</font>
+	Q<font color=purple>(<font color=red>2.1</font>)</font>:GOTO:<font color=red>gotit</font>
+A<font color=purple>(<font color=red>nothing added</font>)</font>: <font color=black>No. I take it black.</font>
+	Q<font color=purple>(<font color=red>2.2</font>)</font>:GOTO:<font color=red>gotit</font>
+A<font color=purple>(<font color=red>milk</font>)</font>: <font color=black>Milk only.</font>
+	Q<font color=purple>(<font color=red>2.3</font>)</font>:GOTO:<font color=red>gotit</font>
+A<font color=purple>(<font color=red>sugar</font>)</font>: <font color=black>Sugar only.</font>  
+	Q<font color=purple>(<font color=red>2.4</font>)</font>:GOTO:<font color=red>gotit</font>
+
+Q<font color=purple>(<font color=red>gotit</font>)</font>: <font color=black>Got it. You like </font>&lt;x&gt;<font color=red>drink</font>&lt;/x&gt;<font color=black> with </font>&lt;x&gt;<font color=red>extras</font>&lt;/x&gt;.</font> 
+</pre></td><td width=300px valign=top>
+<iframe src="<?php echo $home ?>i/?source=http://colarusso.github.io/QnAMarkup/examples/source/drink.txt&sharing=2" style="width:300px;height:300px;border: solid 1px #555;"></iframe>
+</td></tr>
+<tr><td colspan=2 bgcolor="#666666">&nbsp; <a href="<?php echo $home ?>?source=http://colarusso.github.io/QnAMarkup/examples/source/drink.txt&sharing=2" class="foot" target="_QnA">edit this QnA in an new window</a></td></tr>
+</table>
+			<p>
+				Note: the replacement of <code>&lt;x&gt;<font color=red><em>variable_name</em></font>&lt;/x&gt;</code> with user values includes text inside <code>DOC:</code> tags (<a href="#doc">described below</a>). 
+			</p>
+			<p>In addition to the replacement example above, user answers are stored in the document itself. So if you use the <code>submit2()</code> function (<a href="#submit2()">described below</a>) these variables will be passed along. Also, you can get at these values using Javascript's innerHTML property: <a href="http://www.w3schools.com/jsref/prop_html_innerhtml.asp" target="_blank">document.getElementById("variable_name").innerHTML</a>.</p>
+			</ul>
+			<ul>
+			<p>
+			<a name="a" href="#links" class="anchor"></a>
+			<b>Links</b>
 			</p>
 			<p>If the <code>A</code> tag is written with brackets (e.g., <code>A<font color=purple>[]</font>:</code> or <code>A:<font color=purple>[]</font></code>) the contents of the brackets will be passed to that button's <a href="http://www.w3schools.com/tags/att_a_href.asp" target="_blank">href attribute</a>. That is, the button can be turned into a link. If the brackets fall before the colon, the link will target the page the button is on. If the brackets follow the colon, the <em>href</em> will target a new blank page/window. In HTML, <code>A<font color=purple>[<font color=red>http://www.nasa.gov</font>]</font>: <font color=black>I love NASA</font></code> effectively becomes <code>&lt;a <font color=purple>href</font>="<font color=red>http://www.nasa.gov</font>"&gt;<font color=black>I love NASA</font>&lt;/a&gt;</code>, whereas, <code>A:<font color=purple>[<font color=red>http://www.nasa.gov</font>]</font> <font color=black>I love NASA</font></code> effectively becomes <code>&lt;a <font color=purple>href</font>="<font color=red>http://www.nasa.gov</font>" target="_blank"&gt;<font color=black>I love NASA</font>&lt;/a&gt;</code>.
 			</p>
@@ -198,47 +237,46 @@ A:
 <a name="save"></a>
 			<p> For example, you could use the <code>save2()</code> and <code>transcript()</code> functions to let a user save their conversation to a file.
 			</p>
-<table width=100% bgcolor="#eeeeee"><tr><td valign=top><pre style="padding:0 10px 10px 10px;">Q(1): <font color=black>Do you want to see something neat?</font>
+<table width=100% bgcolor="#eeeeee"><tr><td valign=top><pre style="padding:0 10px 10px 10px;">Q<font color=purple>(<font color=red>1</font>)</font>: <font color=black>Do you want to see something neat?</font>
 A: <font color=black>Yes.</font>
-	Q(1.1): <font color=black>Cool. Click away.</font>
+	Q<font color=purple>(<font color=red>1.1</font>)</font>: <font color=black>Cool. Click away.</font>
 	A<font color=purple>[<font color=red>javascript:save2('transcript.txt', transcript());</font>]</font>: <font color=black>Save conversation.</font>
-		Q(1.1.1):GOTO:<font color=red>1</font>
+		Q<font color=purple>(<font color=red>1.1.1</font>)</font>:GOTO:<font color=red>1</font>
 A: <font color=black>No.</font>
-	Q(1.2):GOTO:<font color=red>1</font>
-</p></td><td width=300px valign=top>
+	Q<font color=purple>(<font color=red>1.2</font>)</font>:GOTO:<font color=red>1</font>
+</pre></td><td width=300px valign=top>
 <iframe src="<?php echo $home ?>i/?source=http://colarusso.github.io/QnAMarkup/examples/source/neat.txt&sharing=2" style="width:300px;height:300px;border: solid 1px #555;"></iframe>
 </td></tr>
 <tr><td colspan=2 bgcolor="#666666">&nbsp; <a href="<?php echo $home ?>?source=http://colarusso.github.io/QnAMarkup/examples/source/neat.txt&sharing=2" class="foot" target="_QnA">edit this QnA in an new window</a></td></tr>
-</table>	
+</table></ul>	
 	</ul>
 
 
-	<h2><code>X:<font color=red><em>variable_name</em></font></code><a name="x" href="#x" class="anchor"></a></h2>
+	<h2><code>X:</code><a name="x" href="#x" class="anchor"></a></h2>
 	<ul>
 	<p>
-	Use the <code>X</code> tag in the place of an <code>A</code> tag when you would like users to type their own answer. Instead of a button, it will present as a input/text field. The contents of such a field is saved as a variable, and its names is based on the text following <code>X:</code>. Variable names must be unique, and they must contain only numbers or letters--no spaces and no special characters.
-	</p>
+	Use the <code>X</code> tag in the place of an <code>A</code> tag when you would like users to type their own answer. Instead of a button, it will present as a input/text field. The contents of such a field is saved as the question's variable value, and its names is based on the <code>Q</code> tag's <code><font color=red><em>variable_name</em></font></code>.</p>
 	<p>
-		If you enclose a variable name like so <code>&lt;x&gt;<font color=red><em>variable_name</em></font>&lt;/x&gt;</code> it will be replaced by that variable's value.</p>
+		As with <code>A</code> tags, if you enclose a variable name like so <code>&lt;x&gt;<font color=red><em>variable_name</em></font>&lt;/x&gt;</code> it will be replaced by that variable's value.</p>
 		
 <a name="yourname"></a>	
 		<p> For example, in the QnA below, if a user types in "David," the QnA's reply would read "Nice to meet you David."
 	</p>
-<table width=100% bgcolor="#eeeeee"><tr><td valign=top><pre style="padding:0 10px 10px 10px;">Q: <font color=black>What is your name?</font>
-X:<font color=red>name</font> 
+<table width=100% bgcolor="#eeeeee"><tr><td valign=top><pre style="padding:0 10px 10px 10px;">Q<font color=purple>(<font color=red>name</font>)</font>: <font color=black>What is your name?</font>
+X: 
 	Q: <font color=black>Nice to meet you </font>&lt;x&gt;<font color=red>name</font>&lt;/x&gt;<font color=black>.</font></pre>
 </p></td><td width=300px valign=top>
-<iframe src="<?php echo $home ?>i/?source=http://colarusso.github.io/QnAMarkup/examples/source/your_name.txt&sharing=2" style="width:300px;height:300px;border: solid 1px #555;"></iframe>
+<iframe src="<?php echo $home ?>i/?source=http://colarusso.github.io/QnAMarkup/examples/source/what_is_your_name.txt&sharing=2" style="width:300px;height:300px;border: solid 1px #555;"></iframe>
 </td></tr>
 <tr><td colspan=2 bgcolor="#666666">&nbsp; <a href="<?php echo $home ?>?source=http://colarusso.github.io/QnAMarkup/examples/source/your_name.txt&sharing=2" class="foot" target="_QnA">edit this QnA in an new window</a></td></tr>
 </table>		
 	<p>
-	Note: the replacement of <code>&lt;x&gt;<font color=red><em>variable_name</em></font>&lt;/x&gt;</code> with user values includes text inside <code>DOC:</code> tags (<a href="#doc">described below</a>). 
+	Note: as with <code>A</code> tags, the replacement of <code>&lt;x&gt;<font color=red><em>variable_name</em></font>&lt;/x&gt;</code> with user values includes text inside <code>DOC:</code> tags (<a href="#doc">described below</a>). 
 	</p>
 	<p>
 		<b>Advanced Usage:</b>
 	</p>
-	<p>When the <code>X</code> tag is used, in addition to the replacement described above, user answers are stored in the document itself. An answer is stored in a FORM element with an ID equal to its variable name. So if you use the <code>submit2()</code> function (<a href="submit2()">described below</a>) user variables will be passed along. Also, you can get at these values using Javascript's text value property: <a href="http://www.w3schools.com/jsref/prop_text_value.asp" target="_blank">document.getElementById("variable_name").value</a>.
+	<p>When the <code>X</code> tag is used, as with the <code>A</code> tag, in addition to the replacement described above, user answers are stored in the document itself. So if you use the <code>submit2()</code> function (<a href="#submit2()">described below</a>) user variables will be passed along. Also, you can get at these values using Javascript's innerHTML property: <a href="http://www.w3schools.com/jsref/prop_html_innerhtml.asp" target="_blank">document.getElementById("variable_name").innerHTML</a>.</p>
 	</ul>
 	<h2><code>DOC: <font color=black><em>text/html</em></font></code><a name="doc" href="#doc" class="anchor"></a></h2>
 	<ul>
@@ -248,28 +286,28 @@ X:<font color=red>name</font>
 		<p>For example, in the QnA below, items are added to a shopping list based on the meals a user selects. You are then presented with two options for viewing the shopping list: (1) on screen by reading the contents of the document into an standard <a href="http://www.w3schools.com/jsref/met_win_alert.asp" target="_blank">Javascript alert</a> window; or (2) saving the shopping list as a text file using the <code>save2()</code> function (<a href="#save2()">described below</a>). Both methods access the document via the <code>doc()</code> function (<a href="#doc()">described below</a>).</p> 
 <table width=100% bgcolor="#eeeeee"><tr><td valign=top><pre style="padding:0 10px 10px 10px;">DOC(1):<font color=black>SHOPPING LIST</font>
 
-Q(1): <font color=black>What would you like to cook?</font>
+Q<font color=purple>(<font color=red>1</font>)</font>: <font color=black>What would you like to cook?</font>
 A: <font color=black>Garlic Chicken</font>
-	DOC(1.1):<font color=black>Garlic Chicken
+	DOC<font color=purple>(<font color=red>1.1</font>)</font>:<font color=black>Garlic Chicken
 	4 boneless skinless chicken breasts
 	4 garlic cloves, minced
 	4 tablespoons brown sugar
 	1 tablespoon olive oil
 	additional herbs and spices, as desired</font>
-	Q(1.1):GOTO:<font color=red>2</font>
+	Q<font color=purple>(<font color=red>1.1</font>)</font>:GOTO:<font color=red>2</font>
 A: <font color=black>Mac and Cheese</font>
-	DOC(1.2):<font color=black>Mac and Cheese	
+	DOC<font color=purple>(<font color=red>1.2</font>)</font>:<font color=black>Mac and Cheese	
 	3/4 pound dried elbow macaroni
 	1 1/2 cups grated  sharp cheddar cheese
 	1/2 cup grated gruyere cheese
 	1/3 cup panko bread crumbs, toasted until golden</font>
-	Q(1.2):GOTO:<font color=red>2</font>
-Q(2): <font color=black>Okay. I have the shopping list ready. How would you like it?</font>
+	Q<font color=purple>(<font color=red>1.2</font>)</font>:GOTO:<font color=red>2</font>
+Q<font color=purple>(<font color=red>2</font>)</font>: <font color=black>Okay. I have the shopping list ready. How would you like it?</font>
 A<font color=purple>[<font color=red>javascript:alert(doc());</font>]</font>: <font color=black>In an alert box.</font>
-	Q(2.1):GOTO:<font color=red>3</font>
+	Q<font color=purple>(<font color=red>2.1</font>)</font>:GOTO:<font color=red>3</font>
 A<font color=purple>[<font color=red>javascript:save2('list.txt',doc());</font>]</font>: <font color=black>As a file I can save.</font>
-	Q(2.2):GOTO:<font color=red>3</font>
-Q(3): <font color=black>Enjoy the grub.</font></pre>
+	Q<font color=purple>(<font color=red>2.2</font>)</font>:GOTO:<font color=red>3</font>
+Q<font color=purple>(<font color=red>3</font>)</font>: <font color=black>Enjoy the grub.</font></pre>
 </p></td><td width=300px valign=top>
 <iframe src="<?php echo $home ?>i/?source=http://colarusso.github.io/QnAMarkup/examples/source/shopping_list.txt&sharing=22" style="width:300px;height:475px;border: solid 1px #555;"></iframe>
 </td></tr>
@@ -306,8 +344,15 @@ Q(3): <font color=black>Enjoy the grub.</font></pre>
 <a name="doc"></a>
 <h2><code>doc();</code><a name="doc()" href="#doc()" class="anchor"></a></h2>
 		<ul>
-		<p>This function will return the <code>DOC:</code> content associated with rendered <code>Q</code> tags. For example, when selected, the following tag will display the <code>DOC:</code> content <code>A<font color=purple>[<font color=red>javascript:alert(doc());</font>]</font>: <font color=black>button text</code></code>.</p>
+		<p>This function will return the <code>DOC:</code> content associated with rendered <code>Q</code> tags. For example, when selected, the following tag will display the <code>DOC:</code> content: <code>A<font color=purple>[<font color=red>javascript:alert(doc());</font>]</font>: <font color=black>button text</code></code>.</p>
 		<p>You may recall the use of this function in the <a href="#save">save conversation</a> example above.</p>
+		<p>
+		</ul>
+		
+<a name="json_str"></a>
+<h2><code>json_str();</code><a name="json_str()" href="#json_str()" class="anchor"></a></h2>
+		<ul>
+		<p>This function will return a JSON string containg the QnA's <code><font color=red><em>variable_name</em></font></code> and <code><font color=red><em>variable_name</em></font></code> as key and value pairs. For example, when selected, the following tag will display the the QnA's variables as a JSON string: <code>A<font color=purple>[<font color=red>javascript:alert(json_str());</font>]</font>: <font color=black>button text</code></code>.</p>
 		<p>
 		</ul>
 
@@ -327,9 +372,12 @@ Q(3): <font color=black>Enjoy the grub.</font></pre>
 		</ul>
 
 <a name="submit2"></a>
-<h2><code>submit2(<font color=red><em>action</em></font>, <font color=red><em>method</em></font>, <font color=red><em>docAs</em></font>, <font color=red><em>instructions</em></font>, <font color=red><em>transcriptAs</em></font>);</code><a name="submit2()" href="#submit2()" class="anchor"></a></h2>
+<h2><code>submit2(<font color=red><em>action</em></font>, <font color=red><em>method</em></font>, <font color=red><em>docAs</em></font>, <font color=red><em>instructions</em></font>, <font color=red><em>transcriptAs</em></font>, <font color=red><em>jsonAs</em></font>, <font color=red><em>target</em></font>);</code><a name="submit2()" href="#submit2()" class="anchor"></a></h2>
 		<ul>
-		The entierty of a QnA conversation is wrapped in an <a href="http://www.w3schools.com/tags/tag_form.asp" target="_blank">HTML FORM</a> tag. This function will set that tag's <em>action</em> to <code><font color=red><em>action</em></font></code> and its <em>method</em> to <code><font color=red><em>method</em></font></code>. It will send the QnA's document as a single variable named <code><font color=red><em>docAs</em></font></code> along with an HTML transcript named <code><font color=red><em>transcriptAs</em></font></code>. It will send any variables defined by the <code>X:</code> tag as well as any hidden variables placed inside the document's <code>Q</code> and <code>A</code> tags. Additionally, it will send a variable named <code>i</code> with a value equal to <code><font color=red><em>instructions</em></font></code>. This last variable is intended specifically for use with the local document parser described <a href="#docs">below</a>.
+		The entierty of a QnA conversation is wrapped in an <a href="http://www.w3schools.com/tags/tag_form.asp" target="_blank">HTML FORM</a> tag. This function will set that tag's <em>action</em> to <code><font color=red><em>action</em></font></code>, its <em>method</em> to <code><font color=red><em>method</em></font></code>, and its <em>target</em> to <code><font color=red><em>target</em></font></code>. Note: the <code><font color=red><em>target</em></font></code> parameter is optional. It's default setting is: <code>target = "_self"</code>.</p>
+		<p>It will send the QnA's document as a single variable named <code><font color=red><em>docAs</em></font></code> along with an HTML transcript named <code><font color=red><em>transcriptAs</em></font></code> and a JSON string named <code><font color=red><em>jsonAs</em></font></code>.</p>
+		<p>It will send all variables defined with their names as defined by the <code>Q</code> tag's <code><font color=red><em>variable_name</em></font></code> as well as any hidden variables placed inside the document's <code>Before</code>, <code>After</code>, <code>Q</code> and <code>A</code> tags.</p>
+		<p>Additionally, it will send a variable named <code>i</code> with a value equal to <code><font color=red><em>instructions</em></font></code>. This last variable is intended specifically for use with the WYSIWYG document parsers described <a href="#docs">below</a>.
 		</ul>
 
 	<a href="#">Back to top</a><hr>
@@ -337,7 +385,7 @@ Q(3): <font color=black>Enjoy the grub.</font></pre>
 
 <h2>Document Parsers &amp; Editors<a name="docs" href="#docs" class="anchor"></a></h2>
 <p>My hope is that this section will grow into a list of parsers as people point me to various parsers around the web. The basic idea is that by using the <code>submit2()</code> function in conjunction with a document parser/editor, it is possible to hold up the document created by a QnA for review by a person. Imagine a QnA that used a combination of <code>DOC:</code> and <code>X:</code> tags to craft a custom document for a <em>pro se</em> litigant. At the end of the QnA, that document can be passed to a parser and the user can take some time to edit the text before printing or saving it. The thing is that the <code>DOC:</code> tag doesn't really care what format its content is in. It could be HTML, markdown, or LaTex. By passing that content to a parser, it can be rendered and placed in a form that's easier for a user to digest.</p>	
-<h3>Local Parsers &amp; Editors</h3>
+<h3>Local WYSIWYG Parsers &amp; Editors</h3>
  <ul> <p>For now, I've set up local parsers for <a href="http://www.w3schools.com/html/" target="_blank">HTML</a>, <a href="https://en.wikipedia.org/wiki/Markdown" target="_blank">Markdown</a>, and <a href="https://parall.ax/products/jspdf" target="_blank">jsPDF</a>. They are available at:</p><ul>
  (1) <a href="<?php echo $home ?>doc/parse/html/" target="_blank"><?php echo $home ?>doc/parse/html/</a></li><br>
  (2) <a href="<?php echo $home ?>doc/parse/markdown/" target="_blank"><?php echo $home ?>doc/parse/markdown/</a><br>
@@ -348,35 +396,61 @@ Q(3): <font color=black>Enjoy the grub.</font></pre>
 <a name="santa"></a>
 <p>For example, the QnA below can be used to create a letter to Santa. Note: the document is in HTML. So you'll notice that line breaks are indicated by the HTML tag <a href="http://www.w3schools.com/tags/tag_br.asp" target="_blank">&lt;br&gt;</a>. Also, it is sent to the HTML parser. 
  </p>
-<p><table width=100% bgcolor="#eeeeee"><tr><td valign=top><pre style="padding:0 10px 10px 10px;">Q(1): <font color=black>Would you like to write a letter to Santa? </font>
+<p><table width=100% bgcolor="#eeeeee"><tr><td valign=top><pre style="padding:0 10px 10px 10px;">Q<font color=purple>(<font color=red>1</font>)</font>: <font color=black>Would you like to write a letter to Santa? </font>
 A: <font color=black>Yes.</font>
-	Q(1.1): <font color=black>What is your name?</font>
-	X:<font color=red>myname</font>
-		DOC(1.1.1):<font color=black>Dear Santa,&lt;br&gt;&lt;br&gt; </font>
+	Q<font color=purple>(<font color=red><font color=red>myname</font></font>)</font>: <font color=black>What is your name?</font>
+	X:
+		DOC<font color=purple>(<font color=red>1.1.1</font>)</font>:<font color=black>Dear Santa,&lt;br&gt;&lt;br&gt; </font>
 
-		Q(1.1.1): <font color=black>Have you been naughty or nice?</font>
-		A: <font color=black>Naughty</font>
-			DOC(1.1.1.1): <font color=black>I am sorry that I have been naughty. I will work hard to be nice in the new year.&lt;br&gt;&lt;br&gt;</font>
-			Q(1.1.1.1):GOTO:<font color=red>2</font>
+		Q<font color=purple>(<font color=red>naughty</font>)</font>: <font color=black>Have you been naughty or nice?</font>
+		A<font color=purple>(<font color=red>I am sorry that I have been naughty. I will work hard to be nice in the new year.&lt;br&gt;&lt;br&gt;</font>)</font>: <font color=black>Naughty</font>
+			Q<font color=purple>(<font color=red>1.1.1.1</font>)</font>:GOTO:<font color=red>whatiwant</font>
 		A: <font color=black>Nice</font>
-			Q(1.1.1.2):GOTO:<font color=red>2</font>			
+			Q<font color=purple>(<font color=red>1.1.1.2</font>)</font>:GOTO:<font color=red>whatiwant</font>		
 A: <font color=black>No.</font>
-	Q(1.2): <font color=black>That's cool. Have a good day.</font>
+	Q<font color=purple>(<font color=red>1.2</font>)</font>: <font color=black>That's cool. Have a good day.</font>
 
-Q(2): <font color=black>What would you like for Christmas?</font>
-X:<font color=red>whatiwant</font>
-	DOC(2.1):	<font color=black>I would like </font>&lt;x&gt;<font color=red>whatiwant</font>&lt;/x&gt;<font color=black> for Christmas. I hope all is well with you up north.&lt;br&gt;&lt;br&gt;
+Q<font color=purple>(<font color=red>whatiwant</font></font>)</font>: <font color=black>What would you like for Christmas?</font>
+X:
+	DOC<font color=purple>(<font color=red>2.1</font>)</font>:</font>&lt;x&gt;<font color=red>naughty</font>&lt;/x&gt;<font color=black>I would like </font>&lt;x&gt;<font color=red>whatiwant</font>&lt;/x&gt;<font color=black> for Christmas. I hope all is well with you up north.&lt;br&gt;&lt;br&gt;
 			Sincerely,&lt;br&gt;
 			</font>&lt;x&gt;<font color=red>myname</font>&lt;/x&gt;
-	Q(2.1): <font color=black>Alright, are you ready to see your letter?</font>
+	Q<font color=purple>(<font color=red>2.1</font>)</font>: <font color=black>Alright, are you ready to see your letter?</font>
 	A<font color=purple>[<font color=red>javascript:submit2('<?php echo $home ?>doc/parse/html/', 'POST', 't', 'Proof read your letter. Print it out, and mail it to: Santa Clause, North Pole')</font>]</font>: <font color=black>Yes.</font>
-		Q(2.1.1): <font color=black>Thank you.</font></pre>
-<tr><td bgcolor="#666666">&nbsp; <a href="<?php echo $home ?>?source=http://colarusso.github.io/QnAMarkup/examples/source/santa.txt&sharing=2" class="foot" target="_QnA">edit this QnA in an new window</a></td></tr>
+		Q<font color=purple>(<font color=red>2.1.1</font>)</font>: <font color=black>Thank you.</font></pre>
+<tr><td bgcolor="#666666">&nbsp; <a href="<?php echo $home ?>?source=http://colarusso.github.io/QnAMarkup/examples/source/santa_letter.txt&sharing=2" class="foot" target="_QnA">edit this QnA in an new window</a></td></tr>
 </table>
 <p>
-<p><iframe src="<?php echo $home ?>i/?source=http://colarusso.github.io/QnAMarkup/examples/source/santa.txt&col_width=320&sharing=2" style="width:100%;height:510px;border: solid 1px #555;"></iframe>
+<p><iframe src="<?php echo $home ?>i/?source=http://colarusso.github.io/QnAMarkup/examples/source/santa_letter.txt&col_width=320&sharing=2" style="width:100%;height:510px;border: solid 1px #555;"></iframe>
 </p>			
+</ul>
+<h3>Working with .docx Documets</h3>
+<ul> 
+<p>Although the above parsers offer a good deal of flexability, sometime you want to control a document's format with greater percision than allowed by HTML et al. For such instances, you can make use of <em>.docx</em> templates such as <a href="http://www.qnamarkup.org/docxmerge/templates/Santa-letter.docx" target="_new">this one</a>.<p>
+<p>Instead of constructing the document in QnA you can merge your QnA answers with an existing template. Below we'll do this with a standard .docx (Word) file with mail merge feilds. The service below will take in a JSON string, the URL of a .docx file from which to make a merged .docx file, and the name for the output file. The service we'll be using below is an instance of <a href="https://github.com/colarusso/docx_webmerge" target="_new">docx_webmerge</a>.</p>
+<p>However, the tool only accepts .docx files from a whitelist of servers. if you're a non-profit and would like me to add your website to the whitelist for the example service available at <a href="http://colarusso.pythonanywhere.com/" target="_blank">http://colarusso.pythonanywhere.com/</a> (the app behind the live example below), let me know. As long as you aren't expecting wicked crazy volume, I'll probably just add you to the list.</p>
+<p>That being said, let us write another letter to Santa.</p>
+<p><table width=100% bgcolor="#eeeeee"><tr><td valign=top><pre style="padding:0 10px 10px 10px;">Before: <font color=black>
+&lt;input type="hidden" name="name" value="Letter to Santa"/&gt;
+&lt;input type="hidden" name="docx_uri" value="http://www.qnamarkup.org/docxmerge/templates/Santa-letter.docx"/&gt;</font>
 
+Q<font color=purple>(<font color=red>1</font>)</font>:<font color=black> Would you like to write a letter to Santa? </font>
+A: Yes.
+	Q<font color=purple>(<font color=red>myname</font>)</font>: <font color=black>What is your name?</font>
+	X:
+		Q<font color=purple>(<font color=red>1.1.1</font>)</font>:GOTO:<font color=red>whatiwant</font>		
+
+Q<font color=purple>(<font color=red>whatiwant</font>)</font>:<font color=black> What would you like for Christmas? </font>
+X:
+	Q<font color=purple>(<font color=red>2.1</font>)</font>:<font color=black>Alright, are you ready to see your letter?</font>
+	A<font color=purple>[<font color=red>javascript:submit2('http://colarusso.pythonanywhere.com/','GET','','','','json_doc')</font>]</font>:<font color=black>Yes.</font>
+		Q<font color=purple>(<font color=red>2.1.1</font>)</font>: <font color=black>Thank you.</font></pre>
+<tr><td bgcolor="#666666">&nbsp; <a href="<?php echo $home ?>?source=http://colarusso.github.io/QnAMarkup/examples/source/santa_docx.txt&sharing=2" class="foot" target="_QnA">edit this QnA in an new window</a></td></tr>
+</table>
+<p>
+<p><iframe src="<?php echo $home ?>i/?source=http://colarusso.github.io/QnAMarkup/examples/source/santa_docx.txt&col_width=320&sharing=2" style="width:100%;height:510px;border: solid 1px #555;"></iframe>
+</p>	
+<p>Note: if you'd like to include instructions along with your document, consider appending an instructions page to the begining of the document.</p>
 </ul>
 <a href="#">Back to top</a><hr>
 
@@ -394,9 +468,9 @@ You can submit content to "colarusso.github.io" by following the <a href="https:
 </p>
 <a href="#">Back to top</a>
 
-<div class=footer style="float:left;width:100%;margin:30px 0 0 0;padding:15px 0px;border-top: solid 1px #aaa;">
+<div class=footer style="float:left;width:100%;margin:30px 0 0 0;padding:15px 5px 50px 5px;border-top: solid 1px #aaa;">
 	<?php if ($bugs == 1) { echo "<span style=\"float:right;\"><a href=\"https://github.com/colarusso/QnAMarkup/issues\" target=_blank>report bug/issue</a></span>"; } ?>
-	Updated 2015-01-21  
+	Updated 2016-09-19  
 </div>
 </div> 
 <?php echo $analytics_code ?>
