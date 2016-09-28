@@ -1,6 +1,6 @@
 ## Student Projects
 
-The following links run the QnA souce code contained in this folder. 
+The following links run the QnA souce code contained in the `QnAMarkup/examples/source/LASM-2016/` folder. 
 
 - [Financial Aid Assessment](http://www.qnamarkup.org/i/?source=http://colarusso.github.io/QnAMarkup/examples/source/LASM-2016/fin_aid.txt)
 - [Restraining Order](http://www.qnamarkup.org/i/?source=http://colarusso.github.io/QnAMarkup/examples/source/LASM-2016/restraining_order.txt)
