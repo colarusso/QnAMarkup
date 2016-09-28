@@ -1,0 +1,43 @@
+Title: Intestacy Computer Homework
+Author: Murphy
+Description: Intestate Flowchart Massachusetts; Where will your money go?
+
+Q(1): Are you married or in a civil partnership?
+A: Yes
+	Q(1.1):GOTO:children1
+A: No
+	Q(1.2):GOTO:children2
+
+Q(children1): Do you have descendants?
+A: Yes
+	Q(2.1):GOTO:children3
+A: No
+	Q(2.2):GOTO:parents2
+Q(children2): Do you have descendants?
+A: Yes
+	Q(3.1): Descendents inherit everything, split equally.
+A: No
+	Q(3.2):GOTO:parents1 
+Q(parents1): Do you have any living parents?
+A: Yes
+	Q(4.1): All goes to the living parent(s). 
+A: No
+	Q(4.2):GOTO:sibling 
+Q(parents2): Do you have any living parent(s)?
+A: Yes
+	Q(5.1): $200K + 3/4 of estate goes towards spouse or partner; rest goes to parent(s).
+A: No
+	Q(5.2): All goes to spouse.
+Q(children3): What is the relation between the descendants and spouse/partner? 
+A: All descendants are the spouse's and they are the spouse's only descendants. 
+	Q(6.1): All goes to spouse.
+A: Descendants are the spouse's but spouse has other descendants as well.
+	Q(6.2): Spouse gets $100K + 1/2 of the estate and the rest goes to your descendants.
+A: One or more of the descendants is not the spouse's.
+	Q(6.3): Spouse gets $100K + 1/2 of the estate and the rest goes to your descendants.
+Q(sibling): Do you have any surviving siblings?
+A: Yes
+	Q(7.1): All goes to siblings (per capita at each generation)
+A: No
+	Q(7.2):GOTO:state
+Q(state): Escheat to the state so property is not left without an owner.
