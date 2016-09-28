@@ -1,0 +1,32 @@
+Title: Determining Subject Matter Jurisdiction - What Court? 
+
+Q(1): Does the suit arise our of a <b> question of Federal Law </b>? 
+A: Yes
+	Q(1.1): Is there a <b> well-pleaded complaint </b>? 
+	A: Yes
+		Q(1.1.1): Congratualtions! You have valid subject matter jurisdiction. 
+	A: No
+		Q(1.1.2): Im sorry, you have no subject matter jurisdiction and the Federal Court will likely dismiss your case. 
+A: No 
+	Q(1.2):Does at least one side <b> consist completely of foreign </b> countries or citizens from a foreign countries? 
+	A: Yes 
+		Q(1.2.1): Is the suit between a citizen of a US state, on one side, and foreign countries, or citizens of foreign countries on the other side? 
+		A: Yes 
+			Q(1.2.1.1): Does the <b> amount in controversy exceed $75,00 </b>? 
+			A: Yes 
+				Q(1.2.1.1.1): Congratulations! You have valid subject matter jurisdiction! 
+			A: No
+				Q(1.2.1.1.2): Im sorry, but you do not have subject matter jurisdiction and the Federal Court must dismiss your case. 
+		A: No 
+			Q(1.2.1.2): Im sorry, but you do not have subject matter jurisdiction and the Federal Court must dismiss your case. 
+	A: No 
+		Q(1.2.2): Is Diversity complete? <i> Make sure that no plaintiff is a citizen of the same state as any defendant (including corporations). </i>
+		A: Yes
+			Q(1.2.2.1): Does the amount in controversy exceed $75,000?	
+			A: Yes 
+				Q(1.2.2.1.1): Congratulations, You have subject matter jurisdiction. 
+			A: No 
+				Q(1.2.2.1.2): Im sorry, but you do not have subject matter jurisdiction and the Federal Court must dismiss your case. 
+		A: No
+			Q(1.2.2.2): Im sorry, but you do not have subject matter jurisdiction and the Federal Court must dismiss your case. 
+			
