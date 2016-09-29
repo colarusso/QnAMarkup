@@ -4,17 +4,17 @@ Description: Find a lawyer
 
 Q(1): Are you looking for an Attorney?
 A: Yes
-	Q(1.1): What type of Attorney are you looking for?
+	Q(type): What type of Attorney are you looking for?
 	A: Real Estate
-		Q(1.1.1): Are you trying to sell/buy a house?
+		Q(1.1.1): Are you trying to buy/sell a house?
 		A: Yes
-			Q(1.1.1.1): Awesome! Here's a list of Real Estate attorneys. GOTO:3
+			Q(1.1.1.1): Awesome! Here's a list of Real Estate Attorneys. GOTO:3
 		A: No
 			Q(1.1.1.2): GOTO:2
 	A: Family/Divorce
 		Q(1.1.2): Are you looking to file for divorce?
 		A: Yes
-			Q(1.1.2.1): I'm sorry things didn't work out! Here's a list of divorce attorneys. GOTO:4
+			Q(1.1.2.1): I'm sorry things didn't work out! Here's a list of divorce Attorneys. GOTO:4
 		A: No
 			Q(1.1.2.2): GOTO:2
 	A: Labor/Employment
@@ -30,7 +30,7 @@ A: Yes
 		A: No
 			Q(1.1.4.2): Stay safe!
 	X:
-		Q(1.1.5): Here's a list of MA attorney's focusing on <x></x>
+		Q(1.1.5): Search here for a list of MA Attorney's specializing in <x>type</x> law. GOTO:7
 A: No
 	Q(1.2): Okay then. GOTO:2
 
@@ -43,3 +43,5 @@ Q(4): http://lawyers.findlaw.com/lawyer/practicestate/divorce/massachusetts
 Q(5): http://www.lawyers.com/labor-and-employment/massachusetts/find-law-firms-by-city/
 
 Q(6): http://lawyers.findlaw.com/lawyer/firm/personal-injury-plaintiff/boston/massachusetts
+
+Q(7): https://www.google.com/#q=find+massachusetts+attorneys
