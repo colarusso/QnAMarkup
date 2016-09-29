@@ -2,6 +2,7 @@
 
 The following links run the QnA source code contained in the `QnAMarkup/examples/source/LASM-2016/` folder. 
 
+- Affidavit of Indigency ([run](http://www.qnamarkup.org/i/?source=http://colarusso.github.io/QnAMarkup/examples/source/LASM-2016/affidavit_of_indigency.txt), [edit](http://www.qnamarkup.org/?source=http://colarusso.github.io/QnAMarkup/examples/source/LASM-2016/affidavit_of_indigency.txt))
 - Financial Aid Assessment ([run](http://www.qnamarkup.org/i/?source=http://colarusso.github.io/QnAMarkup/examples/source/LASM-2016/fin_aid.txt), [edit](http://www.qnamarkup.org/?source=http://colarusso.github.io/QnAMarkup/examples/source/LASM-2016/fin_aid.txt))
 - Find a Lawyer ([run](http://www.qnamarkup.org/i/?source=http://colarusso.github.io/QnAMarkup/examples/source/LASM-2016/find_a_lawyer.txt), [edit](http://www.qnamarkup.org/?source=http://colarusso.github.io/QnAMarkup/examples/source/LASM-2016/find_a_lawyer.txt))
 - Intestacy ([run](http://www.qnamarkup.org/i/?source=http://colarusso.github.io/QnAMarkup/examples/source/LASM-2016/intestacy_computer_homework.txt), [edit](http://www.qnamarkup.org/?source=http://colarusso.github.io/QnAMarkup/examples/source/LASM-2016/intestacy_computer_homework.txt))
