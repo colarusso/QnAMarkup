@@ -1,0 +1,45 @@
+Title: Looking for a MA Attorney?
+Author: Andrew Peerless
+Description: Find a lawyer
+
+Q(1): Are you looking for an Attorney?
+A: Yes
+	Q(1.1): What type of Attorney are you looking for?
+	A: Real Estate
+		Q(1.1.1): Are you trying to sell/buy a house?
+		A: Yes
+			Q(1.1.1.1): Awesome! Here's a list of Real Estate attorneys. GOTO:3
+		A: No
+			Q(1.1.1.2): GOTO:2
+	A: Family/Divorce
+		Q(1.1.2): Are you looking to file for divorce?
+		A: Yes
+			Q(1.1.2.1): I'm sorry things didn't work out! Here's a list of divorce attorneys. GOTO:4
+		A: No
+			Q(1.1.2.2): GOTO:2
+	A: Labor/Employment
+		Q(1.1.3): Have you experienced workplace discrimination, retaliation, harassment etc?
+		A: Yes
+			Q(1.1.3.1): I'm sorry to hear that! Here's a list of MA Employment and Labor Attorneys. GOTO:5
+		A: No
+			Q(1.1.3.2): Good! Nobody should have to go through that. GOTO:2
+	A: Personal Injury
+		Q(1.1.4): Have you been injured due to someone's negligence?
+		A: Yes
+			Q(1.1.4.1): I'm sorry to hear that! Here's a list of MA Personal Injury Lawyers: GOTO:6
+		A: No
+			Q(1.1.4.2): Stay safe!
+	X:
+		Q(1.1.5): Here's a list of MA attorney's focusing on <x></x>
+A: No
+	Q(1.2): Okay then. GOTO:2
+
+Q(2): Please come back when you need to find an Attorney! Thanks for visiting.
+
+Q(3): http://lawyers.findlaw.com/lawyer/practicestate/real-estate-law/massachusetts
+
+Q(4): http://lawyers.findlaw.com/lawyer/practicestate/divorce/massachusetts
+
+Q(5): http://www.lawyers.com/labor-and-employment/massachusetts/find-law-firms-by-city/
+
+Q(6): http://lawyers.findlaw.com/lawyer/firm/personal-injury-plaintiff/boston/massachusetts
