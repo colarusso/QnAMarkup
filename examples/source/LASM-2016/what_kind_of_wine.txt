@@ -1,0 +1,66 @@
+Title: What Kind of Wine Should I Drink? 
+Author: Sultana Svirk 
+
+Q(1): What Kind of Wine Should You Drink - Are you eating?
+A: Yes. 
+	Q(1.1): Is your meal…
+	A: Hearty. 
+		Q(1.1.1): Pizza or Pasta?
+		A: Yes. 
+			Q(1.1.1.1): Chianti or Barolo wine. 
+		A: No. 
+			Q(1.1.1.2): Mushroom Quiche? 
+			A: Yes. 
+				Q(1.1.1.2.1): Malbec.
+			A: No. 
+				Q(1.1.1.2.2): Rich Red Meat? 
+				A: Yes. 
+					Q(1.1.1.2.2.1): Cabernet Sauvignon. 
+				A: No. 
+					Q(1.1.1.2.2.2): GOTO:1
+	A: Light. 
+		Q(1.1.2): Poultry or Lean Red Meat? 
+		A: Yes. 
+			Q(1.1.2.1): Zinfandel. 
+		A: No. 
+			Q(1.1.2.2): Spicy or Exotic? 
+			A: Yes. 
+				Q(1.1.2.2.1): Grenache. 
+			A: No. 
+				Q(1.1.2.2.2): Veggie-Based? 
+				A: Yes. 
+					Q(1.1.2.2.2.1): Beaujolais. 
+				A: No. 
+					Q(1.1.2.2.2.2): GOTO:1
+	A: Not sure. 
+		Q(1.1.3): Pinot Noir. 
+A: No.  
+	Q(1.2): Do you prefer.... 
+	A: Sweet. 
+		Q(1.2.1): Do you like Berry Jam?
+		A: Yes. 
+			Q(1.2.1.1): Zinfandel. 
+		A: No. 
+			Q(1.2.1.2): Do you like Cinnamon Spice? 
+			A: Yes. 
+				Q(1.2.1.2.1): Grenache. 
+			A: No. 
+				Q(1.2.1.2.2): Do you like Cherry Crumble? 
+				A: Yes. 
+					Q(1.2.1.2.2.1): Pinot Noir. 
+				A: No. 
+					Q(1.2.1.2.2.2): GOTO:1
+	A: Dry. 
+		Q(1.2.2): Do you like Smoky? 
+		A: Yes. 
+			Q(1.2.2.1): Rioja 
+		A: No. 
+			Q(1.2.2.2): Do you like Peppery? 
+			A: Yes. 
+				Q(1.2.2.2.1): Cotes du Rhone. 
+			A: No. 
+				Q(1.2.2.2.2): Do you like Earthy? 
+				A: Yes. 
+					Q(1.2.2.2.2.1): Beaujolais. 
+				A: No. 
+					Q(1.2.2.2.2.2): GOTO:1
