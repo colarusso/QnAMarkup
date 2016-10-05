@@ -1,7 +1,7 @@
-Title: What Kind of Wine Should I Drink? 
+Title: Wine Pairings 
 Author: Sultana Svirk 
 
-Q(1): What Kind of Wine Should You Drink - Are you eating?
+Q(1): Wine Pairings - Are you eating?
 A: Yes. 
 	Q(1.1): Is your meal…
 	A: Hearty. 
