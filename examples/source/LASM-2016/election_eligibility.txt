@@ -30,28 +30,28 @@ A: Maybe, I'm not sure
 				A: No
 					Q(2.3.2.1.2.2):GOTO:3			
 A: No
-			Q(2.3.2.2): Was your genetic legal mother a U.S. citizen at the time of your birth, or is your birth date after December 23, 1952?
-			A:Yes	
-				Q(2.3.2.2.1): Had your mother previously been physically present in the United States, or one of its outlying territories, for a continuous period of at least one (1) year?
+	Q(2.4.2.1): Was your genetic legal mother a U.S. citizen at the time of your birth, or is your birth date after December 23, 1952?
+	A:Yes	
+		Q(2.4.2.1.1): Had your mother previously been physically present in the United States, or one of its outlying territories, for a continuous period of at least one (1) year?
+		A: Yes
+			Q(2.4.2.1.1.1): Congratulations! You are regarded as a United States Citizen. GOTO:4
+	A: No	
+		Q(2.4.2.1.2): Were you born on or after November 14, 1986 and was your genetic father a U.S. citizen at the time of your birth and your the mother an alien?
+		A: Yes
+			Q(2.4.2.1.2.1): Can a blood relationship between you and your father be established by clear and convincing evidence?
+			A: Yes
+				Q(2.4.2.1.2.1.1):  Was your father a United States citizen at the time of your birth?
 				A: Yes
-					Q(2.3.2.2.1.1): Congratulations! You are regarded as a United States Citizen. GOTO:4
-			A: No	
-				Q(2.3.2.2.2): Were you born on or after November 14, 1986 and was your genetic father a U.S. citizen at the time of your birth and your the mother an alien?
-				A: Yes
-					Q(2.3.2.2.2.1): Can a blood relationship between you and your father be established by clear and convincing evidence?
-					A: Yes
-						Q(2.3.2.2.2.1.1):  Was your father a United States citizen at the time of your birth?
-						A: Yes
-							Q(2.3.2.2.2.1.1.1): Was your U.S. citizen father physically present in the U.S. or its territories for a period of at least five (5) years at some time in his or her life prior to your birth, AND out of those five (5) years was at least two years after their 14th birthday?
+					Q(2.4.2.1.2.1.1.1): Was your U.S. citizen father physically present in the U.S. or its territories for a period of at least five (5) years at some time in his or her life prior to your birth, AND out of those five (5) years was at least two years after their 14th birthday?
 (NOTE: If the U.S. citizen parent spent time abroad in any of the following three capacities, this can also be counted towards the physical presence requirement: Serving honorably in the U.S. armed forces; or Employed with the U.S. government; or Employed with certain international organizations. Additionally, time spent abroad by the U.S. citizen parent while the U.S. citizen parent was the unmarried son or daughter and a member of the household of a person who meets any of the three conditions listed above can also be counted.)							  				
-							A:Yes
-								Q(2.3.2.2.2.1.1.1.1): Congratulations! You are regarded as a United States Citizen. GOTO:4
-							A: No
-								Q(2.3.2.2.2.1.1.1.2): Ok, we still have a few more questions. GOTO:3
-						A: No 
-							Q(2.3.2.2.2.1.1.2): Ok, we still have a few more questions. GOTO:3
-				A: No
-					Q(2.3.2.2.2.2):GOTO:3
+					A:Yes
+						Q(2.4.2.1.2.1.1.1.1): Congratulations! You are regarded as a United States Citizen. GOTO:4
+					A: No
+						Q(2.4.2.1.2.1.1.1.2): Ok, we still have a few more questions. GOTO:3
+				A: No 
+					Q(2.4.2.1.2.1.1.2): Ok, we still have a few more questions. GOTO:3
+		A: No
+			Q(2.4.2.1.2.2):GOTO:3
 
 Q(3): You may have obtained citizenship even if you were born outside of the U.S. and none of the previous questions applied to you. Were you under 18 or not yet born on February 27, 2001?
 A: Yes
@@ -78,16 +78,16 @@ A: No
 		A: Yes
 			Q(3.2.2.1): Congratulations! You are regarded as a United States Citizen. GOTO:4
 		A: No
-Q(3.2.2.2):Sorry, you do not qualify as a U.S. Citizen and may not vote in United States Federal Elections. 
+Q(4):Sorry, you do not qualify as a U.S. Citizen and may not vote in United States Federal Elections. 
 			
-Q(4): Are you currently in prison or have you ever been convicted of a felony?
+Q(5): Are you currently in prison or have you ever been convicted of a felony?
 A: Yes
-	Q(4.1): Uh-oh, sorry to hear that, I hope things have turned around for you. While there is no federal law that automatically excludes people who have been convicted of a felony from voting, most states have laws regarding voting rights for people who have been convicted of a crime classified as a felony, convicted of certain types of felonies, or who are in jail. You will need to check with your state election board in order to determine whether your felony conviction will prevent you from voting, and whether you may be able to get your voting rights reinstated at any point.
+	Q(5.1): Uh-oh, sorry to hear that, I hope things have turned around for you. While there is no federal law that automatically excludes people who have been convicted of a felony from voting, most states have laws regarding voting rights for people who have been convicted of a crime classified as a felony, convicted of certain types of felonies, or who are in jail. You will need to check with your state election board in order to determine whether your felony conviction will prevent you from voting, and whether you may be able to get your voting rights reinstated at any point.
 A: No
-	Q(4.2): Great! GOTO:5
+	Q(5.2): Great! GOTO:5
 
-Q(5): Have you registered in your local jurisdiction?
+Q(6): Have you registered in your local jurisdiction?
 A: Yes
-	Q(5.1): Great! Be sure to visit you local voting station on November 8, 2016!
+	Q(6.1): Great! Be sure to visit you local voting station on November 8, 2016!
 A: No
-	Q(5.2): Please make sure you register to vote in your local jurisdiction by the required date. Visit www.rockthevote.com for more details on how to register.
+	Q(6.2): Please make sure you register to vote in your local jurisdiction by the required date. Visit www.rockthevote.com for more details on how to register.
