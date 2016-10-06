@@ -4,40 +4,40 @@ A: Yes
 	A: Yes
 		Q(1.1.1): Is your music copyrighted?
 		A: Yes
-			Q(1.1.1.1): GOTO:PRO
+			Q(1.1.1.1): GOTO:pro
 		A: No
-			Q(1.1.1.2): GOTO:NOTSMART
+			Q(1.1.1.2): GOTO:notsmart
 
 A: No
 	Q(1.2): GOTO:Not
 
-Q(PRO): Are you registered with a Performance Rights Organization?
+Q(pro): Are you registered with a Performance Rights Organization?
 A: Yes
 	Q(2.1): Do you have management?
 	A: Yes
-		Q(2.1.1): GOTO:PERCENTAGE
+		Q(2.1.1): GOTO:percentage
 	A: No
-		Q(2.1.2): GOTO:FINDMGMT
+		Q(2.1.2): GOTO:notsmart
 
 A: No
-	Q(2.2): GOTO:REGISTER1
+	Q(2.2): GOTO:register1
 
-Q(NOTSMART): You need to file your work with the Library of Congress immediately.
+Q(notsmart): You need to file your work with the Library of Congress immediately.
 
-Q(PERCENTAGE): If you are paying your manager more than 20%. GOTO:WTF
-Q(FINDMGMT): If you are actively seeking management. GOTO:CALLCHAD
-Q(REGISTER1): If you don't know how to register. GOTO:HELP
+Q(percentage): If you are paying your manager more than 20%. GOTO:wtf
+Q(findmgnt): If you are actively seeking management. GOTO:callchad
+Q(register1): If you don't know how to register. GOTO:help
 
-Q(WTF): You are crazy and yes, I am judging you
-Q(CALLCHAD): Do you need management now?
+Q(wtf): You are crazy and yes, I am judging you
+Q(callchad): Do you need management now?
 A: Yes
 	Q(8.1): Have you earned any revenue from your music?
 	A: Yes
-		Q(8.1.1): GOTO:GREAT 
+		Q(8.1.1): GOTO:great 
 	A: No
-		Q(8.1.2): GOTO:DAMNITMAN
+		Q(8.1.2): GOTO:damnitman
 
-Q(HELP): I will agree to help you if we sign a management agreement.
+Q(help): I will agree to help you if we sign a management agreement.
 
-Q(GREAT): I will work with you to ensure your musical career and finances are managed well.
-Q(DAMNITMAN): Sorry, I don't take on charity cases homie.
+Q(great): I will work with you to ensure your musical career and finances are managed well.
+Q(damnitman): Sorry, I don't take on charity cases homie.
