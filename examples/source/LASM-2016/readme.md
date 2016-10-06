@@ -1,6 +1,6 @@
-## Student Projects
+## LASM Fall 2016: Student Projects
 
-The following links run the QnA source code contained in the `QnAMarkup/examples/source/LASM-2016/` folder. 
+The following links showcase the QnA source code contained in the `QnAMarkup/examples/source/LASM-2016/` folder. 
 
 - Affidavit of Indigency ([run](http://www.qnamarkup.org/i/?source=http://colarusso.github.io/QnAMarkup/examples/source/LASM-2016/affidavit_of_indigency.txt), [edit](http://www.qnamarkup.org/?source=http://colarusso.github.io/QnAMarkup/examples/source/LASM-2016/affidavit_of_indigency.txt))
 - Election Eligibility ([run](http://www.qnamarkup.org/i/?source=http://colarusso.github.io/QnAMarkup/examples/source/LASM-2016/election_eligibility.txt), [edit](http://www.qnamarkup.org/?source=http://colarusso.github.io/QnAMarkup/examples/source/LASM-2016/election_eligibility.txt))
