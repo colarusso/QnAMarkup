@@ -32,10 +32,10 @@ Q(WTF): You are crazy and yes, I am judging you
 Q(CALLCHAD): Do you need management now?
 A: Yes
 	Q(8.1): Have you earned any revenue from your music?
-	A. Yes
-		Q(8.1): GOTO:GREAT 
+	A: Yes
+		Q(8.1.1): GOTO:GREAT 
 	A: No
-		Q(8.1.1): GOTO:DAMNITMAN
+		Q(8.1.2): GOTO:DAMNITMAN
 
 Q(HELP): I will agree to help you if we sign a management agreement.
 
