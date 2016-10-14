@@ -257,6 +257,10 @@ function enumerate_tree($editor) {
 	$regex = '/(^|\n)\t*((Q(\((.*)\))?|X|DOC\(?(\d?)(.\s*\d+)*\)?):|A((\(.*\))|)((\[[^\]]*\])+:|:(\[[^\]]*\])?))/';
 	# Split content based no header tags. 
 	$text = preg_split($regex, $content);
+	# Define regex to split into Q blocks
+	$regex_q = '/(^|\n)\t*(Q(\((.*)\))?:)/';
+	# Split content based Q tags only. 
+	$question_array = preg_split($regex_q, $content);
 	# Get non-header tag contents. 	
 	$hits = preg_match_all($regex,$content,$matches,PREG_PATTERN_ORDER);	
 	
@@ -405,7 +409,7 @@ function enumerate_tree($editor) {
 			} 
 			
 			# If variable_name is not unique, throw an error
-			if (preg_match_all("/Q\(".$qvarname[$iq][1]."\):/", $content, $mx) > 1) {
+			if (preg_match_all("/^((\d*)(\.\d*)*)$/", $content, $mx) == 0 and preg_match_all("/Q\(".$qvarname[$iq][1]."\):/", $content, $mx) > 1) {
 				$wellformed = 0;
 				$near = $value.substr($text[$i], 0, 50)."...";
 				$errormsg = $errormsg."<li class=\"error\">Variable names must be unique (not repeated). Error near:<br><code>$near</code></li>";
@@ -502,12 +506,12 @@ function enumerate_tree($editor) {
 				$near = $value.substr($text[$i], 0, 50)."...";
 				$near = preg_replace("/</", "&lt;", $near);
 				$near = preg_replace("/>/", "&gt;", $near);
-				$errormsg = $errormsg."<li class=\"error\">Starting in September 2016, the space after an X (variable) tag must be left blank. Variable names are now pulled from the parent question's target_id. That is, the number or letters in parentheses between the \"Q\" and \":\". For example: <p><code>Q(<font color=red><em>target_id</em></font>):</code></p> Error near:<br><code>$near</code></li>";
+				$errormsg = $errormsg."<li class=\"error\">Starting in September 2016, the space after an X (variable) tag must be left blank. Variable names are now pulled from the parent question's target_id. That is, the number or letters in parentheses between the \"Q\" and \":\". For example: <p><code>Q(<font color=red><em>target_id</em></font>):</code></p><p>See <a href=\"http://www.qnamarkup.org/syntax/#x\" taregt=\"_blank\">Documenation</a>. Error near:<br><code>$near</code></li>";
 			}			
-
-			# If there is more than one X in this answer set			
-			$xcount[$nested] = $xcount[$nested]+1;
-			if ($xcount[$nested] > 1) {
+			
+			# If there is more than one X in this answer set		
+			$tabcount = substr_count($value,"\t");
+			if (preg_match_all("/(^|\n)\t{".$tabcount."}Q(.*\n)*(\t{".$tabcount."}X)(.*\n)*(\t{".$tabcount."}X)(.*\n?)*(\t{".$tabcount."}Q|$)?/", $content,$m, PREG_PATTERN_ORDER)>0) {
 				$wellformed = 0;
 				$near = $value.substr($text[$i], 0, 50)."...";
 				$errormsg = $errormsg."<li class=\"error\">Limit one variable per answer set. Error near:<br><code>$near</code></li>";			
@@ -621,7 +625,7 @@ if ($wellformed ==1) {
 		$i=0;
 		foreach ($questions as $value) {
 			$value[1] = stripslashes($value[1]);
-			preg_match('/GOTO:\s?([a-z0-9\._-]*)\s*$/', $value[1], $matches);
+			preg_match('/GOTO:\s?([a-zA-Z0-9\._-]*)\s*$/', $value[1], $matches);
 			$regex_clean = preg_replace("/\./", "\.", $matches[1]);
 			$regex = "/GOTO:\s?$regex_clean(\s*$)/i";
 			foreach($qvarname as $keypair) {
@@ -648,7 +652,7 @@ if ($wellformed ==1) {
 				#	$j++;
 				#}
 				$snippet_output = $snippet_output."</div><div id=\"rawmarkup\" style=\"display:none;\">$content</div><div id=\"ondeck\" name=\"ondeck\">";	
-				$original = $original."<div id=\"doc\" name=\"doc\" style=\"display:none;\"></div>";				
+				#$original = $original."<div id=\"doc\" name=\"doc\" style=\"display:none;\"></div>";				
 			}
 
 			
@@ -687,8 +691,8 @@ if ($wellformed ==1) {
 			}
 		}
 		$original = $original."];\n";		
-		$original = $original."\tfunction indexis(variablename) {\n\t\tfor(var i = 0; i < QVnames.length; i++) {\n\t\t\tif(QVnames[i][1] === variablename) {\n\t\t\t\treturn QVnames[i][0];\n\t\t\t}\n\t\t}\n\t}\n";
-		$original = $original."\tfunction valueis(variablekey) {\n\t\tfor(var i = 0; i < QVnames.length; i++) {\n\t\t\tif(QVnames[i][0] === variablekey) {\n\t\t\t\treturn QVnames[i][1];\n\t\t\t}\n\t\t}\n\t}\n";
+		#$original = $original."\tfunction indexis(variablename) {\n\t\tfor(var i = 0; i < QVnames.length; i++) {\n\t\t\tif(QVnames[i][1] === variablename) {\n\t\t\t\treturn QVnames[i][0];\n\t\t\t}\n\t\t}\n\t}\n";
+		#$original = $original."\tfunction valueis(variablekey) {\n\t\tfor(var i = 0; i < QVnames.length; i++) {\n\t\t\tif(QVnames[i][0] === variablekey) {\n\t\t\t\treturn QVnames[i][1];\n\t\t\t}\n\t\t}\n\t}\n";
 		$original = $original."</script>\n";
 		
 		$snippet_output = $snippet_output.$original."</div>";

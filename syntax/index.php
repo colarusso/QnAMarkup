@@ -405,7 +405,7 @@ A: <font color=black>Yes.</font>
 		Q<font color=purple>(<font color=red>naughty</font>)</font>: <font color=black>Have you been naughty or nice?</font>
 		A<font color=purple>(<font color=red>I am sorry that I have been naughty. I will work hard to be nice in the new year.&lt;br&gt;&lt;br&gt;</font>)</font>: <font color=black>Naughty</font>
 			Q<font color=purple>(<font color=red>1.1.1.1</font>)</font>:GOTO:<font color=red>whatiwant</font>
-		A: <font color=black>Nice</font>
+		A<font color=purple>()</font>: <font color=black>Nice</font>
 			Q<font color=purple>(<font color=red>1.1.1.2</font>)</font>:GOTO:<font color=red>whatiwant</font>		
 A: <font color=black>No.</font>
 	Q<font color=purple>(<font color=red>1.2</font>)</font>: <font color=black>That's cool. Have a good day.</font>
@@ -424,7 +424,7 @@ X:
 <p><iframe src="<?php echo $home ?>i/?source=http://colarusso.github.io/QnAMarkup/examples/source/santa_letter.txt&col_width=320&sharing=2" style="width:100%;height:510px;border: solid 1px #555;"></iframe>
 </p>			
 </ul>
-<h3>Working with .docx Documets</h3>
+<h3>Working with .docx Documents<a name="docx_docs" href="#docx_docs" class="anchor"></a></h3>
 <ul> 
 <p>Although the above parsers offer a good deal of flexability, sometime you want to control a document's format with greater percision than allowed by HTML et al. For such instances, you can make use of <em>.docx</em> templates such as <a href="http://www.qnamarkup.org/docxmerge/templates/Santa-letter.docx" target="_new">this one</a>.<p>
 <p>Instead of constructing the document in QnA you can merge your QnA answers with an existing template. Below we'll do this with a standard .docx (Word) file with mail merge feilds. The service below will take in a JSON string, the URL of a .docx file from which to make a merged .docx file, and the name for the output file. The service we'll be using below is an instance of <a href="https://github.com/colarusso/docx_webmerge" target="_new">docx_webmerge</a>.</p>

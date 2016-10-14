@@ -81,6 +81,13 @@
 		width:100%;
 		margin:15px 0 0 0;
 	}
+	div.standard_buttons{
+		float:left;
+		width:100%;
+		margin-top:5px;
+		border-top: 1px solid #ddd; 
+		padding-top:12px;		
+	}
 	div.credits{
 		float:left;
 		dispaly:none;
@@ -104,6 +111,38 @@
 	.qpad {
 		float:left;
 		padding:0 <?php echo $line_height*0.75 ?>px;
+	}
+	
+	a.sbutton {
+		float:left;
+		font-family: <?php echo $font_family ?>;
+		font-size: <?php echo $font_size ?>px;
+		line-height: <?php echo $line_height ?>px;
+		width:48%;
+		background: #eee;
+		border-radius: 8px;
+		padding:<?php echo $line_height*0.5 ?>px 0px <?php echo $line_height*0.6 ?>px 0;
+		margin: 0 0 3px 0;
+		border: solid 1px #888;
+		text-align:center;
+		color: #000000;
+		text-decoration: none;
+	}
+
+	a.sbutton:hover, a.sbutton:active {
+		float:left;
+		font-family: <?php echo $font_family ?>;
+		font-size: <?php echo $font_size ?>px;
+		line-height: <?php echo $line_height ?>px;
+		width:48%;
+		background: #ddd;
+		border-radius: 8px;
+		padding:<?php echo $line_height*0.5 ?>px 0px <?php echo $line_height*0.6 ?>px 0;
+		margin: 0 0 3px 0;
+		border: solid 1px #888;
+		text-align:center;
+		color: #000000;
+		text-decoration: underline;
 	}
 
 	a.qabutton {

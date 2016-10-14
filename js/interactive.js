@@ -4,6 +4,10 @@
 	var Dhtml = "";
 	var label = "";
 	var GOTOfired = 0;
+	var path = [];
+	var doc_bin = [];
+	var convo_bin = [];
+	var freetext = 0;
 
 	$("#conversation input").on("keypress", 'form', function (e) {
     	var code = e.keyCode || e.which;
@@ -26,10 +30,16 @@
 		var input_error = 0;
 		if (restart == undefined) {
 			var regexp = new RegExp("\<variable\>");
+			//if (document.getElementById(Xihtml)) {
+			//	console.log("document.getElementById("+Xihtml+").value: "+document.getElementById(Xihtml).value);
+			//} else {
+			//	console.log("NO document.getElementById("+Xihtml+").value: ");
+			//}
 			if (document.getElementById(Ahtml).innerHTML.match(regexp)) {
 				document.getElementById(Xihtml).value = document.getElementById(Xihtml).value.replace(/(^\s*|\s*$)/,"");
 				if (document.getElementById(Xihtml).value == "") {
 					input_error = "Your answer appears to be empty.";
+					label = currentQ;
 				} else {
 					document.getElementById(Xihtml).value = document.getElementById(Xihtml).value.replace(/</g,"&lt;");
 					document.getElementById(Xihtml).value = document.getElementById(Xihtml).value.replace(/>/g,"&gt;");
@@ -42,7 +52,7 @@
 			document.getElementById(Xihtml).focus();			
 		} else {
 			if (restart == undefined) {
-				document.getElementById('QandA').innerHTML += "<div class='frame'><div class='full'><div class='ans_text'>"+document.getElementById(Ahtml).innerHTML+"</div></div><div class='ans_arrow'></div></div></div></div>";
+				document.getElementById('QandA').innerHTML += "<div id=\"break-at-"+QNum+"\" class='frame'><div class='full'><div class='ans_text'>"+document.getElementById(Ahtml).innerHTML+"</div></div><div class='ans_arrow'></div></div></div></div>";
 				// insert answer from button
 				if (document.getElementById(valueis(currentQ))) {
 					document.getElementById(valueis(currentQ)).outerHTML='';
@@ -60,17 +70,22 @@
 					var thisvariable = new RegExp("<(X|x)>"+document.getElementById(Xhtml).innerHTML+"<\/(X|x)>","g");
 					//document.getElementById('doc').innerHTML = document.getElementById('doc').innerHTML.replace(thisvariable, document.getElementById(document.getElementById(Xhtml).innerHTML).innerHTML);
 					//document.getElementById('ondeck').innerHTML = document.getElementById('ondeck').innerHTML.replace(thisvariable, document.getElementById(valueis(currentQ)).innerHTML);
-					console.log("thisvariable: "+thisvariable);
-					console.log("Variable name: "+valueis(currentQ));
+					//console.log("thisvariable: "+thisvariable);
+					//console.log("Variable name: "+valueis(currentQ));
 					//console.log("Variable value: "+document.getElementById(valueis(currentQ)).innerHTML);
-					if(document.getElementById(Ahtml).innerHTML != "") { document.getElementById('transcript').value += "USER: "+document.getElementById(Xihtml).value+"\n"; }
+					if(document.getElementById(Ahtml).innerHTML != "") { 
+						//document.getElementById('transcript').value += "USER: "+document.getElementById(Xihtml).value+"\n"; 
+						convo_bin.push("USER: "+document.getElementById(Xihtml).value+"\n");
+					}
 				} else {
-					document.getElementById('transcript').value += "USER: "+document.getElementById(Ahtml).innerHTML+"\n";
+					//document.getElementById('transcript').value += "USER: "+document.getElementById(Ahtml).innerHTML+"\n";
+					convo_bin.push("USER: "+document.getElementById(Ahtml).innerHTML+"\n");
 				}
 				document.getElementById('Choices').innerHTML = '';
 				setTimeout(function() {renderQnA(Qhtml,Jhtml,Dhtml,restart)}, 300);
 			} else {
 				document.getElementById('Choices').innerHTML = '';
+				path = [];
 				renderQnA(Qhtml,Jhtml,Dhtml,restart);			
 			}
 
@@ -82,24 +97,34 @@
 	function renderQnA(Qht,Jht,Dht,restar) {
 		Dhtml = Dht;
 					
-		var GOTOfired = 0;
+		GOTOfired = 0;
+		path.push(label);
+
 		swapGOTO(Qht,Jht);
+
+		console.log("After swap: "+GOTOfired);
 
 		if (GOTOfired == 0) {
 			document.getElementById('QandA').innerHTML += "<div id="+Jht+" style=\"float:left;width:100%;height:1px;\">&nbsp;</div>";
 		}
-		console.log(Qhtml);
 		document.getElementById('QandA').innerHTML += "<div class='frame'><div class='full'><div class='question_text'>"+swapvar(document.getElementById(Qhtml).innerHTML)+"</div></div><div class='question_arrow'></div></div>";		
 
 		document.getElementById('QandA').innerHTML = document.getElementById('QandA').innerHTML.replace(/(\<br\>){2}/gi,"</div></div><div class='question_arrow'></div></div></div></div><div class='frame'><div class='full'><div class='question_text'>");
 		document.getElementById('QandA').innerHTML = document.getElementById('QandA').innerHTML.replace(/(\<br\> \<br\>)/gi,"<br><br>");
 
 		// add question 
-		document.getElementById('transcript').value += swapvar("BOT: "+ document.getElementById(Qhtml).innerHTML);
-		document.getElementById('transcript').value = document.getElementById('transcript').value.replace(/(\<br\>){2}/gi,"\nBOT: ");
+		//document.getElementById('transcript').value += swapvar("BOT: "+ document.getElementById(Qhtml).innerHTML);
+		//document.getElementById('transcript').value = document.getElementById('transcript').value.replace(/(\<br\>){2}/gi,"\nBOT: ");
+		this_text = swapvar("BOT: "+ document.getElementById(Qhtml).innerHTML);
+		this_text = this_text.replace(/(\<br\>){2}/gi,"\nBOT: ");
+		convo_bin.push(this_text);
 				
+		// make push doc into array in doc() cycle through array and put into output
+		// maybe remove doc div
 		if (document.getElementById(Dhtml)) {
-			document.getElementById('doc').innerHTML += document.getElementById(Dhtml).innerHTML;
+			doc_bin.push([document.getElementById(Dhtml).innerHTML,currentQ]);
+			console.log("Add to Doc ("+Dhtml+"): "+document.getElementById(Dhtml).innerHTML);
+			//document.getElementById('doc').innerHTML += document.getElementById(Dhtml).innerHTML;
 		}
 						
 		tmp = getElementsByIdRegExp("div", "A-"+label+"(\\.{1}\\d){1}$");
@@ -115,18 +140,30 @@
 			if (tmp[i].innerHTML.match(regexp)) {
 				document.getElementById('Choices').innerHTML += "<div class=\"xdiv\"><input type=\"text\" id=\""+Xihtml+"\" name=\""+Xihtml+"\" class=\"xinput\" onkeypress=\"{if (event.keyCode==13)answerQ('"+nextlabel+"')}\"/><a href=\"javascript:void('');\" class=\"xbutton\" onClick=\"answerQ('"+nextlabel+"');\"><span class=\"qpad\">Save above text as answer.</span></a></div>";
 				Xishere = Xihtml;
+				freetext = Xihtml;
 			} else if (a_href[i].innerHTML.match(regexp_js) && a_href[i].innerHTML != "javascript:void('');") {
 				tmp[i].innerHTML = tmp[i].innerHTML.replace(/(\<br\>){2}/gi,"<br> <br>");
 				var script_call = a_href[i].innerHTML.replace(/^javascript:/gi,"");
 				document.getElementById('Choices').innerHTML += "<a href=\"javascript:void('');\" class=\"qabutton\" onClick=\"answerQ('"+nextlabel+"');"+script_call+"\" "+a_target[i].innerHTML+"><span class=\"qpad\">"+tmp[i].innerHTML+"</span></a>";							
+				freetext = 0;
 			} else {
 				tmp[i].innerHTML = tmp[i].innerHTML.replace(/(\<br\>){2}/gi,"<br> <br>");
 				document.getElementById('Choices').innerHTML += "<a href=\""+a_href[i].innerHTML+"\" class=\"qabutton\" onClick=\"answerQ('"+nextlabel+"');\" "+a_target[i].innerHTML+"><span class=\"qpad\">"+tmp[i].innerHTML+"</span></a>";				
+				freetext = 0;
 			}
 		}			
 
 		if (restar == undefined) {
-			document.getElementById('Choices').innerHTML += "<a href=\"javascript:void('');\" class=\"qabutton\" onClick=\"startAT('1');\"><span class=\"qpad\">Start over.</span></a>";
+			
+			document.getElementById('Choices').innerHTML += "<div class=\"standard_buttons\">";
+			if (QNum > 1) { 
+				document.getElementById('Choices').innerHTML += "<a href=\"javascript:void('');\" class=\"sbutton\" onClick=\"goback(QNum);\">GO BACK ONE</a>";
+				document.getElementById('Choices').innerHTML += "<a href=\"javascript:void('');\" class=\"sbutton\" style=\"float:right\" onClick=\"startAT('1');\">START OVER</a>";
+			} else if (QNum == 1) {
+				document.getElementById('Choices').innerHTML += "<a href=\"javascript:void('');\" class=\"sbutton\" onClick=\"startAT('1');\">GO BACK ONE</a>";
+				document.getElementById('Choices').innerHTML += "<a href=\"javascript:void('');\" class=\"sbutton\" style=\"float:right\" onClick=\"startAT('1');\">START OVER</a>";				
+			}
+			document.getElementById('Choices').innerHTML += "</div>"
 		}
 				
 		if (QNum != 0) { 
@@ -139,8 +176,9 @@
 			document.getElementById(Xishere).focus();
 		}
 		console.log("Q#: "+QNum);
+		console.log("New Path: "+path);
 		QNum++;
-			
+					
 	}
 
 	
@@ -154,7 +192,8 @@
 			var Qtexttrans = document.getElementById(QH).innerHTML.replace(/(<)?GOTO:(\d*)(.\s*\d+)*>?/,"");
 			Qtexttrans = Qtexttrans.replace(/\s*$/,"");
 			if (Qtexttrans != "") {
-				document.getElementById('transcript').value += swapvar("BOT: "+Qtexttrans+"\n");
+				//document.getElementById('transcript').value += swapvar("BOT: "+Qtexttrans+"\n");
+				convo_bin.push(swapvar("BOT: "+Qtexttrans+"\n"));
 			}
 			if (document.getElementById(QH).innerHTML.match(/^GOTO:(\d*)(.\s*\d+)*/)) {
 				document.getElementById('QandA').innerHTML += document.getElementById(QH).innerHTML.replace(/(<)?GOTO:(\d*)(.\s*\d+)*>?/,"<"+Qtext+">");
@@ -165,10 +204,13 @@
 			label = Qtext[0].replace("GOTO:","");
 			Qhtml = 'Q-'+label;
 			if (document.getElementById(Dhtml)) {
-				document.getElementById('doc').innerHTML += document.getElementById(Dhtml).innerHTML;
+				doc_bin.push([document.getElementById(Dhtml).innerHTML,currentQ]);
+				console.log("Add to Doc ("+Dhtml+"): "+document.getElementById(Dhtml).innerHTML);
+				//document.getElementById('doc').innerHTML += document.getElementById(Dhtml).innerHTML;
 			}
 			Dhtml = 'D-'+label;
 			GOTOfired = 1;
+			console.log("In swap: "+GOTOfired);
 			swapGOTO(Qhtml,JH);
 		}
 	}
@@ -222,7 +264,9 @@
 	function startAT(id) {
 		document.getElementById('ondeck').innerHTML = document.getElementById('original').value;
 		document.getElementById('QandA').innerHTML = "";
-		document.getElementById('transcript').value = "";
+		//document.getElementById('transcript').value = "";
+		doc_bin = [];
+		convo_bin = [];
 		QNum = 0;
 		answerQ(id,'1');
 	}
@@ -284,25 +328,125 @@
 			if (document.getElementById(QVnames[i][1])) {
 				var item = QVnames[i][1].replace(/\./g,"\\.");
 				var varegx = new RegExp("<x>"+item+"<\/x>","gi");
-				console.log(QVnames[i][1]);
+				//console.log(QVnames[i][1]);
 				input = input.replace(varegx,document.getElementById(QVnames[i][1]).innerHTML);
 			} 
 		}
 		output = input
 		return output
 	}
+	
+	function docforindex(indexID) {
+		for(var i = 0; i < doc_bin.length; i++) {
+			if(doc_bin[i][1] == indexID) {
+				return true;
+			}
+		}
+	}
+	function indexis(variablename) {
+		for(var i = 0; i < QVnames.length; i++) {
+			if(QVnames[i][1] == variablename) {
+				return QVnames[i][0];
+			}
+		}
+	}
+	function valueis(variablekey) {
+		for(var i = 0; i < QVnames.length; i++) {
+			if(QVnames[i][0] == variablekey) {
+				return QVnames[i][1];
+			}
+		}
+	}
+	
+	function look4goto(qn,id) {
+		console.log("GOTO SEARCH: "+id);
+		var qID = "Q-"+id;
+		// If there's a doc in the XXXXXXXXXXXXXXXX, remove it.
+		if (docforindex(path.indexOf(id))) {
+			console.log("DOC FOUND "+id);
+			doc_bin.splice(doc_bin.length-1,1);
+		}
+		convo_bin.splice(-2,2);
+		var re = new RegExp("GOTO:(([a-z0-9\._-]*)\s*)$","gi");
+		if (document.getElementById(qID).innerHTML.match(re)) {
+			convo_bin.splice(-1,1);
+			console.log("GOTO FOUND: "+id);
+			textinput = re.exec(document.getElementById(qID).innerHTML)[2]+"";
+			if (docforindex(indexis(textinput))) {
+				document.getElementById("Xi-"+path[qn]).value = document.getElementById(valueis(textinput)).innerHTML;
+				console.log("DOC FOUND "+textinput);
+				doc_bin.splice(doc_bin.length-1,1);
+			}
+			look4goto(qn,textinput);
+		}
+	}
+	
+	function goback(qn) {
+		Qlast = qn - 3
+		qn = qn - 2;
+		label = path[qn];
+		
+		console.log("GO BACK TO:"+qn);
+		var re = new RegExp('(((^|\\n).*)*)<div id="break-at-'+qn+'" class="frame">((.*)(\\W.*))*', 'g');
+		document.getElementById("QandA").innerHTML = document.getElementById("QandA").innerHTML.replace(re, '$1');
+		document.getElementById('Choices').innerHTML += "<input type=\"hidden\" id=\"Xi-"+path[qn]+"\" name=\"Xi-"+path[qn]+"\" value=\"\">";
+			console.log("####################: "+path[path.length-1]);
+		
+		//look4goto(qn,path[path.length-1]);
+		
+		path.splice(-1,1);
+		convo_bin.splice(-4,4);
+		//convo_bin.splice(-2,2);
+
+		// If there's a doc in the last Q that you're removing, hold on to it.
+		// And put it back after you've removed it. When you rerender the Q.
+		if (document.getElementById("X-"+path[qn]) && document.getElementById(valueis(path[Qlast]))) {
+			document.getElementById("Xi-"+path[qn]).value = document.getElementById(valueis(path[Qlast])).innerHTML;
+			doc_bin.splice(doc_bin.length-1,1);
+		}
+		
+		// If there's a doc in the current Q, remove it.
+		if (docforindex(currentQ)) {
+			console.log("DOC FOUND (current) "+currentQ);
+			doc_bin.splice(doc_bin.length-1,1);
+		}
+		// If there's a doc in the queued up Q, remove it. 
+		if (document.getElementById(Dhtml)) {
+			console.log("DOC FOUND (ondeck)"+Dhtml);
+			doc_bin.splice(doc_bin.length-1,1);
+		}
+		
+		look4goto(qn,path[path.length-1]);
+		
+		if (freetext != 0) {
+			document.getElementById(freetext).value = "";
+		}
+		QNum = qn;
+		loadQ = path[path.length-1];
+		path.splice(-1,1);
+		
+		console.log("Reload ans for: "+loadQ);
+		answerQ(loadQ);
+	}
 
 	function transcript(output) {
+		var convo_output = "";
+		for (var i = 0, len = convo_bin.length; i < len; i++) {
+			convo_output += convo_bin[i];
+		}
 		if (output == 1) {
-			return document.getElementById('transcript').value;
+			return convo_output;
 		} else {
-			var output = document.getElementById('transcript').value.replace(/<[^>]*>/g,"");
-			return output;
+			return convo_output.replace(/<[^>]*>/g,"");
 		}
 	}		
 	
 	function doc() {
-		return swapvar(document.getElementById('doc').innerHTML);
+		var doc_output = ""; 
+		for (var i = 0, len = doc_bin.length; i < len; i++) {
+			doc_output += doc_bin[i][0];
+		}
+		return swapvar(doc_output);
 	}	
 	
 	function json_str() {
@@ -342,7 +486,7 @@
 			var doctext = document.createElement("textarea");
 			doctext.style.display ='none';
 			doctext.name= docAs;
-			doctext.value= swapvar(document.getElementById('doc').innerHTML);
+			doctext.value= doc();
 			document.getElementById('FORM').appendChild(doctext);
 			if (instructions) {
 				var instructtext = document.createElement("textarea");
@@ -358,7 +502,7 @@
 			ttext.type='hidden';
 			ttext.style.display ='none';
 			ttext.name= transcriptAs;
-			ttext.value= document.getElementById('transcript').value;
+			ttext.value= transcript();
 			document.getElementById('FORM').appendChild(ttext);
 		}
 		if (jsonAs) {
