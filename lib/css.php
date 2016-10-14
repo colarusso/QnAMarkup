@@ -142,7 +142,7 @@
 		border: solid 1px #888;
 		text-align:center;
 		color: #000000;
-		text-decoration: underline;
+		text-decoration: none;
 	}
 
 	a.qabutton {
@@ -174,7 +174,7 @@
 		border: solid 1px #888;
 		text-align:left;
 		color: #000000;
-		text-decoration: underline;
+		text-decoration: none;
 	}
 	
 

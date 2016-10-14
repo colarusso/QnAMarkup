@@ -8,6 +8,7 @@
 	var doc_bin = [];
 	var convo_bin = [];
 	var freetext = 0;
+	var goingback = 0;
 
 	$("#conversation input").on("keypress", 'form', function (e) {
     	var code = e.keyCode || e.which;
@@ -82,7 +83,11 @@
 					convo_bin.push("USER: "+document.getElementById(Ahtml).innerHTML+"\n");
 				}
 				document.getElementById('Choices').innerHTML = '';
-				setTimeout(function() {renderQnA(Qhtml,Jhtml,Dhtml,restart)}, 300);
+				if (goingback == 0) {
+					setTimeout(function() {renderQnA(Qhtml,Jhtml,Dhtml,restart)}, 300);
+				} else {
+					renderQnA(Qhtml,Jhtml,Dhtml,restart);
+				}
 			} else {
 				document.getElementById('Choices').innerHTML = '';
 				path = [];
@@ -167,7 +172,11 @@
 		}
 				
 		if (QNum != 0) { 
-			scroll2Q(Jht);           	
+			if (goingback == 0) {
+				scroll2Q(Jht,800);           	
+			} else {
+				window.scrollTo(0, document.getElementById(Jht).offsetTop);     		
+			}
 		} else if (restar != undefined) {
 			window.scrollTo(0,0);
 		}
@@ -178,6 +187,7 @@
 		console.log("Q#: "+QNum);
 		console.log("New Path: "+path);
 		QNum++;
+		goingback = 0;
 					
 	}
 
@@ -216,11 +226,10 @@
 	}
 
 	
-	function scroll2Q(id) {
+	function scroll2Q(id,speed) {
 		var top = document.getElementById(id).offsetTop; //Getting Y of target element
 		console.log("Jump to Y for ("+id+"): "+top);
 		//adapted from https://github.com/Yappli/smooth-scroll
-		var speed = 800;
 		var moving_frequency = 5; // Affects performance !
 		var hop_count = speed/moving_frequency
         var getScrollTopDocumentAtBegin = document.documentElement.scrollTop + document.body.scrollTop;
@@ -385,6 +394,7 @@
 		Qlast = qn - 3
 		qn = qn - 2;
 		label = path[qn];
+		goingback = 1;
 		
 		console.log("GO BACK TO:"+qn);
 		var re = new RegExp('(((^|\\n).*)*)<div id="break-at-'+qn+'" class="frame">((.*)(\\W.*))*', 'g');
