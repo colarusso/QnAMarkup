@@ -1,0 +1,41 @@
+Title: Argos Remembers	
+Author:Anthony Davis	
+Description: Questions for Website
+
+Q(1):Are you a Veteran? 
+A:Yes
+	Q(1.1):What branch did you serve in? 
+	A:Marine 
+		Q(1.1.1):GOTO:3
+	A:Navy
+		Q(1.1.2):GOTO:3
+	A:Air Force
+		Q(1.1.3):GOTO:3
+	A:Army
+		Q(1.1.4):GOTO:3
+	A:Coast Guard
+		Q(1.1.5):GOTO:3
+	A:Other
+		Q(1.1.6):GOTO:2
+A:No
+	Q(1.2):GOTO:2
+
+Q(2): I am sorry we can not help you at this time. Please go to www.helpsteps.com
+
+Q(3): Are you in need of assistance? 
+A:Yes
+	Q(3.1):Do you live in Boston?
+	A:Yes
+		Q(3.1.1):GOTO:5
+	A:No
+		Q(3.1.2):GOTO:4
+A:No
+	Q(3.2):GOTO:2
+
+Q(4): Do you live within 15 miles of Boston? 
+A:Yes
+	Q(4.1):GOTO:5
+A:No
+	Q(4.2):GOTO:2
+
+Q(5):Call 781 241-3286 to schedule an appointment to be matched with an Argos Remembers "Battle Buddy"
