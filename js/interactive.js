@@ -460,16 +460,19 @@
 	}	
 	
 	function json_str() {
+		
 		var json_list = "{";
 		for(var i = 0; i < QVnames.length; i++) {
-			if (document.getElementById(QVnames[i][1])) {
-				json_list = json_list+'"'+QVnames[i][1]+'":"'+document.getElementById(QVnames[i][1]).innerHTML+'"';
-			} else {
-				json_list = json_list+'"'+QVnames[i][1]+'":"'+'"';
-			}
-			if (i+1 < QVnames.length) { 
+			if (!document.getElementById("Q-"+QVnames[i][0]).innerHTML.match(/(GOTO:(\d*)(.\s*\d+)*)/)) {
+				if (document.getElementById(QVnames[i][1])) {
+					json_list = json_list+'"'+QVnames[i][1]+'":"'+document.getElementById(QVnames[i][1]).innerHTML+'"';
+				} else {
+					json_list = json_list+'"'+QVnames[i][1]+'":"'+'"';
+				}
 				json_list = json_list+",";
-			} else {
+			} 
+			if (i+1 == QVnames.length) {
+				json_list = json_list.replace(/,$/, '');
 				json_list = json_list+"}";
 			}
 		}
@@ -523,8 +526,13 @@
 			json.value= json_str();
 			document.getElementById('FORM').appendChild(json);
 		}
+		var ondeckdiv = document.getElementById('ondeck').innerHTML;
+		var rawmarkupdiv = document.getElementById('rawmarkup').innerHTML;
 		document.getElementById('ondeck').innerHTML = "";
+		document.getElementById('rawmarkup').innerHTML = "";
 		document.FORM.submit();
+		document.getElementById('ondeck').innerHTML = ondeckdiv;
+		document.getElementById('rawmarkup').innerHTML = rawmarkupdiv;
 	}
 
 	// h/t http://runnable.com/U5HC9xtufQpsu5aj/use-javascript-to-save-textarea-as-a-txt-file
