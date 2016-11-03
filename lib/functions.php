@@ -511,7 +511,7 @@ function enumerate_tree($editor) {
 			
 			# If there is more than one X in this answer set		
 			$tabcount = substr_count($value,"\t");
-			if (preg_match_all("/(^|\n)\t{".$tabcount."}Q(.*\n)*(\t{".$tabcount."}X)(.*\n)*(\t{".$tabcount."}X)(.*\n?)*(\t{".$tabcount."}Q|$)?/", $content,$m, PREG_PATTERN_ORDER)>0) {
+			if (preg_match_all("/(^|\n)\t{".$tabcount."}Q(((?!\t*Q).)*\n)*(\t{".$tabcount."}X)(((?!\t*Q).)*\n)*(\t{".$tabcount."}X)/", $content,$m, PREG_PATTERN_ORDER)>0) {
 				$wellformed = 0;
 				$near = $value.substr($text[$i], 0, 50)."...";
 				$errormsg = $errormsg."<li class=\"error\">Limit one variable per answer set. Error near:<br><code>$near</code></li>";			
