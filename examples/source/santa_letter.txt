@@ -17,5 +17,5 @@ X:
 			Sincerely,<br>
 			<x>myname</x> 
 	Q(2.1):Alright, are you ready to see your letter?
-	A[javascript:submit2('http://www.qnamarkup.org/doc/parse/html/','POST','t','Proof read your letter. Print it out, and mail it to: Santa Clause, North Pole')]: Yes.
+	A[javascript:submit2('https://www.qnamarkup.org/doc/parse/html/','POST','t','Proof read your letter. Print it out, and mail it to: Santa Clause, North Pole')]: Yes.
 		Q(2.1.1): Thank you.
