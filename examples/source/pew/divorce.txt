@@ -4,7 +4,7 @@ Before:<link rel="stylesheet" type="text/css" href="https://www.codingthelaw.org
 <p><b>Note: This is a single branch of the divorce map. Not complete.</b></p>
 
 Q(1): Is your issue about a divorce that has already been granted?
-A: No!
+A: No.
 	Q(1.1): Do you want to end your marriage?
 	A: No.
 		Q(1.1.1): Does your spouse want to end your marriage?
