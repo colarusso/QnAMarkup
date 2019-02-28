@@ -11,5 +11,6 @@ A: Yes.
 Q(whatiwant): What would you like for Christmas? 
 X:
 	Q(2.1):Alright, are you ready to see your letter?
-	A[javascript:submit2('https://colarusso.pythonanywhere.com/2docx/', 'POST', '', '', '', 'json_doc', '_blank')]: Yes.
+	A[javascript:submit2('https://colarusso.pythonanywhere.com/2docx/', 'POST', '', '', '', 'json_doc', '_blank')]: Yes (docx).
+	A[javascript:submit2('https://colarusso.pythonanywhere.com/2pdf/', 'POST', '', '', '', 'json_doc', '_blank')]: Yes (pdf).
 		Q(2.1.1): Thank you.
