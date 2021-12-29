@@ -18,6 +18,14 @@
     	}
 	});
 
+	function separateIntoBubbles() {
+    		// minimum screen size to break up <br> elemnents into separate
+    		// speech bubbles, e.g. has to be larger than iphone 5 in portrait mode
+		// (iphone 5 has a display screen with height of 578px in portrait mode)
+    		const minimumDocHeight = 578;
+    		return (document.documentElement.clientHeight > minimumDocHeight);
+	}
+
 	function answerQ(lb,restart) {
 		currentQ = label;
 		label = lb;
@@ -114,8 +122,10 @@
 		}
 		document.getElementById('QandA').innerHTML += "<div class='frame'><div class='full'><div class='question_text'>"+swapvar(document.getElementById(Qhtml).innerHTML)+"</div></div><div class='question_arrow'></div></div>";		
 
-		document.getElementById('QandA').innerHTML = document.getElementById('QandA').innerHTML.replace(/(\<br\>){2}/gi,"</div></div><div class='question_arrow'></div></div></div></div><div class='frame'><div class='full'><div class='question_text'>");
-		document.getElementById('QandA').innerHTML = document.getElementById('QandA').innerHTML.replace(/(\<br\> \<br\>)/gi,"<br><br>");
+		if (separateIntoBubbles()) {
+			document.getElementById('QandA').innerHTML = document.getElementById('QandA').innerHTML.replace(/(\<br\>){2}/gi,"</div></div><div class='question_arrow'></div></div></div></div><div class='frame'><div class='full'><div class='question_text'>");
+			document.getElementById('QandA').innerHTML = document.getElementById('QandA').innerHTML.replace(/(\<br\> \<br\>)/gi,"<br><br>");
+		}
 
 		// add question 
 		//document.getElementById('transcript').value += swapvar("BOT: "+ document.getElementById(Qhtml).innerHTML);
