@@ -187,14 +187,6 @@ function save2file(name) {
 
 function saveTextAsFile(tosave,name)
 {
-
-// I'm using file system support as a proxy for support for this feature. 
-// Check based on one found at: http://blog.teamtreehouse.com/building-an-html5-text-editor-with-the-filesystem-apis
-// Handle vendor prefixes.
-window.requestFileSystem = window.requestFileSystem || 
-                           window.webkitRequestFileSystem;
-// Check for support.
-if (window.requestFileSystem) {
 // tosave = ID of textarea to save
 // name = name to save file as, including file extension     
 // grab the content of the form field and place it into a variable
@@ -209,6 +201,14 @@ if (window.requestFileSystem) {
 // an imput field in the HTML and using the collected data here
 // var fileNameToSaveAs = txtFileName.text;
 
+// Microsoft IE doesn't let you click things in JS: see https://stackoverflow.com/a/37522444
+// 
+    if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+        window.navigator.msSaveOrOpenBlob(textFileAsBlob, fileNameToSaveAs);
+        return;
+    }
+
+// Other browsers let you click links, so lets do that.
 // create a link for our script to 'click'
     var downloadLink = document.createElement("a");
 //  supply the name of the file (from the var above).
@@ -235,10 +235,6 @@ if (window.requestFileSystem) {
     
 // click the new link
     downloadLink.click();
-} else {
-	alert('This feature is not supported by your browser. You could, however, cut-and-paste your text into an editor to save it.');
-}
-	
 }
 
 function destroyClickedElement(event)
