@@ -2,7 +2,7 @@ DOC(1):SHOPPING LIST
 
 Q(1): What would you like to cook?
 A: Garlic Chicken
-	DOC(1.1):Garlic Chicken
+	DOC(1.1):<b>Garlic Chicken<b>
 	4 boneless skinless chicken breasts
 	4 garlic cloves, minced
 	4 tablespoons brown sugar
@@ -19,6 +19,8 @@ A: Mac and Cheese
 Q(2): Okay. I have the shopping list ready. How would you like it?
 A[javascript:alert(doc());]: In an alert box.
 	Q(2.1):GOTO:3
-A[javascript:save2('list.txt',doc());]: As a file I can save.
+A[javascript:showdoc('Edit, then print, save, or copy.');]: In a simple text editor.
 	Q(2.2):GOTO:3
+A[javascript:save2('list.txt',doc());]: As a file I can save.
+	Q(2.3):GOTO:3
 Q(3): Enjoy the grub.
