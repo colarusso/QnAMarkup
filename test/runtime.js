@@ -207,6 +207,64 @@ function check(name, cond, info) {
   const sp = await p.evaluate(() => ({ mid: QnA.splitSettings('Q: a\nSettings: fontSize=30\nA: b').settings, none: QnA.parse('Q: a\nA: b').settings, round: QnA.splitSettings('Q: a\n\n' + QnA.settingsTag({ fontFamily: "Georgia, 'Times New Roman', serif", radius: 3 })).settings, same: QnA.parse('Q: a\nA: b\n\tQ: c').code === QnA.parse('Q: a\nA: b\n\tQ: c\n\nSettings: radius=2').code.replace(/\n$/, '') }));
   check('settings tag: only recognised as the last line; round-trips through settingsTag(); parse result otherwise unchanged', sp.mid === null && sp.none === null && sp.round.fontFamily === "Georgia, 'Times New Roman', serif" && sp.round.radius === '3' && sp.same, sp);
 
+  /* ---- chat style (SMS / LLM) ---- */
+  const chat = 'Title: T\nQ: Hello <a href="#">link</a>\nA: Hi\n\tQ(name): What is your name?\n\tX:\n\t\tQ: Bye';
+  const styleOf = () => p.evaluate(() => { const g = s => getComputedStyle(document.querySelector(s)); const q = g('.question_text'), a = document.querySelector('.ans_text') ? g('.ans_text') : null, c = g('.qna-conversation');
+    return { qBg: q.backgroundColor, qTxt: q.color, qLink: g('.question_text a').color, pad: q.padding, margin: q.margin, radius: q.borderRadius, arrow: g('.question_arrow').display, ansTop: a && a.marginTop, ansBg: a && a.backgroundColor, bodyBg: c.backgroundColor, bodyTxt: c.color, opts: document.querySelector('.qna').qna.options }; });
+  await p.setContent(page(chat, 'data-comp-bg="336699" data-body-bg="fafad2" data-body-txt="112233" data-body-link="aa0000"')); await p.waitForTimeout(200);
+  await clickAnswer('Hi');
+  const sms = await styleOf();
+  check('chat style: SMS is the default and is unchanged', sms.opts.chatStyle === 'sms' && sms.qBg === 'rgb(51, 102, 153)' && sms.arrow === 'block' && sms.radius === '15px' && sms.ansTop === '0px', sms);
+  await p.setContent(page(chat, 'data-chat-style="LLM" data-comp-bg="336699" data-body-bg="fafad2" data-body-txt="112233" data-body-link="aa0000"')); await p.waitForTimeout(200);
+  await clickAnswer('Hi');
+  const llm = await styleOf();
+  check('chat style: LLM questions take the Body Colors', llm.opts.chatStyle === 'llm' && llm.qBg === 'rgb(250, 250, 210)' && llm.qTxt === 'rgb(17, 34, 51)' && llm.qLink === 'rgb(170, 0, 0)', llm);
+  check('chat style: LLM keeps the System Text values in the options', llm.opts.compBg === '336699', llm.opts.compBg);
+  check('chat style: LLM question has no bubble (8px top padding only) and no arrow', llm.pad === '8px 0px 0px' && llm.margin === '0px' && llm.radius === '0px' && llm.arrow === 'none', llm);
+  check('chat style: LLM answers sit 8px lower and stay bubbles', llm.ansTop === '8px' && llm.ansBg === 'rgb(238, 238, 238)', llm);
+  await p.setContent(page(chat + '\n\nSettings: chat_style=llm\n', 'data-chat-style="sms"')); await p.waitForTimeout(200);
+  check('chat style: set by the Settings tag, overridden by the attribute; junk means SMS', await p.evaluate(() => document.querySelector('.qna').qna.options.chatStyle === 'sms' && QnA.parse('Q: a\n\nSettings: chatStyle=llm').settings.chatStyle === 'llm' && QnA.normalizeOptions({ chatStyle: 'irc' }).chatStyle === 'sms'));
+
+  /* ---- button and footer link text ---- */
+  await p.setContent(page(chat, 'data-label-save="Send" data-label-back="&lt;b&gt;Back&lt;/b&gt;" data-label-restart="Again; 100%" data-label-credits="about" data-label-edit="remix" data-label_code="make one"')); await p.waitForTimeout(200);
+  await clickAnswer('Hi');
+  const lb = await p.evaluate(() => ({ save: document.querySelector('.xbutton').textContent, back: document.querySelector('.qna-back').innerHTML, restart: document.querySelector('.qna-restart').textContent, footer: document.querySelector('.qna-footer > p').textContent }));
+  check('labels: buttons and footer links use the given text', lb.save === 'Send' && lb.restart === 'Again; 100%' && lb.footer === 'about | remix | make one', lb);
+  check('labels: text is escaped, not HTML', lb.back === '&lt;b&gt;Back&lt;/b&gt;', lb.back);
+  await p.click('.qna-back'); await p.waitForTimeout(300);
+  check('labels: renamed buttons still work', (await bubbles()).length === 1, await bubbles());
+  const lt = await p.evaluate(() => { const tag = QnA.settingsTag({ labelRestart: 'Again; 100% = done', labelBack: '   ' }); const back = QnA.splitSettings('Q: a\n\n' + tag).settings; return { tag, restart: back.labelRestart, n: QnA.normalizeOptions(back) }; });
+  check('labels: round-trip through the Settings tag (";" and "%" escaped); blank means the default', /labelRestart=Again%3B 100%25 = done;/.test(lt.tag) && lt.restart === 'Again; 100% = done' && lt.n.labelRestart === 'Again; 100% = done' && lt.n.labelBack === 'GO BACK ONE' && lt.n.labelSave === 'Save above text as answer.', lt);
+  await p.setContent(page(chat + '\n\nSettings: label_back=Previous; labelCode=build one\n')); await p.waitForTimeout(200);
+  await clickAnswer('Hi');
+  check('labels: set by the Settings tag', await p.evaluate(() => document.querySelector('.qna-back').textContent === 'Previous' && /build one$/.test(document.querySelector('.qna-footer > p').textContent)));
+
+  /* ---- X[javascript:...] ---- */
+  const xjs = pos => 'Q(name): What is your name?\n' + (pos === 'left' ? 'X[javascript:\n\t// after the variable is saved\n\twindow.got = (window.got || [\\]).concat(document.getElementById("name").value + "|" + JSON.parse(json_str()).name);\n\twindow.arr = [1, 2\\];\n]:' : 'X:[javascript:window.got = (window.got || [\\]).concat(document.getElementById("name").value)]') + '\n\tQ(pet): Hi <x>name</x>. Your pet?\n\tX:\n\t\tQ: Bye';
+  dialogs = [];
+  await p.setContent(page(xjs('left')));
+  await p.click('.xbutton'); await p.waitForTimeout(200);
+  check('x script: not run when the empty field is refused', dialogs.length === 1 && (await p.evaluate(() => window.got)) === undefined, dialogs);
+  dialogs = [];
+  await p.fill('input.xinput', 'Ada'); await p.press('input.xinput', 'Enter'); await p.waitForTimeout(500);
+  check('x script: runs on Enter, after the variable is updated (multi-line, comment dropped, \\] unescaped)', JSON.stringify(await p.evaluate(() => [window.got, window.arr])) === '[["Ada|Ada"],[1,2]]', await p.evaluate(() => [window.got, window.arr]));
+  check('x script: the conversation carries on', (await bubbles()).join('|') === 'B:What is your name?|U:Ada|B:Hi Ada. Your pet?', await bubbles());
+  await p.fill('input.xinput', 'Rex'); await p.click('.xbutton'); await p.waitForTimeout(500);
+  check('x script: an X without a bracket runs nothing', (await p.evaluate(() => window.got.length)) === 1);
+  await p.click('.qna-back'); await p.waitForTimeout(300); await p.click('.qna-back'); await p.waitForTimeout(300);
+  check('x script: not run again by GO BACK redraws', (await p.evaluate(() => window.got.length)) === 1);
+  await p.fill('input.xinput', 'Bob'); await p.click('.xbutton'); await p.waitForTimeout(500);
+  check('x script: runs on the button, with the new value', JSON.stringify(await p.evaluate(() => window.got)) === '["Ada|Ada","Bob|Bob"]', await p.evaluate(() => window.got));
+  await p.evaluate(() => { delete window.got; });
+  await p.setContent(page(xjs('right')));
+  await p.fill('input.xinput', 'Cy'); await p.press('input.xinput', 'Enter'); await p.waitForTimeout(500);
+  check('x script: X:[javascript:] behaves the same (no new window, same run)', JSON.stringify(await p.evaluate(() => window.got)) === '["Cy"]' && ctx.pages().length === 1, await p.evaluate(() => window.got));
+  const xe = await p.evaluate(() => { const e = m => QnA.parse('Q(n): Name?\n' + m + '\n\tQ: Bye').errors.map(x => x.line + ':' + x.message.replace(/<[^>]+>/g, '')); const ok = m => { const r = QnA.parse('Q(n): Name?\n' + m + '\n\tQ: Bye'); return r.ok && r.answers[0].isVar && r.answers[0].script; };
+    return { empty: e('X[]:'), emptyR: e('X:[]'), noPrefix: e('X[alert(1)]:'), noPrefixR: e('X:[http://example.com]'), two: e('X[javascript:a()][javascript:b()]:'), space: e('X: [javascript:a()]'), left: ok('X[javascript:a()]:'), right: ok('X:[JavaScript:a()]'), bare: ok('X[javascript:]:'), plain: QnA.parse('Q(n): Name?\nX:\n\tQ: Bye').answers[0].script, code: QnA.parse('Q(n): Name?\nX[javascript:a()]:\n\tQ: Bye').code }; });
+  check('x script: [] and brackets without javascript: are errors, either side of the colon', [xe.empty, xe.emptyR].every(a => a.length === 1 && /^2:.*These are empty/.test(a[0])) && [xe.noPrefix, xe.noPrefixR].every(a => a.length === 1 && /^2:.*prefix is missing/.test(a[0])), xe);
+  check('x script: two brackets, or a space before the bracket, are errors', xe.two.length === 1 && /single/.test(xe.two[0]) && xe.space.length === 1 && /no space/.test(xe.space[0]), xe);
+  check('x script: parsed on either side; kept in the code; plain X unchanged', xe.left === 'a()' && xe.right === 'a()' && xe.bare === '' && xe.plain === '' && /\nX\[javascript:a\(\)\]:\n/.test(xe.code), xe);
+
   check('no page errors', errors.length === 0, errors);
   await browser.close();
   console.log(failed ? `\n${failed} failure(s)` : '\nAll runtime tests passed.');

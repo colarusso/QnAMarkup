@@ -14,3 +14,5 @@ A: Sure.
 			Q(1.1.2.2): My apologies. Let me just say, thermonuclear war is the wrong answer. <br><br><img src ="https://i.giphy.com/uSHMDTUL7lKso.gif"> GOTO:1
 A: Not right now. 
 	Q(1.2): <img src="https://jasoneppink.com/wp-content/gallery/the-reaction-gif-moving-image-as-gesture/david-tennant-in-the-rain.gif"> <br><br> Please... :( GOTO:1
+
+Settings: fontFamily=Verdana, Geneva, sans-serif; fontSize=14; lineHeight=20; colWidth=500; framePad=15; radius=15; compBg=5489eb; compTxt=ffffff; compLink=e3fbfc; usrBg=eeeeee; usrTxt=000000; usrLink=0000ff; bodyBg=ffffff; bodyTxt=000000; bodyLink=0000ff; chatStyle=sms; labelSave=Save above text as answer.; labelBack=GO BACK ONE; labelRestart=START OVER; labelCredits=credits; labelEdit=edit; labelCode=code your own; footer=true; saveProgress=false; start=1

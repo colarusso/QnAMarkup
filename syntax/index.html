@@ -4,7 +4,14 @@
 <meta charset="utf-8">
 <title>QnA Markup — Syntax &amp; Usage</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="apple-touch-icon" href="images/QnA_300.png"/>
 <link rel="icon" href="../favicon.ico">
+
+<meta property="og:title" content="QnA Markup: Syntax and Usage">
+<meta property="og:type" content="website">
+<meta property="og:image" content="images/QnA_300.png">
+<meta property="og:description" content="An open source tool for turning structured text into an interactive set of questions and answers. Designed for people with no programming experience, it can be used to build expert systems and perform rules-based document construction.">
+
 <!--
   Static documentation page. It shares the editor's look (header, fonts, colours) but uses no
   JavaScript: every link is written out in full. Cross-site links go to the rendering domain,
@@ -104,14 +111,14 @@
   <h1><a href="../"><img src="../images/QnA_300.png" alt=""> QnA Markup <sup>Syntax &amp; Usage</sup></a></h1>
   <nav>
     <a href="../">Editor</a>
-    <a href="./" class="current">Syntax</a>
+    <a href="./" class="current">Syntax (How-To)</a>
     <a href="https://www.youtube.com/watch?v=RVhzQ1JVi3s" target="_blank" rel="noopener">Video Primer</a>
     <a href="https://github.com/colarusso/QnAMarkup" target="_blank" rel="noopener">GitHub</a>
   </nav>
 </header>
 
 <main>
-<h1>Syntax &amp; Usage</h1>
+<h1>Syntax &amp; Usage (How-To Guide)</h1>
 
 <div class="aside">
 <img class="better" src="https://www.davidcolarusso.com/flowcharts/images/better.jpg" alt="Flowchart from the quick start guide">
@@ -120,11 +127,14 @@
 </div>
 
 <p>
-QnA is a <a href="https://en.wikipedia.org/wiki/Markup_language" target="_blank">markup language</a> for people with little or no programming experience. It was designed with attorneys in mind and transforms blocks of text into interactive question and answer sessions (QnAs). These QnAs can be used as stand-alone <a href="https://en.wikipedia.org/wiki/Expert_system" target="_blank">expert systems</a> or in the aid of rule-based document construction. See <a href="#santa">example below</a>. Plus, they can be <a href="https://www.qnamarkup.net/i/#z=rVRfa9xGEP8qU_WhLkSS7UIK8p3NQWgc6jQ1djEpgjInza3Gtzur7o5OEaXfvazuznWS-q0PAu1qdvb3b_RX5jBshz6rsntWSxXcdWgtjAS9xQkQDDq6quUNxSZwr-ylghVEdL0luJUVtOS8RA2oLAa0Ixgigd8AuTW1LbXgqGUEtF4MjKzdXFRnbz_cf6gzaLxzKG0BNyzbCOohIh8PNSiwJtj4QVpgAe04Qh_8IzX6XZzv3xN4Bdg0FCOvLcF6go71CU-dUctaZ2BZtkUttdyenH3_ItVVBXdDoFSotydnRSpdsDMQQ7Oss061j1VZPmL0Qn2fejbelWOfN16UREuD1lKYSu0oD4RNUi03vMmd37GYnB0ayjHmhqIOgcotBcdaGN7U2eViHebn2o-Aaz_oAVrStOkoxquELKFMqkQw3rcFvAPrd7QvmKEfwM_wP_ohgPM7KuDYfcGbkJp-Tmocx-JPwb2mhQ-mVHK9RaVYzq3LOoPYBG8ti1nWmfi0Qegsxbiss-Nr2tXJ0rLO_I7Cxvqx6rhtSS5GbrWrzl-f9p8uOmLT6WGx9qGlUEH0lls47T_Bt0R0kSQp92gvD8z_lUY7Cs7L0FjCACOGq-fcz__bOi7YmSHMtj2M_ermp9-_0P6-I_BiJxhxSpEcWYAjiNe0Snn5Bq5xRzD5AbDRAa2dIBIJLBC6QJtn15EUI2-5T4meNU2r8gHDW3SUlFIMhnT5x9qibC8fMMD8ZVHi5YHOqoKPdPT1id1L0UwuHnNneBNnoqE8Pz37oTx9Xb7LWy-ar8ky7Sif_PAF-xtKw6VhAjTIUkAa1ersCcov_iskSen3E2DvrTdMsYAbUnAEj0NUiDi9-tqqpGiazzGkPwNKHCk8D-ieF3xmnOG-m2Y-w931-zf3v938aH-O_kDgCegMUiGkdIH4sYDjNL8Qif9zmlvccZsriaBozpLPJ5OQB5RHivCrJYxUFAVUJwfs2d__AA" target="_blank">fun</a>, and the entire project is <a href="http://en.wikipedia.org/wiki/Open_source" target="_blank">open source</a>.
+QnA is a <a href="https://en.wikipedia.org/wiki/Markup_language" target="_blank">markup language</a> for people with little or no programming experience. It was designed with attorneys in mind and transforms blocks of text into interactive question and answer sessions (QnAs). These QnAs can be used as stand-alone <a href="https://en.wikipedia.org/wiki/Expert_system" target="_blank">expert systems</a> or in the aid of rule-based document construction. See <a href="#santa">example below</a>. Plus, they can be <a href="https://www.qnamarkup.net/i/#z=rVRfa9xGEP8qU_WhLkSS7UIK8p3NQWgc6jQ1djEpgjInza3Gtzur7o5OEaXfvazuznWS-q0PAu1qdvb3b_RX5jBshz6rsntWSxXcdWgtjAS9xQkQDDq6quUNxSZwr-ylghVEdL0luJUVtOS8RA2oLAa0Ixgigd8AuTW1LbXgqGUEtF4MjKzdXFRnbz_cf6gzaLxzKG0BNyzbCOohIh8PNSiwJtj4QVpgAe04Qh_8IzX6XZzv3xN4Bdg0FCOvLcF6go71CU-dUctaZ2BZtkUttdyenH3_ItVVBXdDoFSotydnRSpdsDMQQ7Oss061j1VZPmL0Qn2fejbelWOfN16UREuD1lKYSu0oD4RNUi03vMmd37GYnB0ayjHmhqIOgcotBcdaGN7U2eViHebn2o-Aaz_oAVrStOkoxquELKFMqkQw3rcFvAPrd7QvmKEfwM_wP_ohgPM7KuDYfcGbkJp-Tmocx-JPwb2mhQ-mVHK9RaVYzq3LOoPYBG8ti1nWmfi0Qegsxbiss-Nr2tXJ0rLO_I7Cxvqx6rhtSS5GbrWrzl-f9p8uOmLT6WGx9qGlUEH0lls47T_Bt0R0kSQp92gvD8z_lUY7Cs7L0FjCACOGq-fcz__bOi7YmSHMtj2M_ermp9-_0P6-I_BiJxhxSpEcWYAjiNe0Snn5Bq5xRzD5AbDRAa2dIBIJLBC6QJtn15EUI2-5T4meNU2r8gHDW3SUlFIMhnT5x9qibC8fMMD8ZVHi5YHOqoKPdPT1id1L0UwuHnNneBNnoqE8Pz37oTx9Xb7LWy-ar8ky7Sif_PAF-xtKw6VhAjTIUkAa1ersCcov_iskSen3E2DvrTdMsYAbUnAEj0NUiDi9-tqqpGiazzGkPwNKHCk8D-ieF3xmnOG-m2Y-w931-zf3v938aH-O_kDgCegMUiGkdIH4sYDjNL8Qif9zmlvccZsriaBozpLPJ5OQB5RHivCrJYxUFAVUJwfs2d__AA" target="_blank">fun</a>, the entire project is <a href="http://en.wikipedia.org/wiki/Open_source" target="_blank">open source</a>, and as a bonus, ever QnA can be turned into a flowchart. 
 </p><p>
 Authors define behavior by placing text after one of ten tags<sup><a href="#settings" style="text-decoration-line: none;">&dagger;</a></sup> described below. On this page, you'll find everything you need to write your own QnA. Assuming an average reading speed of 180 words per minute, this entire page should only take about 20 minutes to read. Of course, you should probably <a href="../">open the QnA editor</a> and play around as you read. So it might take an hour before you're an expert. ;)  
 </p><p>
 If you're pressed for time, start with the <a href="#body">Body</a> section. That's where all the exciting stuff happens, and you can build a very respectable QnA with body tags alone. Alternatively, you could try our <a href="QnA_Quick_Start.pdf" target=_blank>quick start guide</a>.
+</p>
+<p>
+	<i>If you're looking for some help structuring your thoughts, this video lesson on <a href="https://www.youtube.com/watch?v=m0n_m3NNSX8" target="_blank">Thinking in Flowcharts</a> has a lot of good practicle advice you can put to use building QnAs.</i>
 </p>
 <h3>Sections</h3>
 <ul>
@@ -245,7 +255,7 @@ The <em>Body</em> is where you define questions and answers along with the text 
 			<p>
 				Note: the replacement of <code>&lt;x&gt;<font color=red><em>variable_name</em></font>&lt;/x&gt;</code> with user values includes text inside <code>DOC:</code> tags (<a href="#doc">described below</a>). 
 			</p>
-			<p>In addition to the replacement example above, user answers are stored in the document itself. So if you use the <code>submit2()</code> function (<a href="#submit2()">described below</a>) these variables will be passed along. Also, you can get at these values using Javascript's innerHTML property: <a href="http://www.w3schools.com/jsref/prop_html_innerhtml.asp" target="_blank">document.getElementById("variable_name").innerHTML</a>.</p>
+			<p>In addition to the replacement example above, user answers are stored in the interview itself. So if you use the <code>submit2()</code> function (<a href="#submit2()">described below</a>) these variables will be passed along. Also, you can get at these values using Javascript's innerHTML property: <a href="http://www.w3schools.com/jsref/prop_html_innerhtml.asp" target="_blank">document.getElementById("variable_name").innerHTML</a>.</p>
 			
 			
 			<p>
@@ -293,8 +303,18 @@ The <em>Body</em> is where you define questions and answers along with the text 
 	<p>
 		<b>Advanced Usage:</b>
 	</p>
-	<p>When the <code>X</code> tag is used, as with the <code>A</code> tag, in addition to the replacement described above, user answers are stored in the document itself. So if you use the <code>submit2()</code> function (<a href="#submit2()">described below</a>) user variables will be passed along. Also, you can get at these values using Javascript's innerHTML property: <a href="http://www.w3schools.com/jsref/prop_html_innerhtml.asp" target="_blank">document.getElementById("variable_name").innerHTML</a>.</p>
+	<p>When the <code>X</code> tag is used, as with the <code>A</code> tag, in addition to the replacement described above, user answers are stored in the interview itself. So if you use the <code>submit2()</code> function (<a href="#submit2()">described below</a>) user variables will be passed along. Also, you can get at these values using Javascript's innerHTML property: <a href="http://www.w3schools.com/jsref/prop_html_innerhtml.asp" target="_blank">document.getElementById("variable_name").innerHTML</a>.</p>
 	
+	<p>
+		<a name="xjs" href="#xjs" class="anchor"></a>
+		<b>Running JavaScript</b>
+	</p>
+	<p>Like an <code>A</code> tag, an <code>X</code> tag can be written with brackets, but here they do one job only: they hold JavaScript to run once the user has submitted their text. There is no button link to fill, so the contents must start with the <code>javascript:</code> prefix, e.g., <code>X<font color=purple>[<font color=red>javascript:alert('Got it!');</font>]</font>:</code>. The code runs <em>after</em> the user's text has been saved as the question's variable, so it can read the new value (and any earlier ones) and act on it. It runs whether the user presses Enter or clicks the button under the field, and it does not run if the field was left empty (the user is asked to type something instead).</p>
+	<p>The brackets may fall before or after the colon, <code>X<font color=purple>[<font color=red>javascript:</font>]</font>:</code> or <code>X:<font color=purple>[<font color=red>javascript:</font>]</font></code>; unlike the <code>A</code> tag, it makes no difference which. Keep the bracket right against the colon, with no space between them. Empty brackets (<code>X<font color=purple>[]</font>:</code>), or brackets whose contents lack the <code>javascript:</code> prefix, are reported as errors, as is more than one set of brackets.</p>
+	<p>As with <code>A</code> tags, the bracket may run over several lines: each line is trimmed, <code>//</code> comments are removed, and a literal <code>]</code> is written <code>\]</code>. In the QnA below, once a name is typed it is read back from the document and placed in the page's title.</p>
+<div class="code"><pre><span class="ln">Q<font color=purple>(<font color=red>name</font>)</font>: <font color=black>What is your name?</font></span><span class="ln">X<font color=purple>[</font><font color=red>javascript:</font></span><span class="ln"><font color=red>	// "name" now holds what was typed</font></span><span class="ln"><font color=red>	var n = document.getElementById("name").value;</font></span><span class="ln"><font color=red>	document.title = "A QnA for " + n;</font></span><span class="ln"><font color=purple>]:</font></span><span class="ln">	Q: <font color=black>Nice to meet you </font>&lt;x&gt;<font color=red>name</font>&lt;/x&gt;<font color=black>.</font></span></pre></div>
+	<p>The code is only run when the user answers. It is not run again when the conversation is redrawn, for example after <em>GO BACK ONE</em> or when saved progress is restored. It has the same reach as a script in an <code>A</code> tag: the predefined functions (<a href="#scripts">described below</a>) and anything defined by a script in your <code>Before:</code> tag can be called from it.</p>
+
 	<h2><code>DOC: <font color=black><em>text/html</em></font></code><a name="doc" href="#doc" class="anchor"></a></h2>
 	
 		<p>You associate a <code>DOC:</code> tag with a <code>Q:</code> tag by placing it in line with and directly before the <code>Q:</code> tag. When a <code>Q</code> tag is displayed to a user, the content of its associated <code>DOC:</code> tag is added to a QnA document variable. </p>
@@ -439,12 +459,12 @@ If you have a text file containing QnA Markup at a URL, you can pass that URL to
 <h2>Embedding a QnA in Your Own Page<a name="embedding" href="#embedding" class="anchor"></a></h2>
 <p>The interpreter is a single JavaScript file served from <code>www.qnamarkup.org</code> (or host it yourself). Put your markup in a <code>&lt;script type="text/qna"&gt;</code> tag and it renders in place:</p>
 <pre><span class="ln">&lt;script src="https://www.qnamarkup.org/dist/2.1.0/qna.min.js"&gt;&lt;/script&gt;</span><span class="ln">&lt;script type="text/qna"&gt;</span><span class="ln">Q: Would you like to embed a QnA?</span><span class="ln">A: Yes.</span><span class="ln">	Q: Then you already have.</span><span class="ln">&lt;/script&gt;</span></pre>
-<p>The markup goes in a <code>script</code> tag with type <code>text/qna</code> because the browser leaves the contents of such a tag exactly as written (tabs, HTML and all). Style options go on the same tag as <code>data-</code> attributes, e.g. <code>data-comp-bg="336699" data-font-size="16" data-footer="false"</code>; the option names match the editor's Settings tab. <code>data-save-progress="true"</code> remembers a visitor's answers in their browser so they can leave and come back (off by default). Use <code>data-target="#some-id"</code> to render somewhere other than right after the script tag. The one sequence that cannot appear inside a script tag is a closing <code>&lt;/script&gt;</code>; write it as <code>&lt;\/script&gt;</code> if you ever need it. However, the editor will take care of this for you, escaping the closing script before providing you with code.</p>
+<p>The markup goes in a <code>script</code> tag with type <code>text/qna</code> because the browser leaves the contents of such a tag exactly as written (tabs, HTML and all). Style options go on the same tag as <code>data-</code> attributes, e.g. <code>data-comp-bg="336699" data-font-size="16" data-footer="false"</code>; the option names match the editor's Settings tab. <code>data-chat-style="llm"</code> shows questions as plain text on the page, like a chat assistant's replies, instead of in speech bubbles, and the text of the built-in buttons and footer links can be changed with <code>data-label-save</code>, <code>data-label-back</code>, <code>data-label-restart</code>, <code>data-label-credits</code>, <code>data-label-edit</code> and <code>data-label-code</code> (e.g. <code>data-label-back="Previous"</code>). <code>data-save-progress="true"</code> remembers a visitor's answers in their browser so they can leave and come back (off by default). Use <code>data-target="#some-id"</code> to render somewhere other than right after the script tag. The one sequence that cannot appear inside a script tag is a closing <code>&lt;/script&gt;</code>; write it as <code>&lt;\/script&gt;</code> if you ever need it. However, the editor will take care of this for you, escaping the closing script before providing you with code.</p>
 <p>The editor's <em>Embed Code</em> output writes a version-pinned URL together with an <code>integrity</code> hash, so your page keeps loading exactly the library it was written against no matter what is released later. Copy that rather than typing the tag by hand.</p>
 <center><a href="#top" class="top">↑ Back to top</a></center>
 
 <h2><sup>&dagger;</sup>The Hidden Tag<a name="settings" href="#settings" class="anchor"></a>: <code>Settings: <font color=black><em>name=value; name=value; ...</em></font></code></h2>
-<p>Depending on how you count, there is an "eleventh" tag, which you should never need to write or even see. When you click <i><b>Save to File</b></i> under your QnA code, the editor adds a final line to the saved text file holding everything from its <i>Settings</i> screen (fonts, sizes, colors, footer, and so on), so your QnA's look is saved along with its words:</p>
+<p>Depending on how you count, there is an "eleventh" tag, which you should never need to write or even see. When you click <i><b>Save to File</b></i> under your QnA code, the editor adds a final line to the saved text file holding everything from its <i>Settings</i> screen (fonts, sizes, colors, chat style, button text, footer, and so on), so your QnA's look is saved along with its words:</p>
 <div class="code"><pre><span class="ln">Q<font color=purple>(<font color=red>1</font>)</font>: <font color=black>Do you like my colors?</font></span><span class="ln">A: <font color=black>Yes.</font></span><span class="ln">	Q<font color=purple>(<font color=red>1.1</font>)</font>: <font color=black>Thanks!</font></span><span class="ln">&#8203;</span><span class="ln">Settings: <font color=black>fontSize=18; compBg=336699; compTxt=ffffff; footer=false</font></span></pre></div>
 <p>When you <i>Load File</i>, the editor removes this line from the text and uses its values to fill in the <i>Settings</i> screen, which is why you never see it in the editor. The same happens if you paste a saved file into the editor and click <i><b>Update Outputs</b></i>.</p>
 <p>The tag only counts when it is the very last line of a QnA. It is never part of the conversation. If a QnA containing it is placed in a web page or loaded from a remote file, its values style that QnA, but anything set explicitly wins: a <code>data-</code> attribute on the <code>&lt;script type="text/qna"&gt;</code> tag (see <a href="#embedding">above</a>) overrides the same setting in the tag. Names match those attributes without the <code>data-</code> prefix (<code>data-font-size</code> becomes <code>fontSize</code>, or <code>font_size</code> if you prefer); only the options found on the <i>Settings</i> screen are recognized, and anything else is ignored.</p>

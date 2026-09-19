@@ -16,6 +16,9 @@ iframe sandboxed without `allow-same-origin` (`preview.html`), so a QnA opened
 in the editor is isolated the same way. The origins are set once, at the top
 of `config.js`; everything else (share links, footer links, the library URL in
 embed code, the cross-links on the static pages) is derived from them.
+The same file holds the editor's header links and, under `defaults`, the starting
+values of its Settings screen (fonts, colours, chat style, button text, …) for
+a copy of the site that should open with a house style.
  
 ## Setting up a Mac
  

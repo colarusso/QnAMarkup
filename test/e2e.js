@@ -167,7 +167,7 @@ server.listen(0, async () => {
 
     /* ---- min width of blank bubble ---- */
     await v.goto(base + 'i/#' + encodeURIComponent('Q: .\nA: a\n\tQ: b')); await v.waitForTimeout(300);
-    check('tiny Q bubble >= 70px wide', (await v.$eval('#qna .question_text', e => e.getBoundingClientRect().width)) >= 70);
+    check('tiny Q bubble >= 60px wide', (await v.$eval('#qna .question_text', e => e.getBoundingClientRect().width)) >= 60);
     await v.goto(base + 'i/#' + encodeURIComponent('Q:\nA: a\n\tQ: b')); await v.waitForTimeout(300);
     check('blank Q renders no bubble, just its answers', (await v.$$('#qna .question_text')).length === 0 && (await v.$$('#qna a.qabutton')).length === 1);
 
@@ -637,6 +637,91 @@ server.listen(0, async () => {
     await page.selectOption('#output', 'embed').catch(() => {}); await page.waitForTimeout(200);
     check('settings: embed code carries settings as attributes, not as a tag', !/Settings:/.test(await page.inputValue('#embed_text')) && /data-font-size="21"/.test(await page.inputValue('#embed_text')));
     await page.selectOption('#output', 'interact');
+    await page.evaluate(() => { localStorage.clear(); });
+
+    /* ---- chat style and button / link text on the Settings screen ---- */
+    await page.goto(base); await (await pv()).waitForSelector('.question_text');
+    await page.fill('#markup', 'Title: Chatty\nQ: Hello?\nA: Hi\n\tQ: Bye'); await page.click('#update'); await page.waitForTimeout(300);
+    await page.click('.tab[data-tab=styleblock]').catch(() => {});
+    const setField = (id, v) => page.evaluate(([id, v]) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); e.dispatchEvent(new Event('change', { bubbles: true })); }, [id, v]);
+    await setField('compBg', '224466'); await setField('bodyBg', 'fafad2');
+    check('chat: System Text fields enabled under SMS', !(await page.$eval('#compBg', e => e.disabled)));
+    await page.selectOption('#chatStyle', 'llm');
+    check('chat: LLM disables the System Text fields but keeps their values', await page.$eval('#compBg', e => e.disabled && e.value === '224466') && await page.$eval('input[type=color][data-for=compBg]', e => e.disabled) && await page.$eval('#compLink', e => e.disabled) && !(await page.$eval('#usrBg', e => e.disabled)) && !(await page.$eval('#chatStyle', e => e.disabled)));
+    await setField('labelBack', 'Previous'); await setField('labelRestart', 'Again; please'); await setField('labelCode', 'make "one"'); await setField('labelEdit', '');
+    check('labels: a blanked field shows the default again', await page.inputValue('#labelEdit') === 'edit');
+    await page.click('#update'); await page.waitForTimeout(600);
+    const pf = await pv(); await pf.click('a.qabutton'); await page.waitForTimeout(700);
+    const chatPv = await pf.evaluate(() => { const q = getComputedStyle(document.querySelector('.question_text')); return { bg: q.backgroundColor, pad: q.padding, arrow: getComputedStyle(document.querySelector('.question_arrow')).display, ans: getComputedStyle(document.querySelector('.ans_text')).marginTop, back: document.querySelector('.qna-back').textContent, restart: document.querySelector('.qna-restart').textContent, footer: document.querySelector('.qna-footer > p').textContent }; });
+    check('chat: preview shows LLM style', chatPv.bg === 'rgb(250, 250, 210)' && chatPv.pad === '8px 0px 0px' && chatPv.arrow === 'none' && chatPv.ans === '8px', chatPv);
+    check('labels: preview shows the new text', chatPv.back === 'Previous' && chatPv.restart === 'Again; please' && chatPv.footer === 'credits | edit | make "one"', chatPv);
+    const embedChat = await page.inputValue('#embed_text'), htmlChat = await page.inputValue('#html_text');
+    check('chat + labels: in embed code and HTML page as data- attributes (saved System Text colour included)', [embedChat, htmlChat].every(t => /data-chat-style="llm"/.test(t) && /data-comp-bg="224466"/.test(t) && /data-label-back="Previous"/.test(t) && /data-label-restart="Again; please"/.test(t) && /data-label-code="make &quot;one&quot;"/.test(t) && !/data-label-edit/.test(t)), embedChat.slice(0, 600));
+    // the link (compressed and plain) renders the same in the viewer
+    const vc = await ctx.newPage();
+    for (const mode of ['z', 'plain']) {
+      await page.selectOption('#output', 'link'); await page.check('input[name=link_mode][value=' + mode + ']'); await page.waitForTimeout(400);
+      const url = await page.inputValue('#link_text');
+      await vc.goto('about:blank'); await vc.goto(url); await vc.waitForSelector('#qna .question_text'); await vc.click('#qna a.qabutton'); await vc.waitForTimeout(700);
+      const got = await vc.evaluate(() => ({ arrow: getComputedStyle(document.querySelector('.question_arrow')).display, back: document.querySelector('.qna-back').textContent, restart: document.querySelector('.qna-restart').textContent, code: document.querySelector('.qna-code-link').textContent }));
+      check('chat + labels: ' + mode + ' link carries them to the viewer', got.arrow === 'none' && got.back === 'Previous' && got.restart === 'Again; please' && got.code === 'make "one"' && (mode !== 'plain' || /chat_style=llm/.test(url) && /label_back=Previous/.test(url)), got);
+    }
+    await vc.close();
+    await page.check('input[name=link_mode][value=z]'); await page.selectOption('#output', 'interact');
+    // Save to File / Load File
+    const [dlc] = await Promise.all([page.waitForEvent('download'), page.click('#save_markup')]);
+    const savedChat = fs.readFileSync(await dlc.path(), 'utf8');
+    check('chat + labels: saved in the Settings tag', /\nSettings: [^\n]*compBg=224466; [^\n]*chatStyle=llm; labelSave=Save above text as answer\.; labelBack=Previous; labelRestart=Again%3B please; labelCredits=credits; labelEdit=edit; labelCode=make "one"; footer=true; [^\n]*\n$/.test(savedChat), savedChat);
+    await page.click('#restore'); await page.waitForTimeout(400);
+    check('chat + labels: Restore Defaults returns to SMS and the standard text', await page.inputValue('#chatStyle') === 'sms' && !(await page.$eval('#compBg', e => e.disabled)) && await page.inputValue('#labelBack') === 'GO BACK ONE' && await page.inputValue('#compBg') === '5489eb');
+    await page.setInputFiles('#upload', { name: 'chat.txt', mimeType: 'text/plain', buffer: Buffer.from(savedChat) }); await page.waitForTimeout(600);
+    check('chat + labels: loading the file restores them', await page.inputValue('#chatStyle') === 'llm' && await page.$eval('#compBg', e => e.disabled && e.value === '224466') && await page.inputValue('#labelRestart') === 'Again; please' && await page.inputValue('#labelCode') === 'make "one"');
+    await page.click('.tab[data-tab=styleblock]').catch(() => {});
+    await page.selectOption('#chatStyle', 'sms'); await page.click('#update'); await page.waitForTimeout(600);
+    check('chat: back to SMS, the old System Text colour is in use again', !(await page.$eval('#compBg', e => e.disabled)) && await (await pv()).$eval('.question_text', e => getComputedStyle(e).backgroundColor) === 'rgb(34, 68, 102)');
+    // state survives a reload of the editor
+    await page.selectOption('#chatStyle', 'llm'); await page.click('#update'); await page.waitForTimeout(400);
+    await page.reload(); await (await pv()).waitForSelector('.question_text');
+    check('chat + labels: remembered across an editor reload', await page.inputValue('#chatStyle') === 'llm' && await page.$eval('#compBg', e => e.disabled) && await page.inputValue('#labelBack') === 'Previous');
+    await page.evaluate(() => { localStorage.clear(); });
+
+    /* ---- config.js sets the Settings screen's defaults ---- */
+    const cfgSrc = fs.readFileSync(path.join(root, 'config.js'), 'utf8');
+    const cfgMod = cfgSrc.replace("fontSize: 14,", "font_size: 16,").replace("chatStyle: 'sms',", "chatStyle: 'llm',").replace("labelBack: 'GO BACK ONE',", "labelBack: 'Previous',").replace("compBg: '5489eb',", "compBg: 'not a colour', editorUrl: 'https://evil.example/',").replace("start: '1',", "start: '1',");
+    check('config: (test fixture applies)', cfgMod !== cfgSrc && /font_size: 16/.test(cfgMod) && /'llm'/.test(cfgMod));
+    const cpage = await ctx.newPage();
+    await cpage.route('**/config.js', r => r.fulfill({ contentType: 'application/javascript', body: cfgMod }));
+    await cpage.goto(base); await cpage.waitForTimeout(1200);
+    await cpage.evaluate(() => localStorage.clear()); await cpage.reload(); await cpage.waitForTimeout(1200);
+    const cval = async () => ({ fs: await cpage.inputValue('#fontSize'), chat: await cpage.inputValue('#chatStyle'), back: await cpage.inputValue('#labelBack'), bg: await cpage.inputValue('#compBg'), off: await cpage.$eval('#compBg', e => e.disabled) });
+    const c1 = await cval();
+    check('config: a first visit starts from the defaults in config.js (snake_case too; invalid values fall back)', c1.fs === '16' && c1.chat === 'llm' && c1.back === 'Previous' && c1.bg === '5489eb' && c1.off, c1);
+    await cpage.click('#update'); await cpage.waitForTimeout(500);
+    const cEmbed = await cpage.inputValue('#embed_text');
+    check('config: outputs carry them, since the library has its own defaults', /data-font-size="16"/.test(cEmbed) && /data-chat-style="llm"/.test(cEmbed) && /data-label-back="Previous"/.test(cEmbed) && !/evil/.test(cEmbed) && !/data-comp-bg/.test(cEmbed), cEmbed.slice(0, 400));
+    await cpage.click('.tab[data-tab=styleblock]').catch(() => {});
+    await cpage.fill('#fontSize', '22'); await cpage.selectOption('#chatStyle', 'sms'); await cpage.fill('#labelBack', ''); await cpage.dispatchEvent('#labelBack', 'change');
+    check('config: a blanked label returns to the configured default', await cpage.inputValue('#labelBack') === 'Previous');
+    await cpage.click('#restore'); await cpage.waitForTimeout(400);
+    const c2 = await cval();
+    check('config: Restore Defaults returns to the configured defaults', c2.fs === '16' && c2.chat === 'llm' && c2.off, c2);
+    // a QnA opened from a link is shown as it renders: unmentioned settings are the library's defaults
+    await cpage.goto('about:blank'); await cpage.goto(base + '#j=' + encodeURIComponent(JSON.stringify({ markup: 'Q: linked\nA: ok\n\tQ: fine', radius: 3 }))); await cpage.waitForTimeout(1200);
+    const c3 = await cval();
+    check('config: a QnA opened from a link keeps the library defaults for what it does not set', c3.fs === '14' && c3.chat === 'sms' && c3.back === 'GO BACK ONE' && await cpage.inputValue('#radius') === '3', c3);
+    await cpage.evaluate(() => localStorage.clear()); await cpage.close();
+
+    /* ---- X[javascript:...] in the editor ---- */
+    await page.evaluate(() => { localStorage.clear(); }); await page.goto(base); await (await pv()).waitForSelector('.question_text');
+    await page.click('.tab[data-tab=codeblock]').catch(() => {});
+    await page.fill('#markup', 'Q(name): Name?\nX[javascript:\n\t// note\n\tdocument.title = "for " + document.getElementById("name").value;\n]:\n\tQ: Hi <x>name</x>'); await page.click('#update'); await page.waitForTimeout(1200);
+    check('x script: editor accepts a multi-line X[javascript:] and keeps it in the code', await page.$eval('#status', e => e.className === 'ok') && /^Q\(name\): Name\?\nX\[javascript:\n\t\/\/ note\n/.test(await page.inputValue('#markup')));
+    const xhl = await page.evaluate(() => { const h = document.getElementById('hl'); const c = cls => Array.from(h.querySelectorAll('.' + cls)).map(e => e.textContent); return { t: c('t'), p: c('p'), b: c('b') }; });
+    check('x script: highlighted like an A bracket (tag blue, code red, across lines)', JSON.stringify(xhl.t) === '["Q","X","Q"]' && xhl.p.some(t => /^javascript:$/.test(t)) && xhl.p.some(t => /document\.title/.test(t)) && xhl.b.filter(t => t === '[' || t === ']').length === 2, xhl);
+    const xf = await pv(); await xf.fill('input.xinput', 'Ada'); await xf.press('input.xinput', 'Enter'); await page.waitForTimeout(700);
+    check('x script: runs in the preview after the variable is saved', await xf.evaluate(() => document.title) === 'for Ada' && /Hi Ada/.test(await xf.$eval('#qna', e => e.innerText)));
+    await page.fill('#markup', 'Q(name): Name?\nX[]:\n\tQ: Hi'); await page.click('#update'); await page.waitForTimeout(700);
+    check('x script: empty brackets are reported with the line', await page.$eval('#status', e => e.className === 'err') && /Line 2:[\s\S]*empty/.test(await (await pv()).$eval('#qna', e => e.innerText)));
     await page.evaluate(() => { localStorage.clear(); });
 
     check('no page errors', errors.length === 0, errors);

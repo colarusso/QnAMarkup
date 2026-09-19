@@ -26,3 +26,5 @@ A[javascript:submit2('https://www.qnamarkup.net/doc/', 'GET', 't', 'Your working
 	Q(2.1): Goodbye.
 A: Not right now.
 	Q(2.2): Well, good luck.
+
+Settings: fontFamily=Verdana, Geneva, sans-serif; fontSize=14; lineHeight=20; colWidth=500; framePad=15; radius=15; compBg=5489eb; compTxt=ffffff; compLink=e3fbfc; usrBg=eeeeee; usrTxt=000000; usrLink=0000ff; bodyBg=ffffff; bodyTxt=000000; bodyLink=0000ff; chatStyle=sms; labelSave=Save above text as answer.; labelBack=GO BACK ONE; labelRestart=START OVER; labelCredits=credits; labelEdit=edit; labelCode=code your own; footer=true; saveProgress=false; start=1

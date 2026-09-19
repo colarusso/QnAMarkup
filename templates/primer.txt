@@ -29,3 +29,5 @@ A: No.
 	Q(1.2): Okay then. GOTO:2
 
 Q(2): Have a nice day.
+
+Settings: fontFamily=Verdana, Geneva, sans-serif; fontSize=14; lineHeight=20; colWidth=500; framePad=15; radius=15; compBg=5489eb; compTxt=ffffff; compLink=e3fbfc; usrBg=eeeeee; usrTxt=000000; usrLink=0000ff; bodyBg=ffffff; bodyTxt=000000; bodyLink=0000ff; chatStyle=llm; labelSave=Save above text as answer.; labelBack=GO BACK ONE; labelRestart=START OVER; labelCredits=credits; labelEdit=edit; labelCode=code your own; footer=true; saveProgress=false; start=1

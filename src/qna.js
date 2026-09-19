@@ -47,6 +47,14 @@
     bodyBg: 'ffffff',       // page / QnA background
     bodyTxt: '000000',      // text outside the bubbles (Before/After content, footer; not the grey credits box)
     bodyLink: '0000ff',     // links outside the bubbles
+    chatStyle: 'sms',       // 'sms': questions and answers in speech bubbles; 'llm': questions as plain text on the body (see QnA.css)
+    // the text of the built-in buttons and footer links (plain text, not HTML)
+    labelSave: 'Save above text as answer.',
+    labelBack: 'GO BACK ONE',
+    labelRestart: 'START OVER',
+    labelCredits: 'credits',
+    labelEdit: 'edit',
+    labelCode: 'code your own',
     start: '1',
     footer: true,           // show credits / edit / code-your-own footer
     saveProgress: false,    // remember the user's answers in localStorage and resume on return
@@ -63,8 +71,11 @@
     col_width: 'colWidth', frame_pad: 'framePad', radius: 'radius',
     comp_bg: 'compBg', comp_txt: 'compTxt', comp_link: 'compLink',
     usr_bg: 'usrBg', usr_txt: 'usrTxt', usr_link: 'usrLink', body_bg: 'bodyBg', body_txt: 'bodyTxt', body_link: 'bodyLink', start: 'start',
-    save_progress: 'saveProgress', editor_url: 'editorUrl'
+    save_progress: 'saveProgress', editor_url: 'editorUrl', chat_style: 'chatStyle',
+    label_save: 'labelSave', label_back: 'labelBack', label_restart: 'labelRestart',
+    label_credits: 'labelCredits', label_edit: 'labelEdit', label_code: 'labelCode'
   };
+  var LABEL_KEYS = ['labelSave', 'labelBack', 'labelRestart', 'labelCredits', 'labelEdit', 'labelCode'];
  
   function normalizeOptions(opts) {
     var o = {}, k;
@@ -87,6 +98,12 @@
       var v = String(o[n]).replace(/^#/, '').toLowerCase();
       if (!/^[0-9a-f]{6}$/.test(v)) v = QnA.defaults[n];
       o[n] = v;
+    });
+    o.chatStyle = /^llm$/i.test(trim(o.chatStyle)) ? 'llm' : 'sms';
+    // labels are one line of plain text (escaped when drawn); a blank one falls back to the default
+    LABEL_KEYS.forEach(function (n) {
+      var v = trim(String(o[n]).replace(/\s+/g, ' ')).slice(0, 200);
+      o[n] = v === '' ? QnA.defaults[n] : v;
     });
     if (!o.start) o.start = '1';
     ['footer', 'saveProgress', 'animate', 'scroll', 'injectCss'].forEach(function (n) {
@@ -118,7 +135,8 @@
   // Non-header tags. Same expression as the original PHP implementation.
   // Non-header tags, with any mix of tabs and spaces as indentation.
   // A bracket ([href] or [javascript:…]) may span lines; write a literal ] inside it as \].
-  var TAG_RE = /(^|\n)[ \t]*((Q(\((.*)\))?|X|DOC\(?(\d?)(.\s*\d+)*\)?):|A((\(.*\))|)((\[(?:[^\]\\]|\\[\s\S])*\])+:|:(\[(?:[^\]\\]|\\[\s\S])*\])?))/g;
+  // An X tag may carry one too, X[javascript:…]: or X:[javascript:…] (checked in the tag walk below).
+  var TAG_RE = /(^|\n)[ \t]*((Q(\((.*)\))?|DOC\(?(\d?)(.\s*\d+)*\)?):|(A((\(.*\))|)|X)((\[(?:[^\]\\]|\\[\s\S])*\])+:|:(\[(?:[^\]\\]|\\[\s\S])*\])?))/g;
  
   /**
    * Nesting level of each tag from its indentation. Tabs and spaces both work
@@ -186,9 +204,10 @@
    * the last non-blank line. Its values style the QnA unless the same option is given explicitly (a data-
    * attribute on the script tag, or an option passed to QnA.render), which always wins. Only the options
    * on the Settings screen can be set this way, and each goes through the usual validation.
+   * Pairs are separated by semicolons, so in a label's text ";" is written %3B (and "%" %25).
    */
   var SETTINGS_KEYS = ['fontFamily', 'fontSize', 'lineHeight', 'colWidth', 'framePad', 'radius', 'compBg', 'compTxt', 'compLink',
-    'usrBg', 'usrTxt', 'usrLink', 'bodyBg', 'bodyTxt', 'bodyLink', 'footer', 'saveProgress', 'start'];
+    'usrBg', 'usrTxt', 'usrLink', 'bodyBg', 'bodyTxt', 'bodyLink', 'chatStyle'].concat(LABEL_KEYS, ['footer', 'saveProgress', 'start']);
   var SETTINGS_RE = /(^|\n)[ \t]*Settings:([^\n]*)\s*$/i;
 
   /** Split markup into { markup (without the tag), settings (object, or null when there is no tag) }. */
@@ -202,6 +221,7 @@
       if (i < 0) return;
       var k = trim(pair.slice(0, i)), v = trim(pair.slice(i + 1));
       k = LEGACY_KEYS[k] || k;
+      if (LABEL_KEYS.indexOf(k) >= 0) v = trim(v.replace(/%([0-9a-fA-F]{2})/g, function (all, hex) { return String.fromCharCode(parseInt(hex, 16)); }));
       if (SETTINGS_KEYS.indexOf(k) >= 0 && v !== '') settings[k] = v;
     });
     // the markup keeps the line break that ended its last real line (when it had one)
@@ -212,7 +232,11 @@
   /** The Settings: line for `options`: every option on the Settings screen, in a fixed order. */
   QnA.settingsTag = function (options) {
     var o = normalizeOptions(options);
-    return 'Settings: ' + SETTINGS_KEYS.map(function (k) { return k + '=' + o[k]; }).join('; ');
+    return 'Settings: ' + SETTINGS_KEYS.map(function (k) {
+      var v = String(o[k]);
+      if (LABEL_KEYS.indexOf(k) >= 0) v = v.replace(/[%;]/g, function (c) { return c === '%' ? '%25' : '%3B'; });
+      return k + '=' + v;
+    }).join('; ');
   };
 
   /**
@@ -224,7 +248,7 @@
    *   code      {string}    markup with computed ids (Q(1.1):) filled in
    *   header    {object}    {title, author, description, before, after}
    *   questions {Array}     [{label, name, text, doc, goto, display}]
-   *   answers   {Array}     [{label, parent, text, href, target, value, isVar}]
+   *   answers   {Array}     [{label, parent, text, href, target, value, isVar, script (X tags only)}]
    *   names     {Array}     [[label, name], ...]  (QVnames in the original)
    *   settings  {object}    values from a trailing hidden Settings: tag, or null (the tag is not in code/markup)
    */
@@ -264,7 +288,7 @@
           while (j < n && nl[j]) { lb += '.' + nl[j]; j++; }
           computedLabels[lb] = true;
           ln = n;
-        } else if (/^X:/.test(tb) || !/^DOC/.test(tb)) {
+        } else if (!/^DOC/.test(tb)) {   // A and X
           nl[n] = (nl[n] || 0) + 1;
           ln = n;
         }
@@ -344,7 +368,7 @@
       }
       var kind;
       if (/^Q/.test(tagBody)) kind = 'Q';
-      else if (/^X:/.test(tagBody)) kind = 'X';
+      else if (/^X[:\[]/.test(tagBody)) kind = 'X';
       else if (/^DOC/.test(tagBody)) kind = 'DOC';
       else kind = 'A';
       var outValue = value;
@@ -433,7 +457,9 @@
           errors.add('Misaligned X.', nearText(value, body));
         }
         body = body.replace(/\s+$/, '');       // trailing whitespace is dropped from the code
-        if (!/^\s*$/.test(body)) {
+        if (/^[ \t]+\[\s*javascript:/i.test(body)) {
+          errors.add('To run JavaScript from an X tag, put the bracket right against the colon, with no space between them: <code>X:[javascript:…]</code> or <code>X[javascript:…]:</code>.', nearText(value, body));
+        } else if (!/^\s*$/.test(body)) {
           body = body.replace(/\s/g, '');
           errors.add('Starting in September 2016, the space after an X (variable) tag must be left blank. Variable names are now pulled from the parent question\'s target_id. That is, the number or letters in parentheses between the "Q" and ":". For example: <p><code>Q(<em style="color:red">target_id</em>):</code></p><p>See <a href="https://www.qnamarkup.org/syntax/#x" target="_blank">Documentation</a>.', nearText(value, body));
         }
@@ -441,7 +467,24 @@
         if (xCount[xparent] > 1) {
           errors.add('Limit one variable per answer set.', nearText(value, body));
         }
-        answers.push({ label: xlabel, parent: xparent, text: '<variable>', href: "javascript:void('');", target: '', value: '', isVar: true });
+        // X[javascript:…]: or X:[javascript:…] (the side of the colon makes no difference): code to run once
+        // the visitor's text has been saved to the question's variable. There is no href to fill here, so the
+        // bracket can hold nothing else: an empty one, or one without the javascript: prefix, is an error.
+        var xscript = '';
+        var xb = tagBody.match(/\[(?:[^\]\\]|\\[\s\S])*\]/g);
+        if (xb) {
+          var xcode = unescapeHref(xb[0].slice(1, -1));
+          if (xb.length > 1) {
+            errors.add('An X tag takes a single <code>[javascript:…]</code>.', nearText(value, body));
+          } else if (!/^javascript:/i.test(xcode)) {
+            errors.add('Square brackets on an X tag must hold JavaScript, written <code>X[javascript:…]:</code> or <code>X:[javascript:…]</code>. ' +
+              (trim(xcode) === '' ? 'These are empty.' : 'The <code>javascript:</code> prefix is missing.') +
+              ' The code runs after the visitor\'s text is saved to the question\'s variable. See <a href="https://www.qnamarkup.org/syntax/#x" target="_blank">Documentation</a>.', nearText(value, body));
+          } else {
+            xscript = xcode.replace(/^javascript:/i, '');
+          }
+        }
+        answers.push({ label: xlabel, parent: xparent, text: '<variable>', href: "javascript:void('');", target: '', value: '', isVar: true, script: xscript });
         lastnest = nested; lastvalue = value; lastWasQ = false;
  
       } else if (kind === 'DOC') {
@@ -525,6 +568,13 @@
     var font = 'font-family:' + o.fontFamily + ';font-size:' + o.fontSize + 'px;line-height:' + lh + 'px;';
     var pad = 'padding:' + (lh * 0.5) + 'px ' + (lh * 0.75) + 'px ' + (lh * 0.70) + 'px ' + (lh * 0.75) + 'px;';
     var bpad = 'padding:' + (lh * 0.5) + 'px 0 ' + (lh * 0.6) + 'px 0;';
+    // Chat style. 'sms' draws questions and answers as speech bubbles. 'llm' sets the questions straight on
+    // the body, as a chat assistant's replies are: they take the Body Colors (the System Text colours are
+    // kept in the options but not used), lose their bubble (no padding but 8px on top, no margin, no radius)
+    // and their arrow; answers stay bubbles, set 8px further down.
+    var llm = o.chatStyle === 'llm';
+    var qBg = llm ? o.bodyBg : o.compBg, qTxt = llm ? o.bodyTxt : o.compTxt, qLink = llm ? o.bodyLink : o.compLink;
+    var qBox = llm ? 'border-radius:0;padding:8px 0 0 0;margin:0;' : 'border-radius:' + r + 'px;' + pad + 'margin-right:' + (r + 30) + 'px;';
     return [
       scope ? '' : 'script[type="text/qna"],#rawmarkup{display:none;}',
       '' + S + '.qna-conversation,' + S + '#QandA{display:flow-root;}',
@@ -536,10 +586,10 @@
       '' + S + '#QandA img{max-width:100%;}',
       '' + S + 'div.frame{float:left;width:100%;margin:5px 0 5px 0;}',
       '' + S + 'div.full{float:left;width:100%;}',
-      '' + S + 'div.question_text{float:left;' + font + 'color:#' + o.compTxt + ';min-width:' + Math.max(70, r + 15) + 'px;background:#' + o.compBg + ';border-radius:' + r + 'px;' + pad + 'margin-right:' + (r + 30) + 'px;}',
-      '' + S + 'div.question_text a:link,' + S + 'div.question_text a:hover,' + S + 'div.question_text a:active,' + S + 'div.question_text a:visited{color:#' + o.compLink + ';}',
-      '' + S + 'div.question_arrow{float:left;width:0;height:0;border-left:5px solid transparent;border-right:10px solid transparent;border-top:15px solid #' + o.compBg + ';margin:0 ' + (r + 5) + 'px;}',
-      '' + S + 'div.ans_text{float:right;' + font + 'color:#' + o.usrTxt + ';min-width:' + (r + 15) + 'px;background:#' + o.usrBg + ';border-radius:' + r + 'px;' + pad + 'margin-left:' + (r + 30) + 'px;}',
+      '' + S + 'div.question_text{float:left;' + font + 'color:#' + qTxt + ';min-width:30px;background:#' + qBg + ';' + qBox + '}',
+      '' + S + 'div.question_text a:link,' + S + 'div.question_text a:hover,' + S + 'div.question_text a:active,' + S + 'div.question_text a:visited{color:#' + qLink + ';}',
+      '' + S + 'div.question_arrow{' + (llm ? 'display:none;' : '') + 'float:left;width:0;height:0;border-left:5px solid transparent;border-right:10px solid transparent;border-top:15px solid #' + qBg + ';margin:0 ' + (r + 5) + 'px;}',
+      '' + S + 'div.ans_text{float:right;' + font + 'color:#' + o.usrTxt + ';min-width:' + (r + 15) + 'px;background:#' + o.usrBg + ';border-radius:' + r + 'px;' + pad + 'margin-left:' + (r + 30) + 'px;' + (llm ? 'margin-top:8px;' : '') + '}',
       '' + S + 'div.ans_text a:link,' + S + 'div.ans_text a:hover,' + S + 'div.ans_text a:active,' + S + 'div.ans_text a:visited{color:#' + o.usrLink + ';}',
       '' + S + 'div.ans_arrow{float:right;width:0;height:0;border-left:10px solid transparent;border-right:5px solid transparent;border-top:15px solid #' + o.usrBg + ';margin:0 ' + (r + 5) + 'px;}',
       '' + S + 'div.choices{float:left;width:100%;margin:15px 0 0 0;}',
@@ -560,7 +610,7 @@
       '' + S + 'a.xbutton{float:left;width:100%;text-align:left;' + font + 'background:#eee;border-radius:8px;' + bpad + 'color:#000;text-decoration:none;cursor:pointer;}',
       '' + S + 'a.xbutton:hover,' + S + 'a.xbutton:active{border-top-left-radius:0;border-top-right-radius:0;background:#ddd;}',
       '' + S + '.qna-jump{float:left;width:100%;height:1px;}',
-      '' + S + '.qna-pending{float:left;width:100%;position:relative;min-height:' + Math.round(lh * 2.2 + 25) + 'px;}',
+      '' + S + '.qna-pending{float:left;width:100%;position:relative;min-height:' + (llm ? lh + 18 : Math.round(lh * 2.2 + 25)) + 'px;}',
       '' + S + '.qna-pending .qna-typing{position:absolute;top:0;left:0;width:100%;margin:5px 0 0 0;}',
       '' + S + '.qna-pending-body{float:left;width:100%;visibility:hidden;}',
       '' + S + '.qna-pending-body.qna-revealed{visibility:visible;animation:qna-fadein .15s ease-in;}',
@@ -788,9 +838,9 @@
       html += '</div></div>';
     }
     html += '<p>';
-    if (hasCredits) html += '<a href="javascript:void(\'\');" class="qna-credits-link">credits</a> | ';
-    html += '<a href="' + escapeHtml(this.options.editorUrl) + '" class="qna-edit-link" target="_top">edit</a> | ';
-    html += '<a href="' + escapeHtml(this.options.editorUrl) + '" target="_top">code your own</a></p>';
+    if (hasCredits) html += '<a href="javascript:void(\'\');" class="qna-credits-link">' + escapeHtml(this.options.labelCredits) + '</a> | ';
+    html += '<a href="' + escapeHtml(this.options.editorUrl) + '" class="qna-edit-link" target="_top">' + escapeHtml(this.options.labelEdit) + '</a> | ';
+    html += '<a href="' + escapeHtml(this.options.editorUrl) + '" class="qna-code-link" target="_top">' + escapeHtml(this.options.labelCode) + '</a></p>';
     this.footer.innerHTML = html;
     var cl = this.footer.querySelector('.qna-credits-link');
     if (cl) cl.addEventListener('click', function () {
@@ -799,8 +849,9 @@
     });
     var edit = this.footer.querySelector('.qna-edit-link');
     var payload = { markup: this.result.markup };
-    ['fontFamily', 'fontSize', 'lineHeight', 'colWidth', 'framePad', 'radius', 'compBg', 'compTxt', 'compLink', 'usrBg', 'usrTxt', 'usrLink', 'bodyBg', 'bodyTxt', 'bodyLink', 'saveProgress', 'start'].forEach(function (k) {
-      if (self.options[k] !== QnA.defaults[k]) payload[k] = self.options[k];
+    // every Settings-screen option that differs from the default goes along (the footer is showing, so not that one)
+    SETTINGS_KEYS.forEach(function (k) {
+      if (k !== 'footer' && self.options[k] !== QnA.defaults[k]) payload[k] = self.options[k];
     });
     QnA.encodeHash(payload).then(function (hash) {
       edit.href = self.options.editorUrl + '#' + hash;
@@ -914,8 +965,10 @@
     list.forEach(function (a) {
       if (a.isVar) {
         xId = 'Xi-' + a.label;
-        html += '<div class="xdiv"><input type="text" id="' + xId + '" name="' + xId + '" class="xinput" data-answer="' + a.label + '" autocomplete="off"/>' +
-          '<a href="javascript:void(\'\');" class="xbutton" data-answer="' + a.label + '"><span class="qpad">Save above text as answer.</span></a></div>';
+        // an X tag's [javascript:…] goes on both the field (Enter) and the button
+        var xs = a.script ? ' data-script="' + escapeHtml(a.script) + '"' : '';
+        html += '<div class="xdiv"><input type="text" id="' + xId + '" name="' + xId + '" class="xinput" data-answer="' + a.label + '"' + xs + ' autocomplete="off"/>' +
+          '<a href="javascript:void(\'\');" class="xbutton" data-answer="' + a.label + '"' + xs + '><span class="qpad">' + escapeHtml(self.options.labelSave) + '</span></a></div>';
       } else {
         var txt = a.text.replace(/(<br\s*\/?>){2}/gi, '<br> <br>');
         var href = a.href, script = '';
@@ -930,24 +983,27 @@
     });
     if (this.history.length > 0 || this.qnum > 1) {
       html += '<div class="standard_buttons">' +
-        '<a href="javascript:void(\'\');" class="sbutton qna-back">GO BACK ONE</a>' +
-        '<a href="javascript:void(\'\');" class="sbutton qna-restart" style="float:right">START OVER</a></div>';
+        '<a href="javascript:void(\'\');" class="sbutton qna-back">' + escapeHtml(this.options.labelBack) + '</a>' +
+        '<a href="javascript:void(\'\');" class="sbutton qna-restart" style="float:right">' + escapeHtml(this.options.labelRestart) + '</a></div>';
     }
     this.choices.innerHTML = html;
  
     var els = this.choices.querySelectorAll('[data-answer]');
     for (var i = 0; i < els.length; i++) {
       (function (el) {
+        // The answer is taken first, then its script runs: for an X tag that means the variable already
+        // holds the new text (and nothing runs when an empty field was refused).
+        var choose = function () {
+          if (!self.answer(el.getAttribute('data-answer'))) return;
+          var s = el.getAttribute('data-script');
+          if (s) { try { (0, eval)(s); } catch (err) { if (root.console) console.error('QnA: error in answer script:', err); } }
+        };
         if (el.tagName === 'INPUT') {
           el.addEventListener('keydown', function (e) {
-            if (e.keyCode === 13 || e.key === 'Enter') { e.preventDefault(); self.answer(el.getAttribute('data-answer')); }
+            if (e.keyCode === 13 || e.key === 'Enter') { e.preventDefault(); choose(); }
           });
         } else {
-          el.addEventListener('click', function () {
-            self.answer(el.getAttribute('data-answer'));
-            var s = el.getAttribute('data-script');
-            if (s) { try { (0, eval)(s); } catch (err) { if (root.console) console.error('QnA: error in answer script:', err); } }
-          });
+          el.addEventListener('click', choose);
         }
       })(els[i]);
     }
@@ -1191,7 +1247,7 @@
   Instance.prototype.answer = function (label) {
     QnA.current = this;
     var a = this.answerByLabel[label];
-    if (!a) return;
+    if (!a) return false;
     var entry = { label: label, value: null };
     if (a.isVar) {
       var input = root.document.getElementById('Xi-' + label);
@@ -1199,7 +1255,7 @@
       if (v === '') {
         alert('Your answer appears to be empty.');
         if (input) input.focus();
-        return;
+        return false;
       }
       entry.value = v.replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
@@ -1209,6 +1265,7 @@
     this.choices.innerHTML = '';
     if (this.options.animate) this.presentSoon(label, 300);
     else this.presentQuestion(label, false);
+    return true;
   };
  
   /**

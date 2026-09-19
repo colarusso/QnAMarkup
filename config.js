@@ -27,10 +27,56 @@
 
     // Navigation links shown in the editor header.
     nav: [
-      { label: 'Syntax', href: 'syntax/'},
+      { label: 'Syntax (How-To)', href: 'syntax/'},
       { label: 'Video Primer', href: 'https://youtu.be/RVhzQ1JVi3s', blank: true},
       { label: 'GitHub', href: 'https://github.com/colarusso/QnAMarkup', blank: true }
     ],
+
+    // Default values for the editor's Settings screen: what a first-time visitor starts with and what
+    // "Restore Defaults" returns to. Names are those of the data- attributes without the prefix
+    // (camelCase, or snake_case if you prefer). Colours are six hex digits; chatStyle is 'sms' or 'llm'.
+    // The values below are the library's own defaults, so as shipped nothing changes; a line that is
+    // removed, or a value that is not valid, falls back to the library's default.
+    //
+    // These are the EDITOR's defaults only. The library (dist/qna.min.js) keeps its own, so a value
+    // changed here is written into everything the editor produces (embed code, HTML page, link, saved
+    // file), exactly as if the author had set it by hand. A QnA opened from a link or a file is shown
+    // as it renders: a setting it does not mention takes the library's default, not the one given here.
+    defaults: {
+      // Body Text
+      fontFamily: 'Verdana, Geneva, sans-serif',   // one not in the editor's list is added to it
+      fontSize: 14,
+      lineHeight: 20,
+      // Body Colors
+      bodyBg: 'ffffff',
+      bodyTxt: '000000',
+      bodyLink: '0000ff',
+      // Framing
+      colWidth: 500,
+      framePad: 15,
+      radius: 15,
+      // System Text (questions)
+      chatStyle: 'sms',
+      compBg: '5489eb',
+      compTxt: 'ffffff',
+      compLink: 'e3fbfc',
+      // User Text (answers)
+      usrBg: 'eeeeee',
+      usrTxt: '000000',
+      usrLink: '0000ff',
+      // Button Text
+      labelSave: 'Save above text as answer.',
+      labelBack: 'GO BACK ONE',
+      labelRestart: 'START OVER',
+      // Footer Link Text
+      labelCredits: 'credits',
+      labelEdit: 'edit',
+      labelCode: 'code your own',
+      // Behavior
+      footer: true,
+      start: '1',
+      saveProgress: false
+    },
 
     // "report bug/issue" link (empty to hide).
     bugs: 'https://github.com/colarusso/QnAMarkup/issues',
@@ -81,6 +127,7 @@
     isLocal: isLocal,
     isViewerOrigin: !isLocal ? (loc.origin === SETTINGS.viewerOrigin) : (viewer !== editor && loc.origin + '/' === viewer),
     nav: SETTINGS.nav,
+    defaults: SETTINGS.defaults || {},   // editor Settings-screen defaults (validated by the editor)
     bugs: SETTINGS.bugs,
     ckeditorLicenseKey: SETTINGS.ckeditorLicenseKey,
     settings: SETTINGS

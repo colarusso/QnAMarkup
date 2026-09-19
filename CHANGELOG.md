@@ -6,6 +6,92 @@ plus `js/interactive.js` at github.com/colarusso/QnAMarkup). Everything below
 is measured against that version; the markup language itself is unchanged,
 and QnAs written for the old editor run as they did before.
 
+## 2.1.0 — chat styles and editable button text
+
+Changes since 2.0.0. The library is published at `dist/2.1.0/`; `dist/2.0.0/`
+is untouched, so pages that pin it (with its integrity hash) keep working.
+With the default settings a QnA looks and reads exactly as it did in 2.0.0.
+
+### Settings
+
+* **Chat style: SMS or LLM** (`chatStyle`, `data-chat-style`, default `sms`),
+  a dropdown at the top of *System Text (questions)*. SMS is the look QnAs
+  have always had: questions and answers in speech bubbles. LLM sets the
+  questions straight on the page, the way a chat assistant's replies appear:
+  * `question_text` takes its background, text and link colours from *Body
+    Colors* instead of *System Text*;
+  * `question_arrow` is not displayed (`display:none`);
+  * `question_text` has no padding, margin or border radius, apart from 8px of
+    padding on top;
+  * `ans_text` gets a top margin of 8px. Answers stay bubbles.
+
+  The System Text colours are ignored, not lost: the editor greys out and
+  disables those three fields while LLM is selected, keeps their values, saves
+  them to file and writes them into every output, so switching back to SMS
+  (in the editor, or by changing `data-chat-style` on an embed) brings the old
+  colours back. The flowchart goes on using them for its question boxes.
+  The three-dot typing indicator follows the chat style.
+* **The built-in button and link text can be changed.** Two new groups on the
+  Settings screen, *Button Text* and *Footer Link Text*, hold the wording of
+  "Save above text as answer." (`labelSave`), "GO BACK ONE" (`labelBack`),
+  "START OVER" (`labelRestart`), "credits" (`labelCredits`), "edit"
+  (`labelEdit`) and "code your own" (`labelCode`), for translation or a
+  different voice. They are plain text (HTML is shown as typed, not
+  interpreted), one line, up to 200 characters; a field left blank returns to
+  the standard wording.
+* Like every other setting, these travel with the QnA: in the hidden
+  `Settings:` tag written by *Save to File* and read by *Load File*, as
+  `data-` attributes on the script tag in the Embed Code and HTML full page
+  outputs (`data-chat-style="llm" data-label-back="Previous"`), in both forms
+  of the Link output (`chat_style=` and `label_back=` etc. in the plain form),
+  in the footer's *edit* link, as options to `QnA.render()`, and in the
+  editor's remembered state. *Restore Defaults* resets them. Only non-default
+  values are written to the outputs.
+* In the `Settings:` tag, pairs are separated by semicolons, so a `;` in a
+  label is written `%3B` (and `%` as `%25`); the library reads them back.
+* The footer's third link has a class of its own, `qna-code-link`.
+
+### Site configuration
+
+* **`config.js` sets the defaults of the editor's Settings screen.** A new
+  `defaults: { … }` block lists every option on the screen (fonts, colours,
+  framing, chat style, button and link text, footer, start, save progress),
+  shipped with the library's own values so nothing changes until one is
+  edited. They are what a first-time visitor starts with, what *Restore
+  Defaults* returns to, and what a blanked button or link text field falls
+  back to. Names may be camelCase or snake_case; only Settings-screen options
+  are read, each through the library's validation, so a missing or invalid
+  value falls back to the library's default.
+* These are the editor's defaults, not the library's: `dist/qna.min.js` is
+  unchanged by them, so a configured value that differs from the library's is
+  written into every output (embed code, HTML page, link, saved file) just as
+  if the author had chosen it. For the same reason a QnA opened from a link
+  (including a footer's *edit* link) or from a file is shown as it renders: a
+  setting it does not mention takes the library's default, not the site's.
+
+### Language
+
+* **`X` tags can run JavaScript: `X[javascript:…]:` or `X:[javascript:…]`.**
+  The code runs after the visitor's text has been saved to the question's
+  variable, whether it was submitted with Enter or the button, so it can read
+  the new value; it does not run when an empty field is refused, nor when the
+  conversation is redrawn (GO BACK, restored progress). The bracket may sit on
+  either side of the colon with no difference in behaviour (there is no href,
+  so no same-window/new-window distinction), and may span several lines
+  exactly as an `A` tag's can (lines trimmed, `//` comments dropped, `\]` for
+  a literal `]`). The error checker requires the full form: empty brackets,
+  contents without the `javascript:` prefix, a second set of brackets, or a
+  space between the colon and the bracket are each reported with their line.
+  `parse()` gives the code as `script` on the X tag's entry in `answers`; the
+  editor highlights the bracket, multi-line included. Documented in the Syntax
+  page's `X:` section under *Running JavaScript*. Markup without brackets on
+  an `X` parses exactly as before.
+
+### Other
+
+* The minimum width of a question bubble is now 30px (it was 70px or more),
+  so a very short question gets a bubble that fits it.
+
 ## 2.0.0 — client-side edition
 
 ### Architecture

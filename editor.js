@@ -11,6 +11,8 @@
   var INTEGRITY = CONFIG.integrity || '';
   var STYLE_KEYS = ['fontFamily', 'fontSize', 'lineHeight', 'colWidth', 'framePad', 'radius', 'compBg', 'compTxt', 'compLink', 'usrBg', 'usrTxt', 'usrLink', 'bodyBg', 'bodyTxt', 'bodyLink'];
   var COLOR_KEYS = ['compBg', 'compTxt', 'compLink', 'usrBg', 'usrTxt', 'usrLink', 'bodyBg', 'bodyTxt', 'bodyLink'];
+  var COMP_KEYS = ['compBg', 'compTxt', 'compLink'];   // System Text colours: not used (so greyed out) when the chat style is LLM
+  var LABEL_KEYS = ['labelSave', 'labelBack', 'labelRestart', 'labelCredits', 'labelEdit', 'labelCode'];
   var LS_KEY = 'qna-editor-state';
   var libText = window.QNA_LIB_SOURCE || null;   // library source, for the "embed the library" option (dist/qna.inline.js)
   var lastResult = null;
@@ -30,12 +32,29 @@
   });
 
   /* ---------- style options ---------- */
+  var SETTINGS_KEYS = STYLE_KEYS.concat(['chatStyle'], LABEL_KEYS, ['footer', 'start', 'saveProgress']);
+  // The Settings screen's defaults: the library's, with anything config.js sets (defaults: {...}) on top.
+  // Only Settings-screen options count, and each goes through the library's validation. These are what a
+  // first visit and "Restore Defaults" show. Outputs are still compared with the LIBRARY's defaults
+  // (nonDefaultOptions), because that is what a page without the option gets.
+  var DEFAULTS = (function () {
+    var given = CONFIG.defaults || {}, picked = {};
+    Object.keys(given).forEach(function (k) {
+      var key = k.replace(/_([a-z])/g, function (all, c) { return c.toUpperCase(); });
+      if (SETTINGS_KEYS.indexOf(key) >= 0) picked[key] = given[k];
+    });
+    return QnA.normalizeOptions(picked);
+  })();
+  function editorDefaults() { var o = {}; SETTINGS_KEYS.forEach(function (k) { o[k] = DEFAULTS[k]; }); return o; }
+  $('start').placeholder = DEFAULTS.start;
   function getOptions() {
     var o = {};
-    STYLE_KEYS.forEach(function (k) { o[k] = $(k).value; });
+    STYLE_KEYS.forEach(function (k) { o[k] = $(k).value; });   // disabled (LLM) System Text fields still hold, and give, their values
+    o.chatStyle = $('chatStyle').value;
+    LABEL_KEYS.forEach(function (k) { o[k] = $(k).value.trim() || DEFAULTS[k]; });   // blank = the default text
     o.footer = $('footer').value === 'true';
     o.saveProgress = $('saveProgress').value === 'true';
-    o.start = $('start').value.trim() || '1';
+    o.start = $('start').value.trim() || DEFAULTS.start;
     return QnA.normalizeOptions(o);
   }
   function setOptions(o) {
@@ -50,13 +69,32 @@
       el.value = o[k];
     });
     COLOR_KEYS.forEach(function (k) { document.querySelector('input[type=color][data-for=' + k + ']').value = '#' + o[k]; });
+    $('chatStyle').value = o.chatStyle;
+    syncChatStyle();
+    LABEL_KEYS.forEach(function (k) { $(k).value = o[k]; });
     $('footer').value = String(o.footer !== false);
     $('saveProgress').value = String(o.saveProgress === true);
-    $('start').value = o.start === '1' ? '' : o.start;
+    $('start').value = o.start === DEFAULTS.start ? '' : o.start;
   }
+  // LLM chat style: the System Text colours are not used, so their fields are disabled. They keep their
+  // values (which are still saved and written to every output), ready for a switch back to SMS.
+  function syncChatStyle() {
+    var llm = $('chatStyle').value === 'llm';
+    COMP_KEYS.forEach(function (k) {
+      $(k).disabled = llm;
+      document.querySelector('input[type=color][data-for=' + k + ']').disabled = llm;
+      $(k).closest('label').classList.toggle('off', llm);
+    });
+  }
+  $('chatStyle').addEventListener('change', syncChatStyle);
+  LABEL_KEYS.forEach(function (k) {
+    $(k).addEventListener('input', function () { scheduleLive(); });
+    // a label left blank means the default, so show it
+    $(k).addEventListener('change', function () { if (!$(k).value.trim()) $(k).value = DEFAULTS[k]; });
+  });
   function nonDefaultOptions() {
     var o = getOptions(), out = {};
-    STYLE_KEYS.concat(['footer', 'start', 'saveProgress']).forEach(function (k) { if (String(o[k]) !== String(QnA.defaults[k])) out[k] = o[k]; });
+    SETTINGS_KEYS.forEach(function (k) { if (String(o[k]) !== String(QnA.defaults[k])) out[k] = o[k]; });
     return out;
   }
   // colour pickers <-> hex fields
@@ -68,7 +106,7 @@
       if (/^[0-9a-fA-F]{6}$/.test(v)) { pick.value = '#' + v; scheduleLive(); }
     });
   });
-  $('restore').addEventListener('click', function () { setOptions({}); update(); });
+  $('restore').addEventListener('click', function () { setOptions(editorDefaults()); update(); });
   $('clear_progress').addEventListener('click', function () {
     var n = 0;
     try { Object.keys(localStorage).filter(function (k) { return /^qna-progress-/.test(k); }).forEach(function (k) { localStorage.removeItem(k); n++; }); } catch (e) {}
@@ -159,7 +197,7 @@
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i], m;
       if (st.bracket) {
-        // inside a multi-line [ ... ] (e.g. javascript) that began on an earlier A tag line
+        // inside a multi-line [ ... ] (e.g. javascript) that began on an earlier A or X tag line
         var close = /^((?:[^\]\\]|\\.)*)\](:?)(?:(\[)((?:[^\]\\]|\\.)*)(\])?)?/.exec(line);
         if (close) {
           st.bracket = false;
@@ -180,9 +218,9 @@
         h += '<span class="b">:</span>';
         if (m[8] !== undefined) h += '<span class="b">[</span><span class="p">' + hlEsc(m[9]) + '</span><span class="b">]</span>';
         out.push(h + hlText(line.slice(m[0].length), st));
-      } else if (!st.comment && (m = /^([ \t]*)(A)(\(([^)]*)\))?(:?)(\[)((?:[^\]\\]|\\.)*)$/.exec(line))) {
-        // an A tag whose [ bracket ] continues on the next line(s)
-        var h2 = hlEsc(m[1]) + '<span class="t">A</span>';
+      } else if (!st.comment && (m = /^([ \t]*)(A|X)(\(([^)]*)\))?(:?)(\[)((?:[^\]\\]|\\.)*)$/.exec(line))) {
+        // an A (or X) tag whose [ bracket ] continues on the next line(s)
+        var h2 = hlEsc(m[1]) + '<span class="t">' + m[2] + '</span>';
         if (m[3] !== undefined) h2 += '<span class="b">(</span><span class="p">' + hlEsc(m[4]) + '</span><span class="b">)</span>';
         if (m[5]) h2 += '<span class="b">:</span>';
         out.push(h2 + '<span class="b">[</span><span class="p">' + hlEsc(m[7]) + '</span>');
@@ -442,7 +480,7 @@
       // Plain, human-readable form: the legacy query-string format the PHP editor used.
       var q = 'markup=' + encodeURIComponent(markup);
       Object.keys(opts).forEach(function (k) {
-        var legacy = { fontFamily: 'font_family', fontSize: 'font_size', lineHeight: 'line_height', colWidth: 'col_width', framePad: 'frame_pad', radius: 'radius', compBg: 'comp_bg', compTxt: 'comp_txt', compLink: 'comp_link', usrBg: 'usr_bg', usrTxt: 'usr_txt', usrLink: 'usr_link', bodyBg: 'body_bg', bodyTxt: 'body_txt', bodyLink: 'body_link', start: 'start' }[k];
+        var legacy = { fontFamily: 'font_family', fontSize: 'font_size', lineHeight: 'line_height', colWidth: 'col_width', framePad: 'frame_pad', radius: 'radius', compBg: 'comp_bg', compTxt: 'comp_txt', compLink: 'comp_link', usrBg: 'usr_bg', usrTxt: 'usr_txt', usrLink: 'usr_link', bodyBg: 'body_bg', bodyTxt: 'body_txt', bodyLink: 'body_link', start: 'start', chatStyle: 'chat_style', labelSave: 'label_save', labelBack: 'label_back', labelRestart: 'label_restart', labelCredits: 'label_credits', labelEdit: 'label_edit', labelCode: 'label_code' }[k];
         if (legacy) q += '&' + legacy + '=' + encodeURIComponent(opts[k]);
         else if (k === 'footer' && opts[k] === false) q += '&sharing=2';
         else if (k === 'saveProgress' && opts[k] === true) q += '&save_progress=1';
@@ -673,7 +711,7 @@
       setOptions(st.options);
     } else {
       ta.value = window.QNA_TEMPLATES.primer ? window.QNA_TEMPLATES.primer.text : '';
-      setOptions({});
+      setOptions(editorDefaults());
     }
     if (st) {
       $('wrap').checked = !!st.wrap; ta.classList.toggle('wrap', !!st.wrap); $('hl').classList.toggle('wrap', !!st.wrap);

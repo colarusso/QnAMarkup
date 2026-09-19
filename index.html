@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <title>QnA Markup Editor</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="apple-touch-icon" href="images/QnA_300.png"/>
 <meta property="og:title" content="QnA Markup Editor">
 <meta property="og:type" content="website">
 <meta property="og:image" content="images/QnA_300.png">
@@ -99,6 +100,11 @@
   .color input[type=color]::-webkit-color-swatch { border: 0; border-radius: 0; }
   .color input[type=color]::-moz-color-swatch { border: 0; border-radius: 0; }
   .color input[type=text] { width: 76px; font-family: var(--mono); }
+  fieldset.labels label { grid-template-columns: auto minmax(0, 1fr); }
+  fieldset.labels input[type=text] { width: 100%; min-width: 0; box-sizing: border-box; }
+  fieldset label.off { color: var(--muted); }
+  fieldset label.off .color { opacity: .45; }
+  fieldset input:disabled { cursor: not-allowed; }
 
   #status { color: var(--muted); font-size: 12px; }
   #status.err { color: #b3261e; }
@@ -210,7 +216,9 @@ A: Type an answer
           <label>Frame padding (px) <input type="number" id="framePad" min="0" max="200"></label>
           <label>Bubble radius (px) <input type="number" id="radius" min="0" max="100"></label>
         </fieldset>
-        <fieldset><legend>System Text (questions)</legend>
+        <fieldset id="system_text"><legend>System Text (questions)</legend>
+          <label title="SMS: questions and answers are speech bubbles. LLM: questions are plain text on the page, like a chat assistant's replies, using the Body Colors; the colors below are kept but not used.">Chat style
+            <select id="chatStyle"><option value="sms">SMS</option><option value="llm">LLM</option></select></label>
           <label>Background <span class="color"><input type="color" data-for="compBg"><input type="text" id="compBg" maxlength="6"></span></label>
           <label>Text <span class="color"><input type="color" data-for="compTxt"><input type="text" id="compTxt" maxlength="6"></span></label>
           <label>Links <span class="color"><input type="color" data-for="compLink"><input type="text" id="compLink" maxlength="6"></span></label>
@@ -219,6 +227,16 @@ A: Type an answer
           <label>Background <span class="color"><input type="color" data-for="usrBg"><input type="text" id="usrBg" maxlength="6"></span></label>
           <label>Text <span class="color"><input type="color" data-for="usrTxt"><input type="text" id="usrTxt" maxlength="6"></span></label>
           <label>Links <span class="color"><input type="color" data-for="usrLink"><input type="text" id="usrLink" maxlength="6"></span></label>
+        </fieldset>
+        <fieldset class="labels"><legend>Button Text</legend>
+          <label>Text input <input type="text" id="labelSave" maxlength="200"></label>
+          <label>Go back <input type="text" id="labelBack" maxlength="200"></label>
+          <label>Start over <input type="text" id="labelRestart" maxlength="200"></label>
+        </fieldset>
+        <fieldset class="labels"><legend>Footer Link Text</legend>
+          <label>Credits <input type="text" id="labelCredits" maxlength="200"></label>
+          <label>Edit <input type="text" id="labelEdit" maxlength="200"></label>
+          <label>Code your own <input type="text" id="labelCode" maxlength="200"></label>
         </fieldset>
         <fieldset><legend>Behavior</legend>
           <label>Footer (credits / edit / "code your own")
