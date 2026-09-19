@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Document Editor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../favicon.ico">
+<link rel="stylesheet" type="text/css" href="../css/generic.css">
+<style>
+  body { margin: 0; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 15px 15px 40px; }
+  .bar a { margin-right: 14px; }
+  #instr { background: #ddffdd; padding: 15px; margin: 10px 0; }
+  #inputfile { display: none; }
+  .footer { margin: 30px 0 0; padding: 15px 3px; border-top: solid 1px #aaa; }
+  #fallback { display: none; background: #fff3b0; padding: 12px 15px; margin: 10px 0; }
+</style>
+<script src="../config.js"></script>
+<script src="../site.js"></script>
+<!--
+  CKEditor 4. Version 4.22.1 is the last release under the open-source (GPL) licence;
+  newer 4.x releases ("4.2x-lts") are covered by CKEditor's commercial Extended Support
+  licence and need a licence key. To use one, change the URL below and set
+  ckeditorLicenseKey in config.js.
+-->
+<script src="https://cdn.ckeditor.com/4.22.1/full/ckeditor.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <form onsubmit="return false;">
+    <p class="bar">
+      <span style="float:right;"><a href="javascript:void('');" id="maximize_link">maximize editor</a></span>
+      <input id="inputfile" type="file" accept=".html,.htm,.txt">
+      <a href="javascript:void('');" id="clear_link">clear</a>
+      <a href="javascript:void('');" id="upload_link">load file</a>
+      <a href="javascript:void('');" id="save_link">save as</a>
+      <a href="javascript:void('');" id="print_link">print</a>
+    </p>
+    <div id="instr"></div>
+    <div id="fallback">The rich-text editor could not be loaded (no connection to cdn.ckeditor.com?). You can still edit the document as plain HTML below.</div>
+    <p><textarea name="t" id="t" rows="20" style="width:100%"></textarea></p>
+    <p>
+      If you'd like to save your work and come back later, use the <em>save as</em> link to save this document to your computer.
+      When you're ready to work on it again, come back to this page and load your file. You should also be able to edit the saved
+      file in most word processors, such as MS Word, though you may lose some formatting.
+    </p>
+    <p>This page provides a WYSIWYG editor for use in conjunction with <a href="https://www.qnamarkup.org/syntax/#docs">QnA-assisted document construction</a>.
+      Send a document here from a QnA with <code>submit2('…/doc/', 'GET', 't', 'instructions')</code>. Everything happens in your browser; nothing is uploaded.</p>
+  </form>
+  <div class="footer"><a id="editor_link" href="../">QnA Editor</a></div>
+</div>
+<script>
+(function () {
+  var CONFIG = window.QNA_CONFIG || {};
+  if (CONFIG.editorUrl) document.getElementById('editor_link').href = CONFIG.editorUrl;
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* --- incoming document: ?t=...&i=... (GET) or the same in the #hash --- */
+  var q = new URLSearchParams(location.search);
+  var hq = location.hash.length > 1 ? new URLSearchParams(location.hash.slice(1)) : null;
+  var t = q.get('t') || (hq && hq.get('t')) || '';
+  var i = q.get('i') || (hq && hq.get('i')) || '';
+  $('t').value = t;
+  if (i) { $('instr').innerHTML = i; } else { $('instr').style.display = 'none'; }
+  // keep the document out of the address bar / history once it has been read
+  if (t || i) { try { history.replaceState(null, '', location.pathname); } catch (e) {} }
+
+  var editor = null;
+  function getData() { return editor ? editor.getData() : $('t').value; }
+  function setData(html) { if (editor) editor.setData(html, { callback: function () { editor.resetDirty(); } }); else $('t').value = html; }
+
+  if (window.CKEDITOR) {
+    CKEDITOR.config.versionCheck = false;   // no "upgrade" notice; the version is pinned deliberately (see the comment in <head>)
+    if (CONFIG.ckeditorLicenseKey) CKEDITOR.config.licenseKey = CONFIG.ckeditorLicenseKey;
+    // CKEditor normally builds its editing area by scripting a blank child iframe, which needs same-origin
+    // access to it. Inside a frame sandboxed without allow-same-origin (the QnA editor's preview pane is
+    // one) this page has an opaque origin and that access is refused: depending on the browser the editing
+    // area stays empty and the document is lost, or the blank iframe resolves to this page's own address
+    // and loads a second copy of it (an editor inside the editor). The "divarea" plugin edits in a plain
+    // div instead, so it is used there. It is not part of the "full" build; it comes from "full-all".
+    var opaque = String(window.origin) === 'null';
+    if (opaque) CKEDITOR.plugins.addExternal('divarea', 'https://cdn.ckeditor.com/4.22.1/full-all/plugins/divarea/', 'plugin.js');
+    editor = CKEDITOR.replace('t', {
+      height: 420,
+      extraPlugins: opaque ? 'divarea' : '',
+      // See https://ckeditor.com/docs/ckeditor4/latest/examples/toolbar.html
+      toolbar: [
+        { name: 'document', groups: ['mode', 'document', 'doctools'], items: ['Source', '-', 'Preview', 'Print'] },
+        { name: 'clipboard', groups: ['clipboard', 'undo'], items: ['Cut', 'Copy', 'Paste', 'PasteText', 'PasteFromWord', '-', 'Undo', 'Redo'] },
+        { name: 'editing', groups: ['find', 'selection', 'spellchecker'], items: ['Find', 'Replace', '-', 'SelectAll', '-', 'Scayt'] },
+        { name: 'insert', items: ['Image', 'Table', 'HorizontalRule', 'SpecialChar', 'PageBreak'] },
+        { name: 'tools', items: ['Maximize'] },
+        { name: 'about', items: ['About'] },
+        '/',
+        { name: 'basicstyles', groups: ['basicstyles', 'cleanup'], items: ['Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript', '-', 'RemoveFormat'] },
+        { name: 'paragraph', groups: ['list', 'indent', 'blocks', 'align', 'bidi'], items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'Blockquote', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock', '-', 'BidiLtr', 'BidiRtl'] },
+        { name: 'links', items: ['Link', 'Unlink', 'Anchor', '-', 'ShowBlocks'] },
+        '/',
+        { name: 'styles', items: ['Styles', 'Format', 'Font', 'FontSize'] },
+        { name: 'colors', items: ['TextColor', 'BGColor'] }
+      ],
+      removePlugins: 'elementspath',
+      allowedContent: true,
+      removeButtons: ''
+    });
+    editor.on('instanceReady', function () { editor.resetDirty(); });
+  } else {
+    $('fallback').style.display = 'block';
+  }
+
+  $('maximize_link').onclick = function () { if (editor) editor.execCommand('maximize'); };
+  $('clear_link').onclick = function () { if (confirm('Clear the document?')) setData(''); };
+  $('print_link').onclick = function () { if (editor) editor.execCommand('print'); else window.print(); };
+  $('upload_link').onclick = function () { $('inputfile').click(); };
+  $('inputfile').addEventListener('change', function () {
+    var f = this.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      var s = String(r.result), m = s.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+      setData(m ? m[1] : s);
+    };
+    r.readAsText(f);
+    this.value = '';
+  });
+  $('save_link').onclick = function () {
+    var d = new Date(), z = function (n) { return (n < 10 ? '0' : '') + n; };
+    var name = 'QnA_document_' + d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + 'T' + z(d.getHours()) + '-' + z(d.getMinutes()) + '.html';
+    var html = '<!DOCTYPE html>\n<html><head><meta charset="utf-8"><title>QnA document</title></head><body>\n' + getData() + '\n</body></html>';
+    var blob = new Blob([html], { type: 'text/html' }), a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+    if (editor) editor.resetDirty();
+  };
+  window.addEventListener('beforeunload', function (evt) {
+    if (editor && editor.checkDirty()) { evt.preventDefault(); evt.returnValue = 'If you have not saved your most-recent changes, they will be lost.'; return evt.returnValue; }
+  });
+})();
+</script>
+</body>
+</html>

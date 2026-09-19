@@ -1,0 +1,5 @@
+Q: Is the wind blowing north by northwest?
+A: Yes.
+	Q: No. Yet there is method in it.
+A: No.
+	Q: Yes.

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>QnA</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta property="og:type" content="website">
+<meta property="og:image" content="../images/QnA_300.png">
+<link rel="icon" href="../favicon.ico">
+<link rel="apple-touch-icon" href="../images/QnA_300.png">
+<style>
+  body { margin: 0; background: #fff; font-family: Verdana, Geneva, sans-serif; }
+  #qna { min-height: 100px; }
+  .qna-msg { max-width: 500px; margin: 40px auto; padding: 0 15px; font-size: 14px; line-height: 20px; color: #333; }
+  .qna-msg code { background: #eee; padding: 2px 5px; }
+</style>
+<script src="../config.js"></script>
+<script src="../dist/qna.min.js" data-auto="false"></script>
+</head>
+<body class="qna-page">
+<div id="qna"></div>
+<script>
+(function () {
+  var CONFIG = window.QNA_CONFIG || {};
+  var EDITOR = CONFIG.editorUrl || new URL('../', location.href).href;
+  var el = document.getElementById('qna');
+
+  function message(html) { el.innerHTML = '<div class="qna-msg">' + html + '</div>'; }
+
+  function show(payload) {
+    if (!payload || payload.markup === undefined) {
+      message('<p>Nothing to show. This page displays a QnA whose markup is passed in the link.</p>' +
+        '<p>Write one in the <a href="' + EDITOR + '">QnA Markup editor</a> and use its <em>Link</em> output, or load a text file with ' +
+        '<code>?source=https://example.com/my_qna.txt</code>.</p>');
+      return;
+    }
+    var opts = Object.assign({}, payload, { editorUrl: EDITOR });
+    delete opts.markup;
+    var inst = QnA.render(el, payload.markup, opts);
+    if (inst) {
+      var h = inst.result.header;
+      if (h.titleText) document.title = h.titleText;
+      var m = document.createElement('meta'); m.setAttribute('property', 'og:title'); m.content = h.titleText || 'QnA'; document.head.appendChild(m);
+      if (h.descriptionText) { var d = document.createElement('meta'); d.setAttribute('property', 'og:description'); d.content = h.descriptionText; document.head.appendChild(d); }
+      var img = (payload.markup.match(/<img[^>]+src=["']([^"']+)["']/i) || [])[1];
+      if (img) { var i = document.createElement('meta'); i.setAttribute('property', 'og:image'); i.content = img; document.head.appendChild(i); }
+    }
+  }
+
+  function load() {
+    var q = new URLSearchParams(location.search);
+    var src = q.get('source');
+    // Legacy-style options may accompany ?source= (e.g. &sharing=2 or &font_size=16)
+    var extra = {};
+    q.forEach(function (v, k) { if (k !== 'source' && k !== 'markup') extra[k] = v; });
+    if (extra.sharing === '2') { extra.footer = false; } delete extra.sharing;
+
+    if (src) {
+      if (!/^https?:\/\//i.test(src)) src = new URL(src, location.href).href;
+      fetch(src).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+        .then(function (text) { show(Object.assign({ markup: text }, extra)); })
+        .catch(function (e) { message('<p>Could not load <code>' + src.replace(/</g, '&lt;') + '</code>: ' + e.message + '.</p><p>The file must be reachable from the browser and served with CORS headers (GitHub Pages, for example, does this).</p>'); });
+      return;
+    }
+    var frag = location.hash.length > 1 ? location.hash : (q.has('markup') ? location.search : '');
+    QnA.decodeHash(frag).then(show).catch(function (e) { message('<p>Could not read the QnA from this link: ' + e.message + '</p>'); });
+  }
+
+  load();
+  window.addEventListener('hashchange', load);
+})();
+</script>
+</body>
+</html>

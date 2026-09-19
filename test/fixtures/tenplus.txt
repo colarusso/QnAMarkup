@@ -1,0 +1,23 @@
+Q(1): a
+A: 1
+	Q:
+A: 2
+	Q:
+A: 3
+	Q:
+A: 4
+	Q:
+A: 5
+	Q:
+A: 6
+	Q:
+A: 7
+	Q:
+A: 8
+	Q:
+A: 9
+	Q:
+A: 10
+	Q: ten GOTO:1
+A: 11
+	Q(1.11): eleven

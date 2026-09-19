@@ -1,0 +1,45 @@
+Title: Premium Tax Credit
+Author: Murphy
+Description: Do you qualify for the premium tax credit?
+
+Q(1): Did you or a family member enroll in health insurance through a Health Insurance Marketplace?
+A: Yes
+	Q(1.1):GOTO:govt
+A: No
+	Q(1.2):GOTO:no
+
+Q(govt): Are you and every member of your family eligible for coverage through an employer or government plan?
+A: Yes
+	Q(2.1):GOTO:no
+A: No
+	Q(2.2):GOTO:income
+Q(income): Is your household income at least 100% but no more than 400% of the federal poverty line for your family size?
+A: Yes
+	Q(3.1):GOTO:depend
+A: No
+	Q(3.2):GOTO:no
+Q(depend): Can you be claimed as a dependent on someone else's tax return?
+A: Yes
+	Q(4.1):GOTO:no
+A: No
+	Q(4.2):GOTO:status
+Q(status): Is your filing status "Married Filing Separately"?
+A: Yes
+	Q(5.1): Unless you meet an exception, you are not eligible for the Premium Tax Credit.
+A: No
+	Q(5.2):GOTO:premiums
+Q(premiums): Were all the premiums paid?
+A: Yes
+	Q(6.1):GOTO:yes
+A: No
+	Q(6.2):GOTO:no
+Q(yes): You may be allowed for a premium tax credit. See form 8962, Premium Tax Credit, and the Form 8962 instructions for more information. 
+A:[https://www.irs.gov/pub/irs-pdf/i8962.pdf] Instructions: Click Here!
+	Q(7.1):GOTO:form
+A:[https://www.irs.gov/pub/irs-pdf/f8962.pdf] Form: Click Here!
+	Q(7.2):GOTO:instructions 
+Q(form): Still need the form?
+A:[https://www.irs.gov/pub/irs-pdf/f8962.pdf] Here you go!
+Q(instructions): Still need the instructions?
+A:[https://www.irs.gov/pub/irs-pdf/i8962.pdf] Here you go!
+Q(no): You are <b>not</b> eligible for the Premium Tax Credit.

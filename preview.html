@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>QnA preview</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  The editor's live preview. index.html loads this page in an iframe with the
+  sandbox attribute and *without* allow-same-origin, so the QnA being edited
+  (which may contain any HTML and JavaScript) runs in an opaque origin: it can
+  do everything a QnA normally does, but cannot touch the editor's storage or
+  DOM. The editor sends the markup and options with postMessage; clicks on
+  error messages are reported back the same way.
+-->
+<style>
+  html, body { margin: 0; }
+  body { background: #fff; font-family: Verdana, Geneva, sans-serif; padding: 0 0 20px; }
+  ul.qna-error-list { margin: 0; padding: 12px 14px 0; }
+  ul.qna-error-list li.error { list-style: none; background: #ffe3e0; border: 1px solid #f3b8b1; border-radius: 0; margin: 0 0 8px; padding: 8px 10px; cursor: pointer; }
+  ul.qna-error-list li.error:hover { background: #ffd6d1; }
+  ul.qna-error-list code { display: block; white-space: pre-wrap; font: 12px ui-monospace, Menlo, Consolas, monospace; margin-top: 4px; }
+</style>
+<script src="dist/qna.min.js" data-auto="false"></script>
+</head>
+<body class="qna-page">
+<div id="qna"></div>
+<script>
+(function () {
+  var el = document.getElementById('qna');
+  var parentWin = window.parent, ranScripts = false, current = null;
+  if (parentWin === window) { el.innerHTML = '<p style="padding:14px;color:#555">This page is the editor\'s preview pane; open the editor instead.</p>'; return; }
+
+  window.addEventListener('message', function (e) {
+    if (e.source !== parentWin) return;
+    var msg = e.data || {};
+    // the editor asks, after every load of this frame, whether it is still showing this page
+    if (msg.type === 'qna-ping') { parentWin.postMessage({ type: 'qna-pong', seq: msg.seq }, '*'); return; }
+    if (msg.type !== 'qna-render') return;
+    if (typeof QnA === 'undefined') {
+      // The library did not load (a sandboxed frame opened from file:// may not read local files):
+      // the editor sends its source along when we ask.
+      if (msg.lib) { var sc = document.createElement('script'); sc.textContent = msg.lib; document.head.appendChild(sc); }
+      if (typeof QnA === 'undefined') { parentWin.postMessage({ type: 'qna-preview-ready', needLib: true }, '*'); return; }
+    }
+    // Scripts written in a QnA run as page scripts and leave their globals behind. Once one has run here,
+    // the next render starts from a fresh page instead (the editor sends the markup again when the new
+    // page says it is ready), so the preview behaves like the published QnA and a script that declares
+    // a let/const/class does not fail with "already declared" the second time round.
+    if (ranScripts) { location.reload(); return; }
+    ranScripts = /<script\b/i.test(String(msg.markup || ''));
+    // The editor focuses this frame first when nothing editable there has focus, so an X input can take it;
+    // the library checks document.hasFocus() before doing so.
+    var inst = QnA.render(el, String(msg.markup || ''), msg.options || {});
+    current = inst ? { inst: inst, markup: String(msg.markup || '') } : null;
+    // Coming back (the editor's BACK bar) after the interview sent this frame elsewhere: pick up where it left off.
+    if (inst && msg.resume && msg.resume.length && msg.resume.every(function (h) { return h && inst.answerByLabel[h.label]; })) {
+      inst.history = msg.resume;
+      inst.replay(false);
+    }
+  });
+
+  // When the interview takes this frame to another page (an A[href]: button, a link, a script), tell the
+  // editor which answers had been given, so its BACK bar can return to this point.
+  // (Reported after every click and Enter, which run after the library has recorded the answer and before any
+  // navigation it causes; a message posted while the page is already being torn down is not reliably delivered.)
+  function reportProgress() {
+    if (current) parentWin.postMessage({ type: 'qna-progress', markup: current.markup, history: current.inst.history.slice() }, '*');
+  }
+  document.addEventListener('click', reportProgress);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Enter') reportProgress(); });
+  window.addEventListener('pagehide', reportProgress);
+
+  el.addEventListener('click', function (e) {
+    var li = e.target.closest ? e.target.closest('li.error[data-line]') : null;
+    if (!li) return;
+    parentWin.postMessage({ type: 'qna-error-line', line: parseInt(li.getAttribute('data-line'), 10) }, '*');
+  });
+
+  parentWin.postMessage({ type: 'qna-preview-ready', needLib: typeof QnA === 'undefined' }, '*');
+})();
+</script>
+</body>
+</html>

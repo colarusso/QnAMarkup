@@ -1,0 +1,7 @@
+Q(1): Do you want to see something neat?
+A: Yes.
+	Q(1.1): Cool. Click away.
+	A[javascript:save2('transcript.txt', transcript());]: Save conversation.
+		Q(1.1.1):GOTO:1
+A: No.
+	Q(1.2):GOTO:1

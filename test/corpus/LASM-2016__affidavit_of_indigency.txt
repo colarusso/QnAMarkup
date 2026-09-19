@@ -1,0 +1,46 @@
+Title: Affidavit of Indigency 
+Author: Harrison Lebov
+Description: Fill out the guided interview below to find out if you are likely to eligible for a waiver of court fees.
+
+Q(1): Massachusetts state statute, G.L. 261 § 27A-G , provides that if you cannot pay for court fees and costs, you may be able to have the state pay for them. This waiver of fees is dependent upon a finding of indigency. Do you believe that you are considered indigent under this law?
+A: Yes
+	Q(1.1):GOTO:3
+A: No
+	Q(1.2):GOTO:2 
+
+Q(2): I'm sorry, you are not indigent, and thus not eligible for have your court fees waived. For more information, please visit http://www.mass.gov/courts/forms/indigency-forms-gen.html
+
+Q(3): Do you receive public assistance under any of the following?
+A:Massachusetts Transitional Aid to Families With Dependent Children
+	Q(3.1):GOTO:4
+A:Massachusetts Emergency Aid to Elderly, Disabled & Children 
+	Q(3.2):GOTO:4
+A:Federal Supplemental Security Income
+	Q(3.3):GOTO:4
+A:Massachusetts MassHealth (formerly Medicaid)
+	Q(3.4):GOTO:4
+A:Massachusetts Veterans Benefits
+	Q(3.5):GOTO:4
+A:No
+	Q(3.6):GOTO:5
+
+Q(4): Congratulations, you are eligible to have your court fees waived. For more information, please visit http://www.mass.gov/courts/forms/indigency-forms-gen.html
+
+Q(5): Does your income, after taxes, exceed 125% of the current Federal Poverty Line?
+A:Yes
+	Q(5.1):GOTO:6
+A:No
+	Q(5.2):GOTO:4
+A:I don't know
+	Q(5.3):Please review the following chart (https://aspe.hhs.gov/poverty-guidelines) then decide if you are above or below the poverty line. Have you determined if you are below the poverty line?
+	A:Yes
+		Q(5.3.1):GOTO:5
+	A:No
+		Q(5.3.2):GOTO:6
+
+Q(6):Are you able to pay the court fees or costs without depriving yourself or those who are dependent on you of the necessities of life? (Including food, shelter and clothing)
+A:Yes
+	Q(6.1):GOTO:2
+A:No
+	Q(6.2):GOTO:4 
+		

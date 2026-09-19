@@ -1,0 +1,192 @@
+#!/usr/bin/env node
+/*
+ * Build script — no npm dependencies required beyond esbuild for minification.
+ *
+ *   node build.js               build everything
+ *   node build.js --templates   regenerate templates/templates.js only
+ *   node build.js --watch       build, then rebuild whenever src/ or templates/ changes
+ *   node build.js --site        also assemble the two deployable sites in site/org and site/net (see DEPLOY.md)
+ *   node build.js --allow-unminified   build even if esbuild is unavailable (dist/qna.min.js is then
+ *                               an unminified copy — for local work only, never for a release)
+ *
+ * Produces:
+ *   dist/qna.js               copy of src/qna.js
+ *   dist/qna.min.js           minified (esbuild if available, otherwise a copy)
+ *   dist/qna.inline.js        qna.min.js as a JS string (window.QNA_LIB_SOURCE)
+ *   templates/templates.js    the templates/*.txt files as a JS object (so the
+ *                             editor works from file:// as well as http://)
+ */
+const fs = require('fs');
+const path = require('path');
+const { execFileSync } = require('child_process');
+ 
+const root = __dirname;
+const args = process.argv.slice(2);
+const kb = n => (fs.statSync(n).size / 1024).toFixed(1) + ' KB';
+const firstLine = e => String((e && (e.stderr || '').toString().trim()) || (e && e.message) || e).split('\n')[0].slice(0, 200);
+ 
+// --- library ---------------------------------------------------------------
+function buildLibrary() {
+  const src = fs.readFileSync(path.join(root, 'src', 'qna.js'), 'utf8');
+  if (/<\/script/i.test(src)) { throw new Error('src/qna.js contains a literal closing script tag; it could not be inlined into a page.'); }
+  fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'dist', 'qna.js'), src);
+ 
+  // --- minify ---------------------------------------------------------------
+  // esbuild is a devDependency (npm install). It is used through its JS API when the module is
+  // installed, otherwise through whichever command-line build can be found. Every attempt reports
+  // why it failed, because "not found" and "installed but broken" need different fixes.
+  const banner = src.match(/^\/\*![\s\S]*?\*\//)[0].split('\n').slice(0, 3).join('\n') + '\n * MIT License. See qna.js for documentation.\n */\n';
+  const OPTS = { minify: true, target: 'es2017', legalComments: 'none' };
+  let minified = null, how = null;
+  const tried = [];
+ 
+  // 1. the module in this project (or anywhere else node can resolve it)
+  try {
+    const esbuild = require(require.resolve('esbuild', { paths: [root, __dirname] }));
+    minified = esbuild.transformSync(src, OPTS).code;
+    how = 'esbuild ' + esbuild.version + ' (module)';
+  } catch (e) { tried.push('esbuild module: ' + firstLine(e)); }
+ 
+  // 2. a command-line esbuild: this project's, one on PATH, or one bundled with a global tool
+  if (minified === null) {
+    const cli = [
+      path.join(root, 'node_modules', '.bin', 'esbuild'),
+      path.join(root, 'node_modules', 'esbuild', 'bin', 'esbuild'),
+      'esbuild',
+      ...(() => { try { return [path.join(execFileSync('npm', ['root', '-g'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(), 'tsx', 'node_modules', 'esbuild', 'bin', 'esbuild')]; } catch (e) { return []; } })()
+    ];
+    for (const bin of cli) {
+      try {
+        minified = execFileSync(bin, ['--minify', '--target=es2017', '--legal-comments=none'], { input: src, stdio: ['pipe', 'pipe', 'pipe'] }).toString();
+        how = bin + ' (command line)';
+        break;
+      } catch (e) { tried.push(bin + ': ' + firstLine(e)); }
+    }
+  }
+ 
+  if (minified === null) {
+    // Refuse to write an unminified file called qna.min.js: it would be published under
+    // dist/<version>/, hashed for SRI, and never republished. --allow-unminified overrides.
+    const why = 'could not run esbuild, so dist/qna.min.js cannot be built:\n       ' + tried.join('\n       ') +
+      '\n\n  Fix: run "npm install" in this folder (esbuild is a devDependency).\n' +
+      '  If npm install was run with --production or NODE_ENV=production, dev dependencies were\n' +
+      '  skipped: run "npm install --include=dev" instead.\n' +
+      '  To build anyway, with an unminified copy (about twice the size, fine for local work but\n' +
+      '  not for a release), run: node build.js --allow-unminified';
+    if (!args.includes('--allow-unminified')) throw new Error(why);
+    console.warn('WARNING: ' + why.split('\n')[0] + ' writing an UNMINIFIED copy (--allow-unminified). Do not publish this build.');
+    minified = src;
+    how = 'not minified';
+  } else {
+    console.log('minified with ' + how);
+  }
+  fs.writeFileSync(path.join(root, 'dist', 'qna.min.js'), banner + minified);
+  // The minified library as a JS string, so the editor can inline it into a
+  // stand-alone page without fetching (works from file:// too).
+  fs.writeFileSync(path.join(root, 'dist', 'qna.inline.js'),
+    '// Generated by build.js — the contents of qna.min.js as a string, for the editor\'s "embed the library" option.\n' +
+    'window.QNA_LIB_SOURCE = ' + JSON.stringify(banner + minified).replace(/<\/script/gi, '<\\/script') + ';\n');
+ 
+  // Version and Subresource Integrity hash of qna.min.js, for the pinned URL the editor writes into snippets.
+  const version = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version;
+  // No SRI hash for an unminified emergency build: it would not match the published dist/<version>/
+  // file, and an integrity attribute that does not match stops the page loading the library at all.
+  const integrity = how === 'not minified' ? '' : 'sha384-' + require('crypto').createHash('sha384').update(fs.readFileSync(path.join(root, 'dist', 'qna.min.js'))).digest('base64');
+  // The versioned, immutable copy that embed code points at (dist/<version>/). It lives in the repo
+  // as well as on the server, so local pages and production pages load the library the same way.
+  // An unminified emergency build is never written there: that path is what embeds pin.
+  if (how !== 'not minified') {
+    fs.mkdirSync(path.join(root, 'dist', version), { recursive: true });
+    fs.copyFileSync(path.join(root, 'dist', 'qna.min.js'), path.join(root, 'dist', version, 'qna.min.js'));
+    fs.copyFileSync(path.join(root, 'dist', 'qna.js'), path.join(root, 'dist', version, 'qna.js'));
+  } else {
+    console.warn('         dist/' + version + '/ left untouched: an unminified build is never published there,');
+    console.warn('         so embed code keeps pointing at the last minified release (rebuild before deploying).');
+  }
+  fs.writeFileSync(path.join(root, 'dist', 'meta.js'),
+    '// Generated by build.js — version and SRI hash of dist/qna.min.js (load before config.js).\n' +
+    'window.QNA_LIB = ' + JSON.stringify({ version, integrity }) + ';\n');
+  if (integrity) console.log('dist/' + version + '/     versioned copy for embeds (' + integrity.slice(0, 20) + '…)');
+  console.log('dist/qna.js      ' + kb(path.join(root, 'dist', 'qna.js')));
+  console.log('dist/qna.min.js  ' + kb(path.join(root, 'dist', 'qna.min.js')));
+}
+ 
+// --- templates -------------------------------------------------------------
+// templates/templates.json lists the .txt files in menu order with their labels;
+// unlisted .txt files are appended alphabetically. Every template is parsed and
+// the build fails if one has errors. See templates/README.md.
+function buildTemplates() {
+  const tplDir = path.join(root, 'templates');
+  const manifest = JSON.parse(fs.readFileSync(path.join(tplDir, 'templates.json'), 'utf8')).templates;
+  const listed = manifest.map(t => t.file.replace(/\.txt$/, ''));
+  const names = {}; manifest.forEach(t => { names[t.file.replace(/\.txt$/, '')] = t.name; });
+  const files = fs.readdirSync(tplDir).filter(f => f.endsWith('.txt')).map(f => f.replace(/\.txt$/, ''));
+  for (const k of listed) if (!files.includes(k)) { throw new Error('templates.json lists ' + k + '.txt but it does not exist.'); }
+  files.sort((a, b) => (listed.indexOf(a) + 1 || 999) - (listed.indexOf(b) + 1 || 999) || a.localeCompare(b));
+  delete require.cache[require.resolve(path.join(root, 'src', 'qna.js'))];
+  const QnA = require(path.join(root, 'src', 'qna.js'));
+  const templates = {}; let bad = 0;
+  for (const f of files) {
+    if (!/^[a-z0-9_]+$/.test(f)) console.warn('WARNING: template file name "' + f + '.txt" should use only lower-case letters, digits and underscores.');
+    const text = fs.readFileSync(path.join(tplDir, f + '.txt'), 'utf8').replace(/\r\n?/g, '\n');
+    const r = QnA.parse(text);
+    if (!r.ok) { bad++; console.error('ERROR: template ' + f + '.txt has errors:'); r.errors.forEach(e => console.error('   line ' + e.line + ': ' + String(e.message).replace(/<[^>]+>/g, ''))); }
+    const http = text.match(/(?:src|href)=["']http:\/\/[^"']+/gi);
+    if (http) console.warn('WARNING: template ' + f + '.txt references media over http:// (' + http.length + '); browsers block these on https pages.');
+    templates[f] = { name: names[f] || f, text };
+  }
+  if (bad) throw new Error(bad + ' template(s) failed to parse; templates.js not written.');
+  fs.writeFileSync(path.join(tplDir, 'templates.js'),
+    '// Generated by build.js from templates/*.txt and templates.json — do not edit by hand.\n' +
+    'window.QNA_TEMPLATES = ' + JSON.stringify(templates, null, 1) + ';\n');
+  console.log('templates.js     ' + Object.keys(templates).join(', '));
+}
+ 
+// --- deployable sites --------------------------------------------------------
+// The site is served from two origins (config.js): the editor and library from
+// editorOrigin, the viewer and document page from viewerOrigin. This assembles
+// the file set for each under site/, ready to rsync (deploy.sh).
+function buildSite() {
+  const version = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version;
+  const out = path.join(root, 'site');
+  fs.rmSync(out, { recursive: true, force: true });
+  const copy = (dest, items) => {
+    for (const item of items) {
+      const from = path.join(root, item), to = path.join(dest, item);
+      if (!fs.existsSync(from)) throw new Error('site: missing ' + item);
+      fs.mkdirSync(path.dirname(to), { recursive: true });
+      fs.cpSync(from, to, { recursive: true, filter: f => !/(^|\/)(\.DS_Store|.*\.txt|.*\.json|README\.md)$/.test(f) || /templates\.js$/.test(f) });
+    }
+  };
+  const org = path.join(out, 'org'), net = path.join(out, 'net');
+  copy(org, ['index.html', 'editor.js', 'preview.html', 'flowchart.js', 'config.js', 'site.js', 'favicon.ico', 'images', 'css', 'syntax', 'templates', 'examples', 'LICENSE', 'dist']);
+  copy(net, ['i', 'doc', 'config.js', 'site.js', 'favicon.ico', 'images', 'css', 'LICENSE', 'dist/qna.min.js', 'dist/meta.js']);
+  // the viewer/doc origin needs no editor: a bare index sends people to it
+  fs.writeFileSync(path.join(net, 'index.html'), '<!DOCTYPE html><meta charset="utf-8"><title>QnA Markup</title><script src="dist/meta.js"></script><script src="config.js"></script><script>location.replace(window.QNA_CONFIG.editorUrl);</script><p>This host renders QnAs. The editor is at <a id="e" href="https://www.qnamarkup.org/">www.qnamarkup.org</a>.</p>\n');
+  const count = d => fs.readdirSync(d, { recursive: true }).filter(f => fs.statSync(path.join(d, f)).isFile()).length;
+  console.log('site/org         ' + count(org) + ' files (library also at dist/' + version + '/)');
+  console.log('site/net         ' + count(net) + ' files');
+}
+ 
+// --- run -------------------------------------------------------------------
+function run() {
+  try {
+    // A deployable site must never contain an unminified qna.min.js: it is hashed for SRI and
+    // published under dist/<version>/, which is never republished.
+    if (args.includes('--site') && args.includes('--allow-unminified')) throw new Error('--site cannot be combined with --allow-unminified: a released build must be minified. Run "npm install" so esbuild is available.');
+    if (!args.includes('--templates')) buildLibrary();
+    buildTemplates();
+    if (args.includes('--site')) buildSite();
+    return true;
+  } catch (e) { console.error('ERROR: ' + e.message); return false; }
+}
+const ok = run();
+if (args.includes('--watch')) {
+  console.log('watching src/ and templates/ … (Ctrl-C to stop)');
+  let timer = null;
+  const rebuild = (what) => { clearTimeout(timer); timer = setTimeout(() => { console.log('\n' + new Date().toLocaleTimeString() + '  ' + what + ' changed'); run(); }, 150); };
+  for (const dir of ['src', 'templates']) {
+    fs.watch(path.join(root, dir), (ev, f) => { if (f && !/templates\.js$/.test(f)) rebuild(dir + '/' + f); });
+  }
+} else if (!ok) process.exit(1);

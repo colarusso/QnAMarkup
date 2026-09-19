@@ -1,0 +1,66 @@
+Before:<link rel="stylesheet" type="text/css" href="https://www.codingthelaw.org/Fall_2017/css/style.css">
+<div id="icon" style="background-size: 110px 99px;background-image: url('http://www.codingthelaw.org/images/max_headroom.gif');"></div>
+<h2 style="text-align:center;">Sample Divorce Map</h2>
+<p><b>Note: This is a single branch of the divorce map. Not complete.</b></p>
+
+Q(1): Is your issue about a divorce that has already been granted?
+A: No.
+	Q(1.1): Do you want to end your marriage?
+	A: No.
+		Q(1.1.1): Does your spouse want to end your marriage?
+		A: No.
+			Q(1.1.1.1): Are you thinking about a separation? 
+			A: Yes.
+				Q(1.1.1.1.1): If you do not want to get legally divorced, you have two other choices: you can separate without a court order, or you can write a legal separation agreement. 
+				A: I want a legal separation agreement.
+					Q(1.1.1.1.1.1): There are no court forms to file for a legal separation so you either need to draft up your own or talk to an attorney. GOTO:2
+				A: I want to learn more about my options.
+					Q(1.1.1.1.1.2): There is a court process that continues your married status but enters a final order that divides marital property and debt, provides a parenting plan and child support order.  This process is used by people who want to remain legally married to protect significant religious, financial, social or legal interests.  You could decide at a later date to file for divorce which would end the marriage.  A legal separation is not required as a step on the way to getting a divorce.  There are no court forms to file for a legal separation so you either need to draft up your own or talk to an attorney.  
+					A: Next.
+						Q(1.1.1.1.1.2.1): You can separate informally without going to court by making your own arrangements with your spouse.  However, if one you decides to not follow the agreed arrangement, you will not have a court order to enforce the agreement.  If you are concerned that the other side may not follow the separation agreement, you may want to file a court case.  Your options are a legal separation or a divorce.
+						A: I want a legal separation.
+							Q(1.1.1.1.1.2.1.1): GOTO:1.1.1.1.1.1
+						A: I want to learn more about filing for divorce.
+							Q(1.1.1.1.1.2.1.2): GOTO:1.1.2
+						A: I am not going to file a court case.
+							Q(1.1.1.1.1.2.1.3): GOTO:2
+			A: No.
+				Q(1.1.1.1.2): GOTO:1.1.1.2		
+		A: Yes.
+			Q(1.1.1.2): Did you know? (education) if you want to stay married but the other spouse doesn't, he/she can file for divorce.  The court will grant the divorce as long as 1 spouse wants the marriage to end.  If you are interested in marriage counseling or mediation, here are resources:  GOTO:2
+	A: Yes.
+		Q(1.1.2): Okay. Let's go through a few questions to see what the next step is for you. [To be added.] GOTO:2
+A: Yes.
+	Q(1.2): Which of these best describes your situation?  [Note to Shandan: this is the weakest section of my decision tree, a rough attempt at providing information within the experience to help people choose which option is best. It also raises a question that is going to be repeated throughout the experience: how do we give people small amounts of information about multiple options, within the curated experience, so they can pick one option and end up with the right action plan?]
+	A: The judge made a decision but I'm not happy with it.
+		Q(1.2.1): Did you know? (education) You have some options depending on how long ago the final decision was made and the issues you are unhappy about. Learn more about:
+		A: Motion for reconsideration
+			Q(1.2.1.1): You can file a motion for reconsideration if it is within 10 days from the date shown in the certificate below the judge's signature and for a specific reason allowed under the court rules.     
+			A: I want to file a motion for reconsideration.
+				Q(1.2.1.1.1): GOTO:2
+			A: I want to learn about my other options. 
+				Q(1.2.1.1.2): Next learn about motion to modify. GOTO:1.2.1.2
+		A: Motion to modify
+			Q(1.2.1.2): [To be added.] 
+			A: I want to file a motion to modify.
+				Q(1.2.1.2.1): GOTO:1.2.2
+			A: I want to learn about my other options. 
+				Q(1.2.1.2.2): Next learn about motion to set aside. GOTO:1.2.1.3
+		A: Motion to set aside 
+			Q(1.2.1.3): File a motion to set aside judgment or order if it is within a reasonable amount of time or 1 year depending on the specific reason you want the court to set aside the decision.  		
+			A: I want to file a motion to set aside judgment.
+				Q(1.2.1.3.1): GOTO:2
+			A: I want to learn about my other options. 
+				Q(1.2.1.3.2): Next learn about appeals. GOTO:1.2.1.4
+		A: Appeal 
+			Q(1.2.1.4): Make sure you file the papers to start the appeal within the deadline for your case type. To appeal a final judgment for child custody, you have 15 days from the final Superior Court decision. For most other civil cases, including property division in a divorce, you have 30 days to file the appeal.  GOTO:2
+	A: The final decision happened but I want to change something.
+		Q(1.2.2): It looks like you want a modification. What do you want to change?
+		A: Money or property division
+			Q(1.2.2.1): It is difficult to change a property and debt division after a final judgment because the things may have been sold, assets transferred or otherwise disposed of. GOTO:2
+		A: Parenting plan or custody
+			Q(1.2.2.2): GOTO:2
+	A: The final decision happened but I want the other side to follow it.
+		Q(1.2.3): It looks like you want to enforce your order. [To be added.] GOTO:2
+
+Q(2): Here's your personalized action plan. [To be added.]

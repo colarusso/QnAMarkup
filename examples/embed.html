@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Embedding a QnA in an existing page</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font-family: Georgia, serif; max-width: 720px; margin: 40px auto; padding: 0 16px; line-height: 1.5; }
+  .box { border: 1px solid #ccc; border-radius: 8px; padding: 0 10px 10px; }
+</style>
+<!-- 1. load the library (in your own page use the versioned URL the editor's Embed Code output writes, e.g. https://www.qnamarkup.org/dist/2.1.0/qna.min.js) -->
+<script src="../dist/qna.min.js"></script>
+</head>
+<body>
+<h1>A page with a QnA in it</h1>
+<p>Everything above and below the box is ordinary page content. The QnA renders
+itself where its script tag sits, entirely in the browser.</p>
+
+<div class="box">
+<!-- 2. the markup, in a script tag so the browser leaves it alone -->
+<script type="text/qna" data-comp-bg="2f6f4e" data-font-family="Georgia, serif" data-footer="false">
+Q(coffee): Coffee or tea?
+A: Coffee
+	Q: Good choice. Milk?
+	A(with milk): Yes
+		Q:GOTO:done
+	A(black): No
+		Q:GOTO:done
+A: Tea
+	Q: Lovely. Milk?
+	A(with milk): Yes
+		Q:GOTO:done
+	A(without milk): No
+		Q:GOTO:done
+
+Q(done): One <x>coffee</x>, <x>1.1</x><x>1.2</x>, coming up. <br><br> Want a transcript?
+A[javascript:alert(transcript());]: Show me.
+	Q: There you go.
+A: No thanks.
+	Q: Enjoy.
+</script>
+</div>
+
+<p>A second QnA on the same page, with its own style, rendered into a target element:</p>
+<script type="text/qna" data-target="#second" data-comp-bg="884466" data-footer="false">
+Q: Second QnA on the same page?
+A: Yes.
+	Q: Yes.
+</script>
+<div id="second" class="box"></div>
+</body>
+</html>

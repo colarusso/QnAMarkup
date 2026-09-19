@@ -1,0 +1,6 @@
+Q(1): Red Sox or Yankees?
+A: Red Sox
+	Q(1.1):GOTO:2 
+A: Yankees
+	Q(1.2): Seriously... GOTO:1
+Q(2): Cool.

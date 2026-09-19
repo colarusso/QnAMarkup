@@ -1,0 +1,3 @@
+Q: q
+A: a
+	Q: GOTO:1 then more

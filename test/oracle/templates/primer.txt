@@ -17,14 +17,14 @@ A: Yes.
 						Q(myname): Instead of pre-defined answers/choices, you can also ask the viewer to enter text of their own. For example, what's your name?
 						X:
 							Q(1.1.1.1.1.1.2.1): Pleased to meet you <x>myname</x>. See what I did there? You can do more, but now you know the basics. For example, you can split a bubble in two. <br><br> You can do a lot with with just: Q GOTO A and X. <br><br> Do you want me to open a window a detailed descriptions of what you can do?
-							A:[https://www.qnamarkup.org/syntax/] Yes.
+							A:[http://www.qnamarkup.org/syntax/] Yes.
 								Q(1.1.1.1.1.1.2.1.1): Feel free to edit what you see in the text field or start from scratch. To see what your markup come to life, hit the "Update" button below the text area. GOTO:2
 							A: No.
 								Q(1.1.1.1.1.1.2.1.2):GOTO:1.1.1.1.1.1.2.1.1
 		A: No.
 			Q(1.1.1.2):GOTO:2
 	A: No.
-		Q(1.1.2): Then head over to <a href="https://www.qnamarkup.org">https://www.QnAMarkup.org</a>.
+		Q(1.1.2): Then head over to <a href="http://www.qnamarkup.org">http://www.QnAMarkup.org</a>.
 A: No. 
 	Q(1.2): Okay then. GOTO:2
 

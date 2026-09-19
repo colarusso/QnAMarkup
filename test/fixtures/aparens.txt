@@ -1,0 +1,6 @@
+Q(1): pick
+A(with parens): One
+	Q(1.1):GOTO:2
+A(): Two
+	Q(1.2):GOTO:2
+Q(2): you said <x>1</x>

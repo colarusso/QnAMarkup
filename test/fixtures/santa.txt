@@ -1,0 +1,22 @@
+Q(1): Would you like to write a letter to Santa? 
+A: Yes.
+	Q(myname): What is your name?
+	X:
+		DOC(1.1.1):Dear Santa,<br><br> 
+
+		Q(naughty): Have you been naughty or nice?
+		A(I am sorry that I have been naughty. I will work hard to be nice in the new year.<br><br>): Naughty
+			Q(1.1.1.1):GOTO:whatiwant
+		A(): Nice
+			Q(1.1.1.2):GOTO:whatiwant		
+A: No.
+	Q(1.2): That's cool. Have a good day.
+
+Q(whatiwant): What would you like for Christmas?
+X:
+	DOC(2.1):<x>naughty</x>I would like <x>whatiwant</x> for Christmas. I hope all is well with you up north.<br><br>
+			Sincerely,<br>
+			<x>myname</x>
+	Q(2.1): Alright, are you ready to see your letter?
+	A[javascript:submit2('doc/parse/html/', 'POST', 't', 'Proof read your letter. Print it out, and mail it to: Santa Clause, North Pole')]: Yes.
+		Q(2.1.1): Thank you.

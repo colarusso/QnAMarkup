@@ -1,0 +1,43 @@
+{
+  "name": "qna-markup",
+  "version": "2.0.0",
+  "description": "Client-side interpreter and editor for QnA Markup — turn structured text into interactive question-and-answer sessions.",
+  "main": "dist/qna.js",
+  "browser": "dist/qna.min.js",
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "node build.js",
+    "templates": "node build.js --templates",
+    "watch": "node build.js --watch",
+    "serve": "node test/serve.js",
+    "test": "node test/compare.js && node test/runtime.js && node test/e2e.js",
+    "site": "node build.js --site",
+    "serve:split": "node test/serve.js --split",
+    "serve:site": "node test/serve.js --site",
+    "deploy": "./deploy.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/colarusso/QnAMarkup"
+  },
+  "homepage": "https://www.qnamarkup.org/",
+  "keywords": [
+    "qna",
+    "markup",
+    "expert-system",
+    "interactive",
+    "questions",
+    "legal"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "playwright": "^1.50.0"
+  }
+}

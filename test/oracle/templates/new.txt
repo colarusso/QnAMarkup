@@ -2,8 +2,8 @@ Title:
 Author:
 Description:
 
-Q: _
+Q:
 A:
-	Q: _
+	Q:
 A:
-	Q: _
+	Q:

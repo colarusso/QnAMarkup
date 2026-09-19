@@ -1,0 +1,69 @@
+Q(1): Are you and your abuser married, engaged, live together, related, or have children together?
+A: Yes.
+	Q(1.1): Has your abuser harmed or attempted to harm you, put you in fear of imminent serious physical harm or caused you to engage in sexual relations by using force?
+	A: Yes.
+		Q(1.1.1): Are you living in the geographical area of this court?
+		A: Yes
+			Q(1.1.1.1): A judge may issue an Abuse Prevention Order without prior notice to your abuser if there is a substantial likelihood of immediate danger of abuse. 
+		A: No.
+			Q(1.1.1.2): Did you used to live in the geographical area of this court but moved to avoid abuse?
+			A: Yes.
+				Q(1.1.1.2.1): A judge may issue an Abuse Prevention Order without prior notice to your abuser if there is a substantial likelihood of immediate danger of abuse. 
+			A: No. 
+				Q(1.1.1.2.2): You may not be able to obtain an Abuse Prevention Order. Would you like to answer more questions to see if you can obtain a harassment prevention order?
+				A: Yes.
+					Q(1.1.1.2.2.1): Are you suffering from harassment because the abuser has committed three or more of the following directed at your: willful and malicious acts that were aimed at you, were intended to cause you fear or intimidation, or damage to your property and did cause you fear or intimidation or damage to your property?
+					A: Yes.
+						Q(1.1.1.2.2.1.1): Do you live in the geographical area of this court?
+						A: Yes.
+							Q(1.1.1.2.2.1.1.1): A judge may issue a Harassment Prevention Order without prior notice to your harasser if there is a substantial likelihood of immediate danger of harassment. 
+						A: No.
+							Q(1.1.1.2.2.1.1.2): Unfortunately, you may not be eligible to obtain a Harassment Prevention Order.
+					A: No.
+						Q(1.1.1.2.2.1.2): Has your abuser caused you to engage in sexual relations involuntarily by using force, threat or duress?
+						A: Yes.
+							Q(1.1.1.2.2.1.2.1): Do you live in the geographical area of this court?
+							A: Yes.
+								Q(1.1.1.2.2.1.2.1.1): A judge may issue a Harassment Prevention Order without prior notice to your harasser if there is a substantial likelihood of immediate danger of harassment.
+							A: No.
+								Q(1.1.1.2.2.1.2.1.2): Unfortunately, you may not be eligible to obtain a Harassment Prevention Order.
+						A: No.
+							Q(1.1.1.2.2.1.2.2): Has your abuser committed indecent assault and battery, rape, statutory rape, enticing a child, stalking or drugging for sexual intercourse?
+							A: Yes.
+								Q(1.1.1.2.2.1.2.2.1): Do you live in the geographical area of this court?
+								A: Yes.
+									Q(1.1.1.2.2.1.2.2.1.1): A judge may issue a Harassment Prevention Order without prior notice to your harasser if there is a substantial likelihood of immediate danger of harassment.
+								A: No.
+									Q(1.1.1.2.2.1.2.2.1.2): Unfortunately, you may not be eligible to obtain a Harassment Prevention Order.
+							A: No.
+				A: No.		
+	A: No.
+A: No.
+	Q(1.2): You may not be eligible to obtain an Abuse Prevention Order but may be eligible for a Harassment Prevention Order. Would you like to answer more questions to find out?
+	A: Yes.
+		Q(1.2.1): Are you suffering from harassment because the abuser has committed three or more of the following directed at your: willful and malicious acts that were aimed at you, were intended to cause you fear or intimidation, or damage to your property and did cause you fear or intimidation or damage to your property?
+		A: Yes.
+			Q(1.2.1.1): Do you live in the geographical area of this court?
+			A: Yes.
+				Q(1.2.1.1.1): A judge may issue a Harassment Prevention Order without prior notice to your harasser if there is a substantial likelihood of immediate danger of harassment. 
+			A: No.
+				Q(1.2.1.1.2): Unfortunately, you may not be eligible to obtain a Harassment Prevention Order.
+		A: No.
+			Q(1.2.1.2): Has your abuser caused you to engage in sexual relations involuntarily by using force, threat or duress?
+			A: Yes.
+				Q(1.2.1.2.1): Do you live in the geographical area of this court?
+				A: Yes.
+					Q(1.2.1.2.1.1): A judge may issue a Harassment Prevention Order without prior notice to your harasser if there is a substantial likelihood of immediate danger of harassment.
+				A: No.
+					Q(1.2.1.2.1.2): Unfortunately, you may not be eligible to obtain a Harassment Prevention Order.
+			A: No.
+				Q(1.2.1.2.2): Has your abuser committed indecent assault and battery, rape, statutory rape, enticing a child, stalking or drugging for sexual intercourse?
+				A: Yes.
+					Q(1.2.1.2.2.1): Do you live in the geographical area of this court?
+					A: Yes.
+						Q(1.2.1.2.2.1.1): A judge may issue a Harassment Prevention Order without prior notice to your harasser if there is a substantial likelihood of immediate danger of harassment.
+					A: No.
+						Q(1.2.1.2.2.1.2): Unfortunately, you may not be eligible to obtain a Harassment Prevention Order.
+				A: No.
+	A: No thank you. I will explore other options.
+

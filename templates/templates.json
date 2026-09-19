@@ -1,0 +1,9 @@
+{
+  "_comment": "Templates shown in the editor's Template menu, in this order. 'file' is a .txt in this folder; 'name' is the menu label. Any .txt not listed here is appended alphabetically under its file name. Run `node build.js` (or `npm run templates`) after editing.",
+  "templates": [
+    { "file": "new.txt",       "name": "New (blank)" },
+    { "file": "primer.txt",    "name": "QnA Primer" },
+    { "file": "lawreview.txt", "name": "Law Journals" },
+    { "file": "game.txt",      "name": "Shall we play a game?" }
+  ]
+}

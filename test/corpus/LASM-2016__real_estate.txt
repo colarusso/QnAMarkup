@@ -1,0 +1,41 @@
+Q(1): Are you looking to rent an Apartment or buy a House?
+A: Rent an Apartment
+	Q(1.1): How many bedrooms do you need?
+	A: Studio
+		Q(1.1.1): Where do you want to live?
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Boston/0-beds-1z141wj/]: Boston
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Cambridge/0-beds-1z141wj/]: Cambridge
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Somerville/0-beds-1z141wj/]: Somerville
+		A[https://www.trulia.com/for_rent/Allston,MA/]: Allston
+	A: 1-Bedroom
+		Q(1.1.2): Where do you want to live?
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Boston/1-beds-1z141xt/]: Boston
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Cambridge/1-beds-1z141xt/]: Cambridge
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Somerville/1-beds-1z141xt/]: Somerville
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Allston/1-beds-1z141xt/]: Allston
+	A: 2-Bedroom
+		Q(1.1.3): Where do you want to live?
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Boston/2-beds-1z141y8/]: Boston
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Cambridge/2-beds-1z141y8/]: Cambridge
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Somerville/2-beds-1z141y8/]: Somerville
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Allston/2-beds-1z141y8/]: Allston
+	A: 3-Bedroom
+		Q(1.1.4): Where do you want to live?
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Boston/3-beds-1z141y8/]: Boston
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Cambridge/3-beds-1z141y8/]: Cambridge
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Somerville/3-beds-1z141y8/]: Somerville
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Allston/3-beds-1z141y8/]: Allston
+	A: 4-Bedroom
+		Q(1.1.5): Where do you want to live?
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Boston/4-beds-1z141to/]: Boston
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Cambridge/4-beds-1z141y8/]: Cambridge
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Somerville/4-beds-1z141y8/]: Somerville
+		A[http://www.apartmentguide.com/apartments/Massachusetts/Allston/4-beds-1z141y8/]: Allston
+			Q(1.1.5.4): Do you need the help of a realtor?
+			A[http://www.bostonheritagerealty.com/team/AG-001-081/]: Yes
+			A: No
+A: Buy a House
+	Q(1.2): Nice! Where are you looking?
+	A[http://www.zillow.com/cambridge-ma/]: Cambridge
+	A[http://www.zillow.com/boston-ma/]: Boston
+	A[http://www.zillow.com/somerville-ma/]: Somerville

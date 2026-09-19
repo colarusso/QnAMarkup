@@ -1,0 +1,3 @@
+Q(dup): q
+A: a
+	Q(dup): x GOTO:dup

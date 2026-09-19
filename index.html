@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>QnA Markup Editor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta property="og:title" content="QnA Markup Editor">
+<meta property="og:type" content="website">
+<meta property="og:image" content="images/QnA_300.png">
+<meta property="og:description" content="An open source tool for turning structured text into an interactive set of questions and answers. Designed for people with no programming experience, it can be used to build expert systems and perform rules-based document construction.">
+<link rel="icon" href="favicon.ico">
+<style>
+  :root {
+    --accent: #5489eb;
+    --accent-dark: #3a6fd0;
+    --line: #d5d9e0;
+    --bg: #f5f6f8;
+    --text: #1d2330;
+    --muted: #5d6675;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body { font-family: var(--sans); font-size: 14px; color: var(--text); background: var(--bg); display: flex; flex-direction: column; }
+  a { color: var(--accent-dark); }
+
+  header { display: flex; align-items: center; gap: 18px; padding: 10px 18px; background: #fff; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  header h1 sup { font-size: 10px; color: var(--muted); font-weight: normal; }
+  header h1 img { width: 26px; height: 26px; border-radius: 6px; }
+  header nav { margin-left: auto; display: flex; gap: 16px; }
+  header nav a { text-decoration: none; color: var(--muted); }
+  header nav a:hover { color: var(--text); }
+
+  main { flex: 1; display: flex; flex-direction: row; padding: 14px 18px 18px; min-height: 0; overflow: hidden; }
+  .pane { background: #fff; border: 1px solid var(--line); border-radius: 8px; display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
+  #left { flex: 1 1 auto; min-width: 300px; max-height: 100%; }
+  #right { flex: 0 0 auto; width: 440px; min-width: 300px; max-height: 100%; }
+  #splitter { flex: 0 0 14px; cursor: col-resize; position: relative; touch-action: none; }
+  #splitter::after { content: ""; position: absolute; left: 5px; right: 5px; top: 50%; height: 40px; margin-top: -20px; border-radius: 3px; background: var(--line); }
+  #splitter:hover::after, body.resizing #splitter::after { background: var(--accent); }
+  body.resizing { user-select: none; cursor: col-resize; }
+  body.resizing.vertical { cursor: row-resize; }
+  body.resizing iframe, body.resizing #out_interact { pointer-events: none; }
+  .bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .bar.bottom { border-bottom: 0; border-top: 1px solid var(--line); }
+  .spacer { flex: 1; }
+  .tabs { display: flex; gap: 2px; }
+  .tab { padding: 6px 12px; border-radius: 6px; cursor: pointer; color: var(--muted); border: 1px solid transparent; background: none; font: inherit; }
+  .tab.active { background: var(--bg); color: var(--text); border-color: var(--line); }
+  button, select, input[type=text], input[type=number] { font: inherit; }
+  button { padding: 6px 12px; border: 1px solid #b9bfc9; border-radius: 6px; background: #fff; cursor: pointer; color: var(--text); }
+  button:hover { background: #f0f2f5; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary:hover { background: var(--accent-dark); }
+  button.link { border: 0; background: none; color: var(--accent-dark); padding: 6px 4px; }
+  button.link:hover { text-decoration: underline; background: none; }
+  select { padding: 5px 8px; border: 1px solid #b9bfc9; border-radius: 6px; background: #fff; }
+  input[type=number], input[type=text] { padding: 5px 8px; border: 1px solid #b9bfc9; border-radius: 6px; }
+  label.check { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); cursor: pointer; }
+  kbd { font: 11px var(--mono); color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px; background: var(--bg); }
+
+  /* editor: transparent textarea over a highlighted <pre> with identical metrics */
+  #editor { flex: 1; position: relative; min-height: 60px; overflow: hidden; background: #fff; }
+  #editor.focus { background: #fffefa; }
+  #markup, #hl { position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; border: 0; padding: 12px 14px 12px 40px; box-sizing: border-box; font: 13px/1.45 var(--mono); tab-size: 4; -moz-tab-size: 4; white-space: pre; overflow-wrap: normal; word-break: normal; letter-spacing: normal; }
+  #markup { resize: none; outline: none; background: transparent; color: transparent; caret-color: #111; overflow: auto; z-index: 2; }
+  #markup::selection { background: rgba(84, 137, 235, .3); }
+  #markup::placeholder { color: #9aa1ab; }
+  #hl { overflow: hidden; pointer-events: none; color: #111; z-index: 1; counter-reset: line; }
+  #editor::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 32px; background: #f7f8fa; border-right: 1px solid #eceff3; z-index: 0; }
+  #hl .ln { display: block; position: relative; min-height: 1.45em; counter-increment: line; }
+  #hl .ln::before { content: counter(line); position: absolute; left: -40px; width: 28px; text-align: right; color: #b5bcc7; font-size: 11px; user-select: none; }
+  #hl .ln.err::before { color: #b3261e; font-weight: 600; }
+  #hl .ln.err { background: #ffecea; }
+  ul.qna-error-list li.error[data-line] { cursor: pointer; }
+  ul.qna-error-list li.error[data-line]:hover { background: #ffd6d2; }
+  ul.qna-error-list .qna-error-line { color: #b3261e; }
+  #hl.wrap, #markup.wrap { white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word; }
+  #hl .t { color: #0000ee; }          /* tags: Q A X DOC GOTO Title… */
+  #hl .b { color: #8b008b; }          /* boundaries: ( ) [ ] : */
+  #hl .p { color: #c81e1e; }          /* parameters / arguments */
+  #hl .h { color: #0b7a3b; }          /* HTML tags */
+  #hl .s { color: #b45f06; }          /* attribute values */
+  #hl .c { color: #8a8f98; }          /* HTML comments */
+
+  #styleblock { flex: 1; overflow: auto; padding: 14px 16px; }
+  #styleblock p.note { color: var(--muted); margin: 0 0 12px; }
+  .stylegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 14px 22px; }
+  fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px 10px; margin: 0; }
+  legend { font-weight: 600; padding: 0 4px; }
+  fieldset label { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; margin: 6px 0; }
+  fieldset input[type=number] { width: 72px; }
+  fieldset select { max-width: 150px; }
+  .color { display: inline-flex; align-items: center; gap: 4px; }
+  .color input[type=color] { width: 30px; height: 26px; padding: 0; border: 1px solid #c9ced6; border-radius: 0; background: none; cursor: pointer; }
+  .color input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+  .color input[type=color]::-webkit-color-swatch { border: 0; border-radius: 0; }
+  .color input[type=color]::-moz-color-swatch { border: 0; border-radius: 0; }
+  .color input[type=text] { width: 76px; font-family: var(--mono); }
+
+  #status { color: var(--muted); font-size: 12px; }
+  #status.err { color: #b3261e; }
+  #status.ok { color: #1d7a3e; }
+  #out_note { display: none; color: #b3261e; font-size: 12px; margin-left: 8px; }
+  #out_note.show { display: inline; }
+  #warn { display: none; background: #fff6d6; border-bottom: 1px solid #ecd68a; color: #5c4a00; padding: 8px 12px; font-size: 13px; line-height: 1.4; }
+  #warn.show { display: block; }
+  #warn code { font-family: var(--mono); font-size: 12px; word-break: break-all; }
+  #warn ul { margin: 4px 0 0; padding-left: 18px; }
+
+  .out { flex: 1; overflow: auto; min-height: 0; background: #fff; }
+  .out > div { display: none; padding: 12px 14px; }
+  /* side by side: the active output fills the pane and its textarea takes whatever height is left */
+  .out > div.active { display: flex; flex-direction: column; height: 100%; }
+  #out_interact.active { display: flex; flex-direction: column; height: 100%; padding: 0; }
+  #preview { display: block; width: 100%; flex: 1 1 auto; min-height: 0; border: 0; background: transparent; }
+  #out_interact.away #preview { background: #fff; }
+  #preview_back { display: none; flex: 0 0 auto; width: 100%; margin: 0; padding: 9px 12px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: #1d2330; color: #fff; font: bold 13px/1.2 inherit; letter-spacing: .06em; cursor: pointer; text-align: center; }
+  #preview_back:hover, #preview_back:focus-visible { background: #2f3a52; }
+  #out_interact.away #preview_back { display: block; }
+  #out_flow.active { padding: 0; }
+  #out_flow .flowbar { margin: 0; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  #flow_canvas { flex: 1 1 auto; min-height: 200px; background: #fafbfc; background-image: radial-gradient(#dfe3ea 1px, transparent 1px); background-size: 18px 18px; overflow: hidden; }
+  .out > div > * { flex: 0 0 auto; }
+  .out textarea { width: 100%; flex: 1 1 auto; min-height: 100px; height: 100px; font: 12px/1.4 var(--mono); border: 1px solid var(--line); border-radius: 6px; padding: 8px; white-space: pre; resize: none; }
+  .out input[type=text].wide { width: 100%; font-family: var(--mono); font-size: 12px; }
+  .out p { margin: 8px 0; }
+  .out .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
+  .out .note { color: var(--muted); font-size: 12px; }
+  ul.qna-error-list { margin: 0; padding: 0; }
+  ul.qna-error-list li.error { list-style: none; background: #ffe3e0; border: 1px solid #f3b8b1; border-radius: 0; margin: 0 0 8px; padding: 8px 10px; }
+  ul.qna-error-list code { display: block; white-space: pre-wrap; font: 12px var(--mono); margin-top: 4px; }
+
+  #loading { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: #fff3b0; border: 1px solid #e6c84f; padding: 6px 16px; border-radius: 6px; display: none; z-index: 10; }
+  #upload { display: none; }
+
+  @media (max-width: 860px) {
+    main { flex-direction: column; padding: 10px; }
+    #left { flex: 1 1 auto; min-height: 200px; width: auto !important; max-height: none; }
+    #right { flex: 0 0 auto; width: auto !important; min-width: 0; height: 45vh; min-height: 200px; max-height: none; }
+    .out > div.active { display: block; height: auto; }
+    .out textarea { height: 220px; resize: vertical; }
+    #out_flow.active, #out_interact.active { display: flex; height: 100%; }
+    #splitter { cursor: row-resize; }
+    #splitter::after { left: 50%; right: auto; top: 5px; bottom: 5px; height: auto; margin-top: 0; width: 40px; margin-left: -20px; }
+    header { flex-wrap: wrap; gap: 6px 14px; padding: 8px 12px; }
+    header h1 { font-size: 16px; }
+    header nav { gap: 10px; font-size: 13px; margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<div id="loading">working…</div>
+
+<header>
+  <h1><img src="images/QnA_300.png" alt=""> QnA Markup Editor</h1>
+  <nav id="nav"></nav>
+</header>
+
+<main>
+  <!-- ======================= left: markup / style ======================= -->
+  <section class="pane" id="left">
+    <div class="bar">
+      <div class="tabs">
+        <button class="tab active" data-tab="codeblock">Markup</button>
+        <button class="tab" data-tab="styleblock">Settings</button>
+      </div>
+      <select id="template" title="Load a template">
+        <option value="">Load Template…</option>
+      </select>
+      <input id="upload" type="file" accept=".txt,.qna,.md,text/plain">
+      <button class="link" id="load_file">Load File</button>
+      <button class="link" id="new">New</button>
+      <span class="spacer"></span>
+      <span id="status"></span>
+    </div>
+
+    <div id="editor">
+      <pre id="hl" aria-hidden="true"></pre>
+      <textarea id="markup" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Q: Type your first question here
+A: Type an answer
+	Q: Indent the next question with a tab"></textarea>
+    </div>
+
+    <div id="styleblock" style="display:none">
+      <p class="note">Style settings control a subset of the output's look; for full control, save one of the HTML outputs and edit its CSS. Behavior settings apply to every output (link, embed code, full page).</p>
+      <div class="stylegrid">
+        <fieldset><legend>Body Text</legend>
+          <label>Font family
+            <select id="fontFamily">
+              <option value="Arial, Helvetica, sans-serif">Arial / Helvetica</option>
+              <option value="'Courier New', Courier, monospace">Courier New</option>
+              <option value="Georgia, 'Times New Roman', serif">Georgia / Times</option>
+              <option value="'Palatino Linotype', 'Book Antiqua', Palatino, serif">Palatino</option>
+              <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif">System (sans-serif)</option>
+              <option value="Verdana, Geneva, sans-serif">Verdana / Geneva</option>
+            </select></label>
+          <label>Font size (px) <input type="number" id="fontSize" min="6" max="72"></label>
+          <label>Line height (px) <input type="number" id="lineHeight" min="6" max="120"></label>
+        </fieldset>
+        <fieldset><legend>Body Colors</legend>
+          <label>Background <span class="color"><input type="color" data-for="bodyBg"><input type="text" id="bodyBg" maxlength="6"></span></label>
+          <label>Text <span class="color"><input type="color" data-for="bodyTxt"><input type="text" id="bodyTxt" maxlength="6"></span></label>
+          <label>Links <span class="color"><input type="color" data-for="bodyLink"><input type="text" id="bodyLink" maxlength="6"></span></label>
+        </fieldset>
+        <fieldset><legend>Framing</legend>
+          <label>Max page width (px) <input type="number" id="colWidth" min="100" max="4000"></label>
+          <label>Frame padding (px) <input type="number" id="framePad" min="0" max="200"></label>
+          <label>Bubble radius (px) <input type="number" id="radius" min="0" max="100"></label>
+        </fieldset>
+        <fieldset><legend>System Text (questions)</legend>
+          <label>Background <span class="color"><input type="color" data-for="compBg"><input type="text" id="compBg" maxlength="6"></span></label>
+          <label>Text <span class="color"><input type="color" data-for="compTxt"><input type="text" id="compTxt" maxlength="6"></span></label>
+          <label>Links <span class="color"><input type="color" data-for="compLink"><input type="text" id="compLink" maxlength="6"></span></label>
+        </fieldset>
+        <fieldset><legend>User Text (answers)</legend>
+          <label>Background <span class="color"><input type="color" data-for="usrBg"><input type="text" id="usrBg" maxlength="6"></span></label>
+          <label>Text <span class="color"><input type="color" data-for="usrTxt"><input type="text" id="usrTxt" maxlength="6"></span></label>
+          <label>Links <span class="color"><input type="color" data-for="usrLink"><input type="text" id="usrLink" maxlength="6"></span></label>
+        </fieldset>
+        <fieldset><legend>Behavior</legend>
+          <label>Footer (credits / edit / "code your own")
+            <select id="footer"><option value="true">Show</option><option value="false">Hide</option></select></label>
+          <label>Start at question (id) <input type="text" id="start" style="width:72px" placeholder="1"></label>
+          <label title="Remembers a visitor's answers in their browser (localStorage) so they can leave and pick up where they left off. 'Start over' clears it.">Save visitor progress in browser
+            <select id="saveProgress"><option value="false">Off</option><option value="true">On</option></select></label>
+        </fieldset>
+      </div>
+      <p style="margin-top:14px"><button id="restore">Restore Defaults</button>
+        <button id="clear_progress" title="Removes every interview's saved answers from this browser's storage (the 'Save visitor progress' feature). Other visitors' browsers are unaffected.">Delete saved interview progress</button>
+        <span id="clear_progress_note" class="note"></span></p>
+    </div>
+
+    <div class="bar bottom">
+      <label class="check" id="wrap_box"><input type="checkbox" id="wrap"> word wrap</label>
+      <label class="check"><input type="checkbox" id="live" checked> live preview</label>
+      <a id="bug_report" href="#" target="_blank" style="display:none;font-size:12px">report bug/issue</a>
+      <span class="spacer"></span>
+      <button id="save_markup">Save to File</button>
+      <button class="primary" id="update" title="Ctrl/Cmd + Enter">Update Outputs</button>
+    </div>
+  </section>
+
+  <div id="splitter" title="Drag to resize"></div>
+
+  <!-- ======================= right: output ======================= -->
+  <section class="pane" id="right">
+    <div class="bar">
+      <strong>Output</strong>
+      <a id="open_output" href="#" target="_blank" title="Open stand-alone QnA in a new tab">open ↗</a>
+      <span class="spacer"></span>
+      <select id="output">
+        <option value="interact">Interactive</option>
+        <option value="link">Link</option>
+        <option value="embed">Embed Code</option>
+        <option value="html">HTML full page</option>
+        <option value="flow">Flowchart</option>
+      </select>
+      <span id="out_note" role="status"></span>
+    </div>
+    <div id="warn"></div>
+    <div class="out">
+      <div id="out_interact" class="active"><button type="button" id="preview_back" title="The preview has left the QnA. Return to it, where you left off.">&#8592; BACK</button><iframe id="preview" name="preview" src="preview.html" title="Preview of the QnA" sandbox="allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-popups-to-escape-sandbox"></iframe></div>
+      <div id="out_link">
+        <p>Link to a <a id="link_a" href="#" target="_blank">stand-alone QnA</a>. The whole QnA (markup and style) travels in the link itself; nothing is stored on a server.</p>
+        <div class="row">
+          <label class="check"><input type="radio" name="link_mode" value="z" checked> compressed</label>
+          <label class="check"><input type="radio" name="link_mode" value="plain"> plain text</label>
+        </div>
+        <input type="text" class="wide" id="link_text" readonly>
+        <p class="note" id="link_note"></p>
+        <div class="row"><button id="copy_link">Copy Link</button></div>
+      </div>
+      <div id="out_embed">
+        <p>Paste this into any web page. It loads the QnA library from a CDN and renders your markup right where the script tag sits — client-side, no server code needed. See the <a href="syntax/#embedding">docs</a> for options.</p>
+        <div class="row"><label class="check"><input type="checkbox" id="inline_lib_embed"> embed the library in the page (no CDN)</label></div>
+        <textarea id="embed_text" readonly></textarea>
+        <div class="row"><button id="copy_embed">Copy Embed</button><!--<button id="save_embed">Save to File</button>--></div>
+      </div>
+      <div id="out_flow">
+        <div class="row flowbar">
+          <button id="flow_fit" title="Fit the whole chart in view">Fit</button>
+          <button id="flow_in" title="Zoom in">+</button>
+          <button id="flow_out" title="Zoom out">−</button>
+          <button id="flow_reset" title="Forget dragged positions and lay the chart out again">Reset layout</button>
+          <button id="flow_png">Save as PNG</button>
+          <button id="flow_svg">Save as SVG</button>
+          <span class="note">Drag boxes or line labels to arrange · double-click a label to reset its line · drag background to pan</span>
+        </div>
+        <div id="flow_canvas"></div>
+      </div>
+      <div id="out_html">
+        <p>A complete, stand-alone HTML page.</p>
+        <div class="row"><label class="check"><input type="checkbox" id="inline_lib"> embed the library in the page (works offline, no CDN)</label></div>
+        <textarea id="html_text" readonly></textarea>
+        <div class="row"><button id="copy_html">Copy</button><button id="save_html">Save HTML to File</button></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="dist/meta.js"></script>
+<script src="config.js"></script>
+<script src="dist/qna.min.js" data-auto="false"></script>
+<script src="dist/qna.inline.js"></script>
+<script src="flowchart.js"></script>
+<script src="templates/templates.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>

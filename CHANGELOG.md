@@ -1,0 +1,221 @@
+# Changelog
+
+This edition of QnA Markup is a client-side rewrite of the original
+server-rendered implementation (the PHP interpreter in `lib/functions.php`
+plus `js/interactive.js` at github.com/colarusso/QnAMarkup). Everything below
+is measured against that version; the markup language itself is unchanged,
+and QnAs written for the old editor run as they did before.
+
+## 2.0.0 — client-side edition
+
+### Architecture
+
+* The interpreter is a single JavaScript file (`dist/qna.min.js`, ~35 KB) that
+  runs in the browser. No PHP, no server: a QnA is embedded in any page with a
+  `<script src="…/qna.min.js">` tag and the markup in a
+  `<script type="text/qna">` block, and the whole site is plain static files.
+* The parser was ported line by line and checked against the original with a
+  PHP oracle over every template, every syntax-page example, 31 gallery QnAs
+  and a set of edge cases (`test/compare.js`). Ids, answers, variables, header
+  tags and error conditions match apart from the deliberate fixes listed under
+  *Parser* below.
+* The rendered HTML keeps the same structure, ids and class names
+  (`#conversation`, `#QandA`, `#Choices`, `.question_text`, `.qabutton`, …)
+  and the same generated CSS, so styling written for the old output still
+  applies. Options are read from `data-` attributes in camelCase or the
+  original snake_case, and the same options can be passed to `QnA.render()`.
+* All of the original helper functions (`transcript()`, `doc()`, `json_str()`,
+  `mail2()`, `save2()`, `submit2()`) are still globals, so existing
+  `A[javascript:…]` buttons keep working; they are also namespaced under
+  `QnA.*`.
+* Several QnAs can live on one page. Each is rendered in place with its own
+  options; when their styles differ the CSS is scoped per instance.
+
+### Parser
+
+* **Spaces are accepted as indentation, not just tabs.** Nesting is
+  structural: tags at the same level must line up, and a tab counts as four
+  columns when mixed with spaces. A dedent that matches no earlier tag is an
+  error. (The PHP only recognised tabs; one gallery QnA written with spaces
+  now parses as its author intended.)
+* **GOTO renumbering works.** Numeric GOTO targets follow their questions when
+  ids are reassigned. The PHP promised this but the code path was unreachable,
+  so a stale `GOTO:1.3` silently pointed at the wrong question.
+* GOTO targets are checked against the ids questions *will* receive, so
+  `Q: … GOTO:1` is valid before the editor has written `Q(1):` into the text.
+* GOTO targets containing capital letters are validated (the PHP's case-
+  sensitive pre-check let `GOTO:Not` through to fail at run time).
+* `A():` gives an empty answer value, as the documentation's Santa example
+  relies on (the PHP fell back to the button text).
+* Header tags are parsed correctly when text such as a comment precedes them;
+  `\r\n` line endings are normalised; duplicate-name errors are reported once.
+* Leading and trailing whitespace in a Q tag's text is trimmed, so a
+  `Q: GOTO:1.1` no longer renders an empty bubble.
+* A `[javascript:…]` bracket may span several lines; each line is trimmed and
+  `//` comments are dropped before the code runs. A literal `]` inside any
+  bracket is written `\]`.
+* Every error carries a line number (`Line 12: …`), including GOTO errors,
+  which are reported on the GOTO's own line.
+
+### Runtime
+
+* "Go back one" replays the conversation from its history instead of editing
+  the DOM with regular expressions; the variable of an undone answer is
+  cleared.
+* A new exchange scrolls the top of the response bubble to the top of the
+  QnA's area; going back removes the last exchange with no scroll of its own.
+* Questions that contain images are held back, with a three-dot typing
+  indicator, until the images have loaded and decoded (up to `loadTimeout`,
+  default 30 s), so bubbles appear complete rather than reflowing.
+* Optional **save visitor progress** (`data-save-progress="true"`, off by
+  default): answers are kept in the visitor's browser (localStorage) and the
+  interview resumes where they left off; *Start over* clears them. When the
+  option is off the runtime stores nothing at all. Saved answers are keyed on
+  the markup, so a changed QnA never restores stale answers.
+* An input field is only focused automatically when nothing editable
+  elsewhere on the page has focus, so a live preview never steals the cursor
+  from an editor.
+* New **Body Colors** options (`bodyBg`, `bodyTxt`, `bodyLink`) for the
+  background and for text and links outside the bubbles. The credits box
+  always sits on grey and keeps black text with standard link colours. The
+  Body Text font family, size and line height now apply to the whole body,
+  credits and footer included.
+* `showdoc(instructions)` opens the generated document in an in-page overlay
+  with Print / Save / Copy buttons, as a lightweight alternative to the
+  document editor page.
+* **Scripts written in the markup run.** The documentation has always said
+  `Before:` and `After:` can carry JavaScript, and in the server-rendered
+  original they did, because their contents were part of the page's HTML.
+  In 2.0.0 everything is inserted with `innerHTML`, where script tags are
+  inert. Now every `<script>` in `Before:`, `After:` or a `Q`/`A` is run as a
+  normal page script: in the global scope (so `A[javascript:…]` buttons, later
+  scripts and the host page can all call what it defines), in the order
+  written, with external scripts (`src`) loading in sequence before the
+  scripts that follow them. Header scripts run before the first question is
+  drawn; a script in a `Q` runs whenever its bubble is drawn. Non-JavaScript
+  script blocks are left untouched. See *Scripts in a QnA* in the README.
+* A QnA's instance is attached to its container (`element.qna`) and is
+  `QnA.current` before any of its scripts run.
+* Script and style blocks are left out of `transcript()`.
+
+### Hosting and security
+
+* Two origins, as before, but now `www.qnamarkup.org` (editor, docs, library)
+  and `www.qnamarkup.net` (viewer, document page), both plain static hosts.
+  The origins are set once in `config.js`; every cross-link is derived from
+  them, and on `localhost` / `file:` the folder works as a single site.
+* The editor's live preview runs in an iframe sandboxed without
+  `allow-same-origin`, so a QnA opened in the editor (including one arriving
+  by link) cannot reach the editor's storage or DOM. The editor's own script is
+  external, so the editor origin can be served with a Content-Security-Policy
+  that forbids inline script.
+* The library is published at a version-pinned URL that is never modified,
+  and embed code carries a Subresource Integrity hash for it.
+* `node build.js --site` assembles the two deployable folders; `deploy.sh`
+  rsyncs them. `DEPLOY.md` documents headers and redirects.
+
+### Sharing and links
+
+* Share links pack the QnA into the URL fragment, deflate-compressed
+  (`i/#z=…`), with no practical size limit; the old 4,000-character
+  `?markup=…` form is still produced on request and still accepted by the
+  viewer, as is raw URL-encoded markup after the `#`.
+* The viewer (`i/`) can also load a remote text file with `?source=URL`.
+* The "Embed Code" output is a script-tag snippet. The former hidden-`div`
+  container and the iframe/HTML-snippet outputs are gone.
+* Embed Code and HTML full page can optionally inline the whole library, for
+  pages that must work offline or without a CDN.
+
+### Editor
+
+* Syntax highlighting: tags in blue, `()`/`[]` boundaries in purple,
+  arguments and parameters in red, text in black, HTML highlighted.
+* Line numbers in the gutter; error messages cite the line and clicking one
+  selects that line.
+* live preview (debounced), and the editor state survives a reload.
+* Resizable split between the editor and output panes, side by side or
+  stacked, with minimum sizes so neither can be squeezed away.
+* Outputs: Interactive, Link, Embed Code, HTML full page and **Flowchart** —
+  an interactive chart of the interview (questions as nodes, answers as
+  edges; an X tag's edge is labelled `Input: <variable>`, GOTOs are dashed,
+  pure-GOTO questions collapse into their target, dead ends get a dot, DOC
+  tags get a page marker), with draggable nodes, pan and zoom, and PNG or SVG
+  export on a transparent background, styled from the QnA's own settings.
+* The Style tab is now Settings and includes the save-progress switch, Body
+  Colors, and a button that deletes all saved interview progress in this
+  browser.
+* "Save to File" names the file after the Title tag with a timestamp
+  (`My_Title_2026-09-17T13-42.txt`).
+* A warning is shown when media are referenced over `http://`, which
+  browsers block on an `https://` page.
+* Blank question bubbles have a sensible minimum width; colour pickers have a
+  plain 1 px border; error boxes are square.
+* **Flowchart lines can be rearranged.** The label in the middle of a line
+  (a small grip dot on the unlabelled START line) is a handle: drag it and the
+  line is re-routed through that point, attaching to whichever side of each
+  box faces it. Double-click the handle to put the line back on its automatic
+  route. Like box positions, moved lines survive re-renders until *Reset
+  layout*, follow their boxes when those are dragged, and are included in the
+  PNG and SVG exports (grip dots and tooltips are not).
+* **The preview follows the interview wherever it goes, and offers a way
+  BACK.** An `A[href]:` button, a link in a question or a script may change
+  the location of the preview frame; the editor does not redirect any of that
+  to a new window. (Only `A:[href]`, the form that asks for a new window,
+  gets `target="_blank"`, as the language defines.) Whenever the frame ends up
+  showing something other than the QnA, however it got there, a full-width
+  **BACK** bar appears across the top of the pane. BACK reloads the preview
+  and resumes the interview at the point it was left, answers included; a
+  *Update Outputs* or a live-preview edit returns to the QnA as well. Because the
+  frame is sandboxed and the visited page is another origin, leaving is
+  detected with a ping that only `preview.html` answers after each load.
+  The recommended `frame-src` in `DEPLOY.md` is now `'self' https:` so that
+  such navigations are not blocked by the editor's own CSP.
+* The preview frame reloads before re-rendering a QnA whose scripts have run,
+  so a script that declares a top-level `let`, `const` or `class` does not fail
+  with "already declared" on the next keystroke.
+* Code inside script/style blocks no longer shows up in flowchart boxes.
+
+### Saving and loading
+
+* **Save to File keeps the Settings screen.** The saved text file ends with a
+  hidden `Settings:` tag, one line listing every value from the Settings screen
+  (`Settings: fontFamily=…; fontSize=18; compBg=336699; …; start=1`).
+  *Load File* takes the line off again and uses it to fill in the Settings
+  screen, so it never appears in the text area; a file without it leaves the
+  settings as they are. A tag pasted into the text area is ignored while
+  typing and taken in the same way on *Update Outputs*.
+* The parser strips the tag (only when it is the last non-blank line) and
+  reports its values as `parse().settings`; `code` and `markup` never contain
+  it, and a QnA without the tag parses exactly as before. `QnA.render` and the
+  `<script type="text/qna">` auto-init use the values as the QnA's style, with
+  explicit options and `data-` attributes overriding them. Only Settings-screen
+  options are accepted, through the usual validation. New helpers:
+  `QnA.splitSettings(markup)` and `QnA.settingsTag(options)`.
+* Documented at the bottom of the Syntax page as "The Hidden Tag".
+
+### Document editor page
+
+* `doc/` replaces the PHP `doc/parse/html/` page. It is static, so `submit2`
+  should send the document with `GET`; it loads CKEditor 4.22.1 (the last
+  open-source release of CKEditor 4, replacing the 4.3.5 that shipped with the
+  original) and falls back to a plain textarea if the CDN is unreachable.
+* **No more "editor inside the editor" in the preview pane.** When a QnA hands
+  a document to `/doc/` from the editor's preview (the Law Journals template
+  does), the page runs inside the preview's sandbox and so has an opaque
+  origin. CKEditor's usual iframe-based editing area needs same-origin access
+  to a blank child iframe; refused that, Safari loaded a second copy of the
+  page into it (a toolbar inside the toolbar) and Chromium left it empty,
+  losing the document. In that situation the page now uses CKEditor's
+  `divarea` plugin (loaded from the `full-all` CDN path), which edits in a
+  plain div. Outside a sandbox nothing changes.
+
+### Templates
+
+* Templates are plain `.txt` files listed in `templates/templates.json`; the
+  build validates each one and fails on errors.
+
+### Removed
+
+* All server-side code and the requirement for a PHP host.
+* The hidden `<div>` markup container.
+* The iframe and "HTML snippet" outputs (merged into Embed Code).

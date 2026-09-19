@@ -1,0 +1,3 @@
+Q(bad name!): q
+A: a
+	Q: x

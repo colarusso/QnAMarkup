@@ -1,0 +1,10 @@
+Q: a
+A: b
+  Q: c
+  A: d
+    Q: e
+  A: f
+    Q: g GOTO:2
+A: h
+    Q: i
+Q(2): done

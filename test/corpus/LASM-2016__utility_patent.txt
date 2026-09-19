@@ -1,0 +1,70 @@
+Title: Can I get a utility patent for my invention?
+Description: A Guide for Inventors
+
+Q(1):Does your invention obey the basic laws of physics?
+A: Yes
+	Q(1.1):Good start. Is your invention a world changing, blue-skies concept that is still at the drawing board stage and that will completely revolutionize the way we wear clothes/eat food/interact socially and make you billions?
+	A:No, don't be ridiculous.
+		Q(1.1.1):Wonderful. Is there something clever about it that no one's ever thought to do before?
+		A:Oh yes. Loads of clever stuff.
+			Q(1.1.1.1):GOTO:1.1.1.2.1
+		A:Yes, but it's all about the software. I can't patent that, right?
+			Q(1.1.1.2):Ah, that's a classic patent myth. It's more complicated than that. Is the software liked to some type of hardware?
+			A:Yes
+				Q(1.1.1.2.1):Great! We could be on to something. So, how many people have you told about your invention?
+				A:Loads! They're all really excited. (Yay me!)
+					Q(1.1.1.2.1.1):Has it been more than a year since you told people?
+					A:No, I came up with the idea last night and called all my friends this morning.
+						Q(1.1.1.2.1.1.1):GOTO:1.1.1.2.1.2
+					A:It's been in beta-testing for at least a few years now.
+						Q(1.1.1.2.1.1.2):What do you mean beta-testing?
+						A:We worked out the kinks in the first six months, and we're trying to build up hype. We even put out a press release.
+							Q(1.1.1.2.1.1.2.1):Game over, man. Game over. 
+						A:Routine testing to optimize our software. 
+							Q(1.1.1.2.1.1.2.2):GOTO:1.1.1.2.2
+				A:No one! It's a secret.
+					Q(1.1.1.2.1.2): Congratulations! It looks like you might be able to get a utility patent (though there are no guarantees that there isn't some prior art lurking out there).
+			A:Not so much.
+				Q(1.1.1.2.2):It's okay. Come and talk to us!
+		A:No, it's pretty run-of-the-mill stuff. 
+			Q(1.1.1.3):But it's better than what's already out there, right?
+			A:Oh yes, way better.
+				Q(1.1.1.3.1):Okay, so how did you make it better/cheaper? Is there anything clever about that?
+				A:Well, I suppose we did change this thingy here...
+					Q(1.1.1.3.1.1):GOTO:1.1.1.2.1
+				A:We stole stuff.
+					Q(1.1.1.3.1.2):GOTO:1.2
+			A:Not really.
+				Q(1.1.1.3.2):But it's cheaper than what's already out there, right?
+				A:Yes
+					Q(1.1.1.3.2.1):GOTO:1.1.1.3.1
+				A:No
+					Q(1.1.1.3.2.2):Ah, sorry. That one won't fly. But you may be able to get a patent on the design. Maybe.
+	A:Yes. How did you know?
+		Q(1.1.2):Consider your expectations managed. Chances are someone's already published it somewhere: a work of fiction, a magazine article, or a ridculously speculative patent from 1994.
+		A:You don't seem to understand; I said billions!
+			Q(1.1.2.1):Go and get a search done to see what's out there.
+			A:My search didn't turn up anything.
+				Q(1.1.2.1.1):Are you sure?
+				A: Yes.
+					Q(1.1.2.1.1.1):GOTO:1.1.1
+				A:No.
+					Q(1.1.2.1.1.2):GOTO:1.1.2.1
+			A:Turns out someone mentioned the idea in a Batman comic back in the 60s. But I still want my billions.	
+				Q(1.1.2.1.2):Okay go and make the thing work-there might be something in the way you realize the technology.
+				A:Done it.
+					Q(1.1.2.1.2.1):GOTO:1.1.1
+				A:I give up, this patent thing is hard.
+					Q(1.1.2.1.2.2):GOTO:1.1.2.2
+		A:I give up, this patent thing is hard.
+			Q(1.1.2.2):Are you sure you want to give up that easily?
+			A:Yes.
+				Q(1.1.2.2.1):Bye bye.
+			A:No.
+				Q(1.1.2.2.2):Good for you! Do you have another invention?
+				A:Yes.
+					Q(1.1.2.2.2.1):GOTO:1
+				A:No.
+					Q(1.1.2.2.2.2):Think harder and come back again. Good bye and good luck. 
+A: No
+	Q(1.2):Go away
