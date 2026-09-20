@@ -6,6 +6,63 @@ plus `js/interactive.js` at github.com/colarusso/QnAMarkup). Everything below
 is measured against that version; the markup language itself is unchanged,
 and QnAs written for the old editor run as they did before.
 
+## 2.2.0 — button colors and borders
+
+Changes since 2.1.0. The library is published at `dist/2.2.0/`; `dist/2.1.0/`
+and `dist/2.0.0/` are untouched, so pages that pin them keep working. With the
+default settings a QnA looks exactly as it did in 2.1.0 (the generated CSS is
+the same, character for character, apart from `#ddd`, `#eee` and `#888` being written
+with six digits).
+
+### Settings
+
+* Two new groups on the Settings screen, before *Button Text*.
+  **Button Body**:
+  * *Background* (`btnBg`, `data-btn-bg`, default `eeeeee`) and *Text*
+    (`btnTxt`, `data-btn-txt`, default `000000`) colour every button: the
+    answer buttons (`a.qabutton`), the text-input box and its "Save above text
+    as answer." button (`div.xdiv`, `a.xbutton`), and GO BACK ONE / START OVER
+    (`a.sbutton`). The field you type in stays black on white.
+  * *Bold text* (`btnBold`, `data-btn-bold`, default `false`), a checkbox:
+    button text in bold.
+  * The credits box goes with the buttons: `div.credits` has the button
+    background and `div.credit_text` the button text colour (it was always
+    `#eee` / black, the old button colours). Bold does not apply to it. Links
+    in the credits keep the standard blue / purple while the button text is
+    the default black; with any other button text colour they take that
+    colour, underlined, so they can be read on a dark box.
+
+  **Borders**:
+  * *Button borders* (`btnBorder`, `data-btn-border`, default `888888`): the
+    outline of those buttons and of the text-input box, and the line between
+    its field and its button.
+  * *Divider lines* (`btnDivider`, `data-btn-divider`, default `dddddd`): the
+    top border of `div.standard_buttons` and of `.qna-footer`, the two thin
+    rules that set the buttons off from what is around them.
+* The hover / pressed shade is no longer a fixed `#ddd` but worked out from
+  the two colours: the background moved 1/14 of the way towards the text
+  colour. For the defaults that is exactly `#dddddd`; a dark button with light
+  text lightens on hover instead of jumping to light grey.
+* Like every other setting they travel with the QnA: the hidden `Settings:`
+  tag, `data-` attributes in Embed Code and HTML full page, both forms of the
+  Link output (`btn_bg=`, `btn_txt=`, `btn_bold=1`, `btn_border=`, `btn_divider=` in the plain
+  form), the footer's *edit* link, options to `QnA.render()`, the editor's
+  remembered state, *Restore Defaults*, and the `defaults` block of
+  `config.js`. Only non-default values are written to the outputs.
+
+### Editor
+
+* **A link that looks too long to work says so.** The Link output carries the
+  whole QnA, so a big one can outgrow what will open. When the current link is
+  longer than about 8,000 characters in the *plain text* form (it travels in
+  the query string, and web servers commonly refuse such a request with 414
+  "URI Too Long") or 32,000 in the *compressed* form (it travels in the
+  `#fragment`, so only browser and app limits apply), the **open ↗** shortcut
+  in the Output header is hidden and a warning at the top of the Link pane
+  explains why and points to the compressed form, Embed Code and HTML full
+  page. The link stays in the pane to copy or try. The limits are `LINK_MAX`
+  in `editor.js`.
+
 ## 2.1.0 — chat styles and editable button text
 
 Changes since 2.0.0. The library is published at `dist/2.1.0/`; `dist/2.0.0/`

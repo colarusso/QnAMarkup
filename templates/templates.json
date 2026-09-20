@@ -4,6 +4,7 @@
     { "file": "new.txt",       "name": "New (blank)" },
     { "file": "primer.txt",    "name": "QnA Primer" },
     { "file": "lawreview.txt", "name": "Law Journals" },
-    { "file": "game.txt",      "name": "Shall we play a game?" }
+    { "file": "game.txt",      "name": "Shall we play a game?" },
+    { "file": "zork_mini.txt",      "name": "Zork mini preview" }
   ]
 }

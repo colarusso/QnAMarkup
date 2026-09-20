@@ -1,0 +1,261 @@
+Title: Zork mini preview
+Description: This is NOT a faitful port of Zork from its <a href="https://opensource.microsoft.com/blog/2025/11/20/preserving-code-that-shaped-generations-zork-i-ii-and-iii-go-open-source/" target="_blank">open source release</a>. It is a short adaptation meant to demonstrate some features of QnA Markup, esp. the formatting options under <i>Settings</i>.
+
+Q(west_closed):[West of House] You are standing in an open field west of a white house. The front door is boarded, and a small closed mailbox stands beside the path.
+A: Open the mailbox
+    Q(1.1): GOTO:mailbox_open
+A: Walk around the north side of the house
+    Q(1.2): GOTO:behind_closed
+A: Walk around the south side of the house
+    Q(1.3): GOTO:behind_closed
+A: Try the front door
+    Q(1.4): The boards and nails do not budge. GOTO:west_closed
+
+Q(mailbox_open): The open mailbox contains a leaflet headed "WELCOME TO ZORK!"
+A: Read the leaflet, take it, and close the mailbox
+    Q(2.1): The leaflet promises danger and adventure. You fold it into your pocket and shut the now-empty mailbox. GOTO:west_empty
+A: Read the leaflet, leave it inside, and close the mailbox
+    Q(2.2): You return the leaflet to the mailbox and close the little door. GOTO:west_closed
+A: Leave the mailbox open and walk around the north side
+    Q(2.3): GOTO:behind_open
+A: Leave the mailbox open and walk around the south side
+    Q(2.4): GOTO:behind_open
+
+Q(west_open):[West of House] The front door is still boarded. The mailbox is open, and the leaflet is still inside.
+A: Take the leaflet and close the mailbox
+    Q(3.1): You pocket the leaflet and shut the now-empty mailbox. GOTO:west_empty
+A: Close the mailbox without taking the leaflet
+    Q(3.2): GOTO:west_closed
+A: Walk around the north side of the house
+    Q(3.3): GOTO:behind_open
+A: Walk around the south side of the house
+    Q(3.4): GOTO:behind_open
+
+Q(west_empty):[West of House] The front door is still boarded. The mailbox is closed and empty; the leaflet is in your pocket.
+A: Check the mailbox again
+    Q(4.1): You open the mailbox. It is empty, just as you left it. You close it again. GOTO:west_empty
+A: Walk around the north side of the house
+    Q(4.2): GOTO:behind_empty
+A: Walk around the south side of the house
+    Q(4.3): GOTO:behind_empty
+A: Try the front door
+    Q(4.4): The boards and nails do not budge. GOTO:west_empty
+
+Q(behind_closed):[Behind House] You are behind the white house. A kitchen window is slightly ajar. The leaflet remains inside the closed mailbox on the other side of the house.
+A: Open the window and climb into the kitchen
+    Q(5.1): You push the window open and climb through. GOTO:kitchen_untouched
+A: Return around the north side to the mailbox
+    Q(5.2): GOTO:west_closed
+A: Return around the south side to the mailbox
+    Q(5.3): GOTO:west_closed
+A: Peer through the kitchen window
+    Q(5.4): A table and a narrow stairway are visible inside. GOTO:behind_closed
+
+Q(behind_open):[Behind House] You are behind the white house. A kitchen window is slightly ajar. Around front, the mailbox is still open with the leaflet inside.
+A: Open the window and climb into the kitchen
+    Q(6.1): You push the window open and climb through. GOTO:kitchen_untouched
+A: Return around the north side to the mailbox
+    Q(6.2): GOTO:west_open
+A: Return around the south side to the mailbox
+    Q(6.3): GOTO:west_open
+A: Peer through the kitchen window
+    Q(6.4): A table and a narrow stairway are visible inside. GOTO:behind_open
+
+Q(behind_empty):[Behind House] You are behind the white house. A kitchen window is slightly ajar. The leaflet is still in your pocket.
+A: Open the window and climb into the kitchen
+    Q(7.1): You push the window open and climb through. GOTO:kitchen_untouched
+A: Return around the north side to the empty mailbox
+    Q(7.2): GOTO:west_empty
+A: Return around the south side to the empty mailbox
+    Q(7.3): GOTO:west_empty
+A: Read the leaflet again
+    Q(7.4): It still welcomes you to Zork and warns that survival is unlikely. GOTO:behind_empty
+
+Q(kitchen_untouched):[Kitchen] The window stands open behind you. A brown sack and a glass bottle sit on the table. A doorway leads west, and stairs lead up.
+A: Go west into the Living Room
+    Q(8.1): GOTO:living_untouched
+A: Climb the stairs to the Attic
+    Q(8.2): GOTO:attic_untouched
+A: Examine the brown sack and bottle without taking them
+    Q(8.3): The sack contains a lunch and a clove of garlic. The bottle holds clear water. You leave everything on the table. GOTO:kitchen_untouched
+
+Q(attic_untouched):[Attic] Dust hangs in the air. A coil of rope and a nasty-looking knife lie here. The only exit is down.
+A: Examine the rope and knife without taking them
+    Q(9.1): The rope looks sturdy. The knife looks less useful than dangerous. You leave both where they are. GOTO:attic_untouched
+A: Go down to the Kitchen
+    Q(9.2): GOTO:kitchen_untouched
+
+Q(living_untouched):[Living Room] An elvish sword hangs above an empty trophy case, and a brass lantern rests nearby. A large Oriental rug covers the center of the floor. The doorway east returns to the Kitchen.
+A: Take the sword and brass lantern
+    Q(10.1): You take both. The wall above the trophy case and the spot beside it are now bare. GOTO:living_geared
+A: Examine the Oriental rug without moving it
+    Q(10.2): It is large, dusty, and oddly placed, but it still covers the floor. GOTO:living_untouched
+A: Return east to the Kitchen
+    Q(10.3): GOTO:kitchen_untouched
+
+Q(kitchen_geared):[Kitchen] You are carrying the elvish sword and brass lantern. The brown sack and bottle remain untouched on the table. The doorway west leads to the Living Room, and stairs lead up.
+A: Go west to the Living Room
+    Q(11.1): GOTO:living_geared
+A: Climb the stairs to the Attic
+    Q(11.2): GOTO:attic_geared
+A: Look out through the open window
+    Q(11.3): The clearing behind the house is quiet. You keep your sword and lantern with you. GOTO:kitchen_geared
+
+Q(attic_geared):[Attic] You still carry the sword and lantern. The rope and knife remain in the dust, and the only exit is down.
+A: Examine the rope and knife without taking them
+    Q(12.1): Nothing has changed: the rope is sturdy, and the knife is nasty. GOTO:attic_geared
+A: Go down to the Kitchen
+    Q(12.2): GOTO:kitchen_geared
+
+Q(living_geared):[Living Room] You carry the elvish sword and brass lantern; they are no longer where you found them. The Oriental rug still covers the floor.
+A: Move the rug and open the trap door beneath it
+    Q(13.1): The rug slides aside, revealing a wooden trap door. You pull it open onto a dark staircase. GOTO:living_ready
+A: Return east to the Kitchen
+    Q(13.2): GOTO:kitchen_geared
+A: Examine the trophy case
+    Q(13.3): The case is empty, waiting for treasures. GOTO:living_geared
+A: Try the strange west door
+    Q(13.4): It is nailed shut from the other side. GOTO:living_geared
+
+Q(kitchen_ready):[Kitchen] You still carry the sword and lantern. In the Living Room, the rug remains pushed aside and the trap door remains open. The sack and bottle are still on the table.
+A: Go west to the open trap door
+    Q(14.1): GOTO:living_ready
+A: Climb the stairs to the Attic
+    Q(14.2): GOTO:attic_ready
+A: Examine the sack and bottle without taking them
+    Q(14.3): The lunch, garlic, and water are still here. GOTO:kitchen_ready
+
+Q(attic_ready):[Attic] You carry the sword and lantern. The rope and knife remain untouched. Downstairs, the trap door is still open.
+A: Examine the rope and knife without taking them
+    Q(15.1): The rope and knife are exactly where you first saw them. GOTO:attic_ready
+A: Go down to the Kitchen
+    Q(15.2): GOTO:kitchen_ready
+
+Q(living_ready):[Living Room] You carry the sword and lantern. The rug is pushed aside, and the trap door is open over a dark staircase.
+A: Switch on the lantern and descend
+    Q(16.1): You light the lantern and descend. The trap door crashes shut above you. GOTO:cellar
+A: Close the trap door and pull the rug back over it
+    Q(16.2): The floor once again looks undisturbed. You keep the sword and lantern. GOTO:living_geared
+A: Return east to the Kitchen, leaving the trap door open
+    Q(16.3): GOTO:kitchen_ready
+
+Q(cellar):[Cellar] Your lantern lights a dark cellar. The trap door has slammed shut overhead. A passage leads north, another south, and a steep ramp rises west.
+A: Go north
+    Q(17.1): GOTO:troll_room
+A: Go south
+    Q(17.2): GOTO:east_chasm
+A: Try the steep ramp to the west
+    Q(17.3): You climb a few steps, lose your footing, and slide back into the Cellar. GOTO:cellar
+
+Q(troll_room):[Troll Room] A nasty troll with a bloody axe blocks both the east passage and the forbidding hole to the west. The Cellar lies south.
+A: Fight the troll with the elvish sword
+    Q(18.1): After a brutal exchange, the troll collapses. Its axe falls beside it, and both guarded routes are clear. GOTO:troll_dead
+A: Retreat south to the Cellar
+    Q(18.2): GOTO:cellar
+A: Try to slip past to the east
+    Q(18.3): The troll fends you off with a menacing gesture. GOTO:troll_room
+A: Try to slip past to the west
+    Q(18.4): The troll drives you back with its axe. GOTO:troll_room
+
+Q(troll_dead):[Troll Room] The troll lies dead. Its axe remains on the floor. The open routes lead east to a narrow passage, west into a forbidding hole, and south to the Cellar.
+A: Go east
+    Q(19.1): GOTO:east_west_passage
+A: Go west into the Maze
+    Q(19.2): GOTO:maze_entry
+A: Return south to the Cellar
+    Q(19.3): GOTO:cellar_troll_dead
+
+Q(cellar_troll_dead):[Cellar] Your lantern still burns. The trap door remains shut. The defeated troll lies north; the passage south is open.
+A: Go north to the Troll Room
+    Q(20.1): GOTO:troll_dead
+A: Go south toward the chasm
+    Q(20.2): GOTO:east_chasm_dead
+A: Try the steep ramp to the west
+    Q(20.3): You slide back down again. GOTO:cellar_troll_dead
+
+Q(east_west_passage):[East-West Passage] A narrow passage runs east and west. At its north end, a staircase leads down into darkness.
+A: Go west to the defeated troll
+    Q(21.1): GOTO:troll_dead
+A: Go east to the Round Room
+    Q(21.2): GOTO:round_room
+A: Take the staircase down
+    Q(21.3): GOTO:deep_chasm
+
+Q(round_room):[Round Room] This circular stone room has passages east, west, north, south, and southeast. Several other openings are blocked by cave-ins.
+A: Return west to the East-West Passage
+    Q(22.1): GOTO:east_west_passage
+A: Go east toward a distant roar
+    Q(22.2): The roar swells until it seems to fill your skull. This stateful excerpt ends here, with several mysteries still ahead. GOTO:thanks
+A: Go north into the north-south passage
+    Q(22.3): The passage bends deeper into the Great Underground Empire. This stateful excerpt ends here. GOTO:thanks
+A: Go south into the narrow passage
+    Q(22.4): The stone walls close in around you as the adventure continues beyond this excerpt. GOTO:thanks
+A: Go southeast toward the engravings
+    Q(22.5): Ancient markings cover the cave walls. Their puzzle belongs to the next chapter. GOTO:thanks
+
+Q(deep_chasm):[Chasm] A chasm runs southwest to northeast. The stairway returns up to the East-West Passage; paths also continue northeast and south.
+A: Climb back up
+    Q(23.1): GOTO:east_west_passage
+A: Follow the path northeast
+    Q(23.2): Cold water glimmers ahead near the reservoir. This stateful excerpt ends here. GOTO:thanks
+A: Follow the path south
+    Q(23.3): You enter a north-south passage and continue beyond this excerpt. GOTO:thanks
+
+Q(maze_entry):[Maze] You are in a maze of twisty little passages, all alike. East returns to the room of the defeated troll; north circles back here, while south and west go deeper.
+A: Go east to the Troll Room
+    Q(24.1): GOTO:troll_dead
+A: Go north
+    Q(24.2): After several turns, you arrive at the same place. GOTO:maze_entry
+A: Go south
+    Q(24.3): The passages twist away behind you. Mapping the deeper Maze belongs to the next chapter. GOTO:thanks
+A: Go west
+    Q(24.4): You press farther into the Maze, where this stateful excerpt ends. GOTO:thanks
+
+Q(east_chasm):[East of Chasm] You stand on the unseen edge of a deep chasm. A narrow passage returns north to the Cellar, while a path continues east to a Gallery.
+A: Go north to the Cellar
+    Q(25.1): GOTO:cellar
+A: Go east to the Gallery
+    Q(25.2): GOTO:gallery
+A: Try to climb down into the chasm
+    Q(25.3): The drop appears to lead straight to the infernal regions. You wisely remain on the ledge. GOTO:east_chasm
+
+Q(gallery):[Gallery] Most of the paintings have been stolen, but one valuable-looking work remains. Exits lead west to the chasm and north to a Studio.
+A: Take the painting and end this expedition while you can
+    Q(26.1): You roll the painting carefully under one arm. This excerpt ends with your first treasure secured. GOTO:thanks
+A: Go north to the Studio, leaving the painting in place
+    Q(26.2): GOTO:studio
+A: Go west to the chasm, leaving the painting in place
+    Q(26.3): GOTO:east_chasm
+
+Q(studio):[Studio] Paint of dozens of colors spatters the walls and floor. A doorway leads south to the Gallery, and a narrow chimney rises from the fireplace.
+A: Return south to the Gallery
+    Q(27.1): GOTO:gallery
+A: Climb the chimney
+    Q(27.2): With the sword and lantern awkwardly managed, you squeeze upward and emerge in the Kitchen. This excerpt ends before the route loops back through the house. GOTO:thanks
+
+Q(east_chasm_dead):[East of Chasm] You stand on the edge of the deep chasm. North lies the Cellar and the already-defeated troll; east lies the Gallery.
+A: Go north to the Cellar
+    Q(28.1): GOTO:cellar_troll_dead
+A: Go east to the Gallery
+    Q(28.2): GOTO:gallery_dead
+A: Try to climb down into the chasm
+    Q(28.3): The drop appears to lead straight to the infernal regions. You stay on the ledge. GOTO:east_chasm_dead
+
+Q(gallery_dead):[Gallery] The valuable painting still hangs here. West returns toward the Cellar and the defeated troll; north leads to the Studio.
+A: Take the painting and end this expedition while you can
+    Q(29.1): You roll the painting carefully under one arm. This excerpt ends with your first treasure secured and the troll still vanquished. GOTO:thanks
+A: Go north to the Studio, leaving the painting in place
+    Q(29.2): GOTO:studio_dead
+A: Go west to the chasm, leaving the painting in place
+    Q(29.3): GOTO:east_chasm_dead
+
+Q(studio_dead):[Studio] Paint of dozens of colors spatters the walls and floor. South returns to the Gallery; a narrow chimney rises toward the Kitchen. The troll remains defeated behind you.
+A: Return south to the Gallery
+    Q(30.1): GOTO:gallery_dead
+A: Climb the chimney
+    Q(30.2): You squeeze upward and emerge in the Kitchen. This excerpt ends here; behind you, the troll remains defeated and the house objects remain where you left them. GOTO:thanks
+
+Q(thanks): Thanks for playing! Visit <a href="https://www.qnamarkup.org/" target="_blank">QnAMarkup.org</a> to learn more about QnA. Then head over to the <a href="https://en.wikipedia.org/wiki/Zork" target="_blank">Zork Wikipedia page</a> to lean more about our inspiration. To edit the code of this QnA, click on the "edit" link below.
+
+
+Settings: fontFamily='Courier New', Courier, monospace; fontSize=16; lineHeight=18; colWidth=500; framePad=15; radius=15; compBg=5489eb; compTxt=ffffff; compLink=e3fbfc; usrBg=000000; usrTxt=00e447; usrLink=a2f6af; bodyBg=000000; bodyTxt=00e447; bodyLink=a2f6af; btnBg=00b438; btnTxt=000000; btnBold=true; btnBorder=000000; btnDivider=0c511a; chatStyle=llm; labelSave=Save above text as answer.; labelBack=UNDO; labelRestart=RESTART; labelCredits=credits; labelEdit=edit; labelCode=code your own; footer=true; saveProgress=false; start=1

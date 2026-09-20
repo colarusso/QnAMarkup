@@ -64,6 +64,13 @@
       usrBg: 'eeeeee',
       usrTxt: '000000',
       usrLink: '0000ff',
+      // Button Body
+      btnBg: 'eeeeee',
+      btnTxt: '000000',
+      btnBold: false,              // true: button text in bold
+      // Borders
+      btnBorder: '888888',         // the outline of the buttons and the text-input box
+      btnDivider: 'dddddd',        // the rules above GO BACK ONE / START OVER and above the footer
       // Button Text
       labelSave: 'Save above text as answer.',
       labelBack: 'GO BACK ONE',

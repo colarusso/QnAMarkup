@@ -685,6 +685,77 @@ server.listen(0, async () => {
     check('chat + labels: remembered across an editor reload', await page.inputValue('#chatStyle') === 'llm' && await page.$eval('#compBg', e => e.disabled) && await page.inputValue('#labelBack') === 'Previous');
     await page.evaluate(() => { localStorage.clear(); });
 
+    /* ---- Button Body and Borders on the Settings screen ---- */
+    await page.goto(base); await (await pv()).waitForSelector('.question_text');
+    await page.fill('#markup', 'Title: Buttons\nQ: Hello?\nA: Hi\n\tQ: Bye'); await page.click('#update'); await page.waitForTimeout(300);
+    await page.click('.tab[data-tab=styleblock]').catch(() => {});
+    check('buttons: Button Body and Borders cards sit before Button Text with the default values', await page.evaluate(() => { const f = document.getElementById('button_body'), b = document.getElementById('borders'); return f.querySelector('legend').textContent === 'Button Body' && f.nextElementSibling === b && b.querySelector('legend').textContent === 'Borders' && b.nextElementSibling.querySelector('legend').textContent === 'Button Text' && !f.querySelector('#btnDivider') && b.querySelector('#btnBorder') && b.querySelector('#btnDivider') && f.querySelector('#btnBold') && document.getElementById('btnBorder').value === '888888' && document.getElementById('btnBg').value === 'eeeeee' && document.getElementById('btnTxt').value === '000000' && document.getElementById('btnDivider').value === 'dddddd' && !document.getElementById('btnBold').checked && document.querySelector('input[type=color][data-for=btnDivider]').value === '#dddddd'; }));
+    const embedPlain = await (async () => { await page.selectOption('#output', 'embed'); return page.inputValue('#embed_text'); })();
+    check('buttons: defaults write nothing into the outputs', !/data-btn/.test(embedPlain), embedPlain.slice(0, 300));
+    await page.selectOption('#output', 'interact');
+    await setField('btnBg', '102030'); await setField('btnTxt', 'ffeedd'); await setField('btnDivider', 'aa0000'); await setField('btnBorder', '00aa55');
+    await page.check('#btnBold'); await page.waitForTimeout(900);
+    const btnPv = await (await pv()).evaluate(async () => { const g = s => getComputedStyle(document.querySelector(s)); const first = { bg: g('.qabutton').backgroundColor, txt: g('.qabutton').color, w: g('.qabutton').fontWeight };
+      document.querySelector('.qabutton').click(); for (let i = 0; i < 40 && !document.querySelector('.sbutton'); i++) await new Promise(r => setTimeout(r, 100));
+      return { bg: first.bg, txt: first.txt, w: first.w, border: g('.sbutton').borderTopColor, sbg: g('.sbutton').backgroundColor, std: g('.standard_buttons').borderTopColor, foot: g('.qna-footer').borderTopColor }; });
+    check('buttons: live preview shows colours, bold, border and divider', btnPv.border === 'rgb(0, 170, 85)' && btnPv.bg === 'rgb(16, 32, 48)' && btnPv.txt === 'rgb(255, 238, 221)' && btnPv.w === '700' && btnPv.sbg === 'rgb(16, 32, 48)' && btnPv.std === 'rgb(170, 0, 0)' && btnPv.foot === 'rgb(170, 0, 0)', btnPv);
+    check('buttons: colour picker follows the hex field', await page.$eval('input[type=color][data-for=btnBg]', e => e.value) === '#102030');
+    await page.click('#update'); await page.waitForTimeout(400);
+    await page.selectOption('#output', 'embed'); const embedBtn = await page.inputValue('#embed_text');
+    await page.selectOption('#output', 'html'); const htmlBtn = await page.inputValue('#html_text');
+    check('buttons: in embed code and HTML page as data- attributes', [embedBtn, htmlBtn].every(t => /data-btn-bg="102030"/.test(t) && /data-btn-txt="ffeedd"/.test(t) && /data-btn-bold="true"/.test(t) && /data-btn-border="00aa55"/.test(t) && /data-btn-divider="aa0000"/.test(t)), embedBtn.slice(0, 600));
+    await page.selectOption('#output', 'link');
+    for (const mode of ['z', 'plain']) {
+      await page.check('input[name=link_mode][value=' + mode + ']'); await page.waitForTimeout(400);
+      const url = await page.inputValue('#link_text');
+      const v = await ctx.newPage(); await v.goto(url); await v.waitForSelector('.qabutton');
+      const got = await v.evaluate(async () => { const g = s => getComputedStyle(document.querySelector(s)); const first = { bg: g('.qabutton').backgroundColor, w: g('.qabutton').fontWeight };
+        document.querySelector('.qabutton').click(); for (let i = 0; i < 40 && !document.querySelector('.sbutton'); i++) await new Promise(r => setTimeout(r, 100));
+        return { bg: first.bg, w: first.w, border: g('.sbutton').borderTopColor, std: g('.standard_buttons').borderTopColor }; });
+      await v.close();
+      check('buttons: ' + mode + ' link carries them to the viewer', got.bg === 'rgb(16, 32, 48)' && got.w === '700' && got.border === 'rgb(0, 170, 85)' && (mode !== 'plain' || /btn_border=00aa55/.test(url)) && got.std === 'rgb(170, 0, 0)' && (mode !== 'plain' || /btn_bg=102030/.test(url) && /btn_bold=1/.test(url) && /btn_divider=aa0000/.test(url)), got);
+    }
+    await page.check('input[name=link_mode][value=z]');
+    const savedBtn = await page.evaluate(() => window.markupForFile());
+    check('buttons: saved in the Settings tag', /\nSettings: [^\n]*bodyLink=0000ff; btnBg=102030; btnTxt=ffeedd; btnBold=true; btnBorder=00aa55; btnDivider=aa0000; chatStyle=sms; /.test(savedBtn), savedBtn);
+    await page.selectOption('#output', 'interact'); await page.waitForTimeout(300);
+    await page.reload(); await (await pv()).waitForSelector('.question_text');
+    check('buttons: remembered across an editor reload', await page.inputValue('#btnBg') === '102030' && await page.isChecked('#btnBold') && await page.inputValue('#btnBorder') === '00aa55' && await page.inputValue('#btnDivider') === 'aa0000');
+    await page.click('.tab[data-tab=styleblock]').catch(() => {});
+    await page.click('#restore'); await page.waitForTimeout(300);
+    check('buttons: Restore Defaults resets them', await page.inputValue('#btnBg') === 'eeeeee' && await page.inputValue('#btnTxt') === '000000' && !(await page.isChecked('#btnBold')) && await page.inputValue('#btnBorder') === '888888' && await page.inputValue('#btnDivider') === 'dddddd');
+    await page.waitForTimeout(1500);   // let any pending live update (which saves the state) finish before clearing
+    await page.evaluate(() => { localStorage.clear(); });
+
+    /* ---- a link too long to work: no "open" shortcut, a warning in the Link pane ---- */
+    await page.goto(base); await (await pv()).waitForSelector('.question_text');
+    await page.click('.tab[data-tab=codeblock]').catch(() => {});
+    const linkState = async () => page.evaluate(() => ({ open: getComputedStyle(document.getElementById('open_output')).display, warn: getComputedStyle(document.getElementById('link_warn')).display, text: document.getElementById('link_warn').textContent, len: document.getElementById('link_text').value.length, href: document.getElementById('link_a').getAttribute('href').length, first: document.getElementById('out_link').firstElementChild.id }));
+    await page.fill('#markup', 'Q: Short?\nA: Yes\n\tQ: ok'); await page.click('#update'); await page.waitForTimeout(500);
+    await page.selectOption('#output', 'link'); await page.waitForTimeout(300);
+    const ll0 = await linkState();
+    check('long link: a short link has the open shortcut and no warning', ll0.open !== 'none' && ll0.warn === 'none' && ll0.first === 'link_warn', ll0);
+    // ~9,000 characters of repetitive text: too long as plain text, tiny once compressed
+    await page.fill('#markup', 'Q: ' + 'Is this long? '.repeat(650) + '\nA: Yes\n\tQ: ok'); await page.click('#update'); await page.waitForTimeout(600);
+    const ll1 = await linkState();
+    check('long link: compressed form of a repetitive QnA is still fine', ll1.open !== 'none' && ll1.warn === 'none' && ll1.len < 8000, ll1);
+    await page.check('input[name=link_mode][value=plain]'); await page.waitForTimeout(400);
+    const ll2 = await linkState();
+    check('long link: plain form over the limit hides open and warns (link still in the pane)', ll2.open === 'none' && ll2.warn === 'block' && /too long/.test(ll2.text) && /414/.test(ll2.text) && /compressed/.test(ll2.text) && ll2.len > 8000 && ll2.href === ll2.len, ll2);
+    await page.check('input[name=link_mode][value=z]'); await page.waitForTimeout(400);
+    const ll3 = await linkState();
+    check('long link: switching back to compressed restores the shortcut', ll3.open !== 'none' && ll3.warn === 'none', ll3);
+    // incompressible text: too long even compressed
+    await page.evaluate(() => { let s = ''; const a = new Uint32Array(1); for (let i = 0; i < 6000; i++) { crypto.getRandomValues(a); s += a[0].toString(36) + ' '; } const t = document.getElementById('markup'); t.value = 'Q: ' + s + '\nA: Yes\n\tQ: ok'; });
+    await page.click('#update'); await page.waitForTimeout(900);
+    const ll4 = await linkState();
+    check('long link: compressed form over the limit hides open and warns', ll4.open === 'none' && ll4.warn === 'block' && ll4.len > 32000 && /browsers/.test(ll4.text) && !/414/.test(ll4.text), { open: ll4.open, warn: ll4.warn, len: ll4.len });
+    await page.fill('#markup', 'Q: Short?\nA: Yes\n\tQ: ok'); await page.click('#update'); await page.waitForTimeout(600);
+    const ll5 = await linkState();
+    check('long link: a short QnA again clears it', ll5.open !== 'none' && ll5.warn === 'none', ll5);
+    await page.selectOption('#output', 'interact'); await page.waitForTimeout(1500);
+    await page.evaluate(() => { localStorage.clear(); });
+
     /* ---- config.js sets the Settings screen's defaults ---- */
     const cfgSrc = fs.readFileSync(path.join(root, 'config.js'), 'utf8');
     const cfgMod = cfgSrc.replace("fontSize: 14,", "font_size: 16,").replace("chatStyle: 'sms',", "chatStyle: 'llm',").replace("labelBack: 'GO BACK ONE',", "labelBack: 'Previous',").replace("compBg: '5489eb',", "compBg: 'not a colour', editorUrl: 'https://evil.example/',").replace("start: '1',", "start: '1',");

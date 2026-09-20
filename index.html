@@ -115,6 +115,9 @@
   #warn.show { display: block; }
   #warn code { font-family: var(--mono); font-size: 12px; word-break: break-all; }
   #warn ul { margin: 4px 0 0; padding-left: 18px; }
+  #link_warn { display: none; background: #fff6d6; border: 1px solid #ecd68a; border-radius: 8px; color: #5c4a00; padding: 8px 12px; margin: 0 0 8px; font-size: 13px; line-height: 1.4; }
+  #link_warn.show { display: block; }
+  #open_output.toolong { display: none; }
 
   .out { flex: 1; overflow: auto; min-height: 0; background: #fff; }
   .out > div { display: none; padding: 12px 14px; }
@@ -228,6 +231,15 @@ A: Type an answer
           <label>Text <span class="color"><input type="color" data-for="usrTxt"><input type="text" id="usrTxt" maxlength="6"></span></label>
           <label>Links <span class="color"><input type="color" data-for="usrLink"><input type="text" id="usrLink" maxlength="6"></span></label>
         </fieldset>
+        <fieldset id="button_body"><legend>Button Body</legend>
+          <label>Background <span class="color"><input type="color" data-for="btnBg"><input type="text" id="btnBg" maxlength="6"></span></label>
+          <label>Text <span class="color"><input type="color" data-for="btnTxt"><input type="text" id="btnTxt" maxlength="6"></span></label>
+          <label title="Show the text of the buttons in bold.">Bold text <input type="checkbox" id="btnBold"></label>
+        </fieldset>
+        <fieldset id="borders"><legend>Borders</legend>
+          <label title="The outline of every button and of the text-input box.">Button borders <span class="color"><input type="color" data-for="btnBorder"><input type="text" id="btnBorder" maxlength="6"></span></label>
+          <label title="The thin rules above GO BACK ONE / START OVER and above the footer (the top border of standard_buttons and qna-footer).">Divider lines <span class="color"><input type="color" data-for="btnDivider"><input type="text" id="btnDivider" maxlength="6"></span></label>
+        </fieldset>
         <fieldset class="labels"><legend>Button Text</legend>
           <label>Text input <input type="text" id="labelSave" maxlength="200"></label>
           <label>Go back <input type="text" id="labelBack" maxlength="200"></label>
@@ -282,6 +294,7 @@ A: Type an answer
     <div class="out">
       <div id="out_interact" class="active"><button type="button" id="preview_back" title="The preview has left the QnA. Return to it, where you left off.">&#8592; BACK</button><iframe id="preview" name="preview" src="preview.html" title="Preview of the QnA" sandbox="allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-popups-to-escape-sandbox"></iframe></div>
       <div id="out_link">
+        <div id="link_warn" role="status"></div>
         <p>Link to a <a id="link_a" href="#" target="_blank">stand-alone QnA</a>. The whole QnA (markup and style) travels in the link itself; nothing is stored on a server.</p>
         <div class="row">
           <label class="check"><input type="radio" name="link_mode" value="z" checked> compressed</label>

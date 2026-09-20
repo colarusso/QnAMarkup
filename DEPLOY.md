@@ -65,8 +65,8 @@ DRY=1 ./deploy.sh        # preview what would change
 The build writes the library to `dist/qna.min.js` (latest) *and* to
 `dist/<version>/qna.min.js`, the copy embed code points at. The versioned
 folders are part of the repository, so the same URL shape works locally, on
-`localhost:8000/dist/2.1.0/qna.min.js`, and in production; the editor header
-shows the version it is serving (`v2.1.0`). On the server the `dist/<version>/`
+`localhost:8000/dist/2.2.0/qna.min.js`, and in production; the editor header
+shows the version it is serving (`v2.2.0`). On the server the `dist/<version>/`
 folders are also protected from rsync's `--delete`, so a version removed from
 the repo later still stays online for pages that pin it. A version is never
 republished: if the library changes, bump `"version"` in `package.json` first,

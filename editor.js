@@ -9,8 +9,8 @@
   var EDITOR_URL = CONFIG.editorUrl || HERE;
   var CDN = CONFIG.cdn || HERE + 'dist/qna.min.js';
   var INTEGRITY = CONFIG.integrity || '';
-  var STYLE_KEYS = ['fontFamily', 'fontSize', 'lineHeight', 'colWidth', 'framePad', 'radius', 'compBg', 'compTxt', 'compLink', 'usrBg', 'usrTxt', 'usrLink', 'bodyBg', 'bodyTxt', 'bodyLink'];
-  var COLOR_KEYS = ['compBg', 'compTxt', 'compLink', 'usrBg', 'usrTxt', 'usrLink', 'bodyBg', 'bodyTxt', 'bodyLink'];
+  var STYLE_KEYS = ['fontFamily', 'fontSize', 'lineHeight', 'colWidth', 'framePad', 'radius', 'compBg', 'compTxt', 'compLink', 'usrBg', 'usrTxt', 'usrLink', 'bodyBg', 'bodyTxt', 'bodyLink', 'btnBg', 'btnTxt', 'btnBorder', 'btnDivider'];
+  var COLOR_KEYS = ['compBg', 'compTxt', 'compLink', 'usrBg', 'usrTxt', 'usrLink', 'bodyBg', 'bodyTxt', 'bodyLink', 'btnBg', 'btnTxt', 'btnBorder', 'btnDivider'];
   var COMP_KEYS = ['compBg', 'compTxt', 'compLink'];   // System Text colours: not used (so greyed out) when the chat style is LLM
   var LABEL_KEYS = ['labelSave', 'labelBack', 'labelRestart', 'labelCredits', 'labelEdit', 'labelCode'];
   var LS_KEY = 'qna-editor-state';
@@ -32,7 +32,7 @@
   });
 
   /* ---------- style options ---------- */
-  var SETTINGS_KEYS = STYLE_KEYS.concat(['chatStyle'], LABEL_KEYS, ['footer', 'start', 'saveProgress']);
+  var SETTINGS_KEYS = STYLE_KEYS.concat(['btnBold', 'chatStyle'], LABEL_KEYS, ['footer', 'start', 'saveProgress']);
   // The Settings screen's defaults: the library's, with anything config.js sets (defaults: {...}) on top.
   // Only Settings-screen options count, and each goes through the library's validation. These are what a
   // first visit and "Restore Defaults" show. Outputs are still compared with the LIBRARY's defaults
@@ -50,6 +50,7 @@
   function getOptions() {
     var o = {};
     STYLE_KEYS.forEach(function (k) { o[k] = $(k).value; });   // disabled (LLM) System Text fields still hold, and give, their values
+    o.btnBold = $('btnBold').checked;
     o.chatStyle = $('chatStyle').value;
     LABEL_KEYS.forEach(function (k) { o[k] = $(k).value.trim() || DEFAULTS[k]; });   // blank = the default text
     o.footer = $('footer').value === 'true';
@@ -69,6 +70,7 @@
       el.value = o[k];
     });
     COLOR_KEYS.forEach(function (k) { document.querySelector('input[type=color][data-for=' + k + ']').value = '#' + o[k]; });
+    $('btnBold').checked = o.btnBold === true;
     $('chatStyle').value = o.chatStyle;
     syncChatStyle();
     LABEL_KEYS.forEach(function (k) { $(k).value = o[k]; });
@@ -468,22 +470,40 @@
     warn.innerHTML = html; warn.className = 'show';
   }
   function linkMode() { return document.querySelector('input[name=link_mode]:checked').value; }
+  // A link carries the whole QnA, so it can outgrow what will open. The plain form puts it in the query
+  // string, which is sent to the web server, and servers commonly refuse a request line beyond about 8 KB
+  // (414 URI Too Long). The compressed form rides in the #fragment, which never reaches the server, so
+  // only browser limits apply (tens of thousands of characters, fewer in some). Past these sizes the
+  // header's "open" link is hidden and the Link pane says why; the link itself stays in the pane.
+  var LINK_MAX = { plain: 8000, z: 32000 };
+  function linkTooLong(url, mode) {
+    var max = LINK_MAX[mode] || LINK_MAX.z, big = url.length > max, w = $('link_warn');
+    $('open_output').classList.toggle('toolong', big);
+    w.className = big ? 'show' : '';
+    w.innerHTML = !big ? '' : '<b>This link is probably too long to work.</b> It is ' + url.length.toLocaleString() + ' characters, and ' +
+      (mode === 'plain'
+        ? 'a plain-text link sends the whole QnA to the web server as part of the address; most servers refuse addresses longer than about ' + max.toLocaleString() + ' characters (error 414, "URI Too Long"). Try the <i>compressed</i> form, which is shorter and is never sent to the server'
+        : 'beyond about ' + max.toLocaleString() + ' characters some browsers will not open a link, and most email, chat and social apps cut off or refuse links far shorter than that') +
+      '. The <b>open \u2197</b> shortcut above has been hidden; the link below is still here to try. For a QnA this size, the <i>Embed Code</i> or <i>HTML full page</i> output is the dependable way to share it.';
+  }
   function updateLink(markup, opts) {
     var openA = $('open_output');
-    var payload = Object.assign({ markup: markup }, opts);
+    var payload = Object.assign({ markup: markup }, opts), mode = linkMode();
     var setUrl = function (url) {
       $('link_text').value = url;
       $('link_a').href = url; openA.href = url;
-      $('link_note').textContent = url.length.toLocaleString() + ' characters' + (url.length > 8000 ? ' — very long links may not work in every application; consider the HTML outputs instead.' : '');
+      linkTooLong(url, mode);
+      $('link_note').textContent = url.length.toLocaleString() + ' characters' + (url.length > 8000 && url.length <= (LINK_MAX[mode] || LINK_MAX.z) ? ' — very long links may not work in every application; consider the HTML outputs instead.' : '');
     };
     if (linkMode() === 'plain') {
       // Plain, human-readable form: the legacy query-string format the PHP editor used.
       var q = 'markup=' + encodeURIComponent(markup);
       Object.keys(opts).forEach(function (k) {
-        var legacy = { fontFamily: 'font_family', fontSize: 'font_size', lineHeight: 'line_height', colWidth: 'col_width', framePad: 'frame_pad', radius: 'radius', compBg: 'comp_bg', compTxt: 'comp_txt', compLink: 'comp_link', usrBg: 'usr_bg', usrTxt: 'usr_txt', usrLink: 'usr_link', bodyBg: 'body_bg', bodyTxt: 'body_txt', bodyLink: 'body_link', start: 'start', chatStyle: 'chat_style', labelSave: 'label_save', labelBack: 'label_back', labelRestart: 'label_restart', labelCredits: 'label_credits', labelEdit: 'label_edit', labelCode: 'label_code' }[k];
+        var legacy = { fontFamily: 'font_family', fontSize: 'font_size', lineHeight: 'line_height', colWidth: 'col_width', framePad: 'frame_pad', radius: 'radius', compBg: 'comp_bg', compTxt: 'comp_txt', compLink: 'comp_link', usrBg: 'usr_bg', usrTxt: 'usr_txt', usrLink: 'usr_link', bodyBg: 'body_bg', bodyTxt: 'body_txt', bodyLink: 'body_link', start: 'start', btnBg: 'btn_bg', btnTxt: 'btn_txt', btnBorder: 'btn_border', btnDivider: 'btn_divider', chatStyle: 'chat_style', labelSave: 'label_save', labelBack: 'label_back', labelRestart: 'label_restart', labelCredits: 'label_credits', labelEdit: 'label_edit', labelCode: 'label_code' }[k];
         if (legacy) q += '&' + legacy + '=' + encodeURIComponent(opts[k]);
         else if (k === 'footer' && opts[k] === false) q += '&sharing=2';
         else if (k === 'saveProgress' && opts[k] === true) q += '&save_progress=1';
+        else if (k === 'btnBold' && opts[k] === true) q += '&btn_bold=1';
       });
       setUrl(VIEWER + '?' + q);
     } else {

@@ -25,7 +25,7 @@
 })(typeof window !== 'undefined' ? window : this, function (root) {
   'use strict';
  
-  var QnA = { version: '2.1.0' };
+  var QnA = { version: '2.2.0' };
  
   /* ------------------------------------------------------------------ */
   /*  Defaults                                                           */
@@ -45,8 +45,14 @@
     usrTxt: '000000',
     usrLink: '0000ff',
     bodyBg: 'ffffff',       // page / QnA background
-    bodyTxt: '000000',      // text outside the bubbles (Before/After content, footer; not the grey credits box)
+    bodyTxt: '000000',      // text outside the bubbles (Before/After content, footer; not the credits box, which follows the buttons)
     bodyLink: '0000ff',     // links outside the bubbles
+    // the buttons (answers, text-input box, GO BACK ONE / START OVER) and the rules that set them off
+    btnBg: 'eeeeee',        // button background (the hover shade is worked out from it, see QnA.css)
+    btnTxt: '000000',       // button text
+    btnBold: false,         // button text in bold
+    btnBorder: '888888',    // the outline of the buttons and of the text-input box (and the line between its field and its button)
+    btnDivider: 'dddddd',   // the top border of standard_buttons and qna-footer, which act as dividers near the buttons
     chatStyle: 'sms',       // 'sms': questions and answers in speech bubbles; 'llm': questions as plain text on the body (see QnA.css)
     // the text of the built-in buttons and footer links (plain text, not HTML)
     labelSave: 'Save above text as answer.',
@@ -72,6 +78,7 @@
     comp_bg: 'compBg', comp_txt: 'compTxt', comp_link: 'compLink',
     usr_bg: 'usrBg', usr_txt: 'usrTxt', usr_link: 'usrLink', body_bg: 'bodyBg', body_txt: 'bodyTxt', body_link: 'bodyLink', start: 'start',
     save_progress: 'saveProgress', editor_url: 'editorUrl', chat_style: 'chatStyle',
+    btn_bg: 'btnBg', btn_txt: 'btnTxt', btn_bold: 'btnBold', btn_border: 'btnBorder', btn_divider: 'btnDivider',
     label_save: 'labelSave', label_back: 'labelBack', label_restart: 'labelRestart',
     label_credits: 'labelCredits', label_edit: 'labelEdit', label_code: 'labelCode'
   };
@@ -94,7 +101,7 @@
       if (!/^\d+$/.test(String(o[n]))) o[n] = QnA.defaults[n];
       o[n] = parseInt(o[n], 10);
     });
-    ['compBg', 'compTxt', 'compLink', 'usrBg', 'usrTxt', 'usrLink', 'bodyBg', 'bodyTxt', 'bodyLink'].forEach(function (n) {
+    ['compBg', 'compTxt', 'compLink', 'usrBg', 'usrTxt', 'usrLink', 'bodyBg', 'bodyTxt', 'bodyLink', 'btnBg', 'btnTxt', 'btnBorder', 'btnDivider'].forEach(function (n) {
       var v = String(o[n]).replace(/^#/, '').toLowerCase();
       if (!/^[0-9a-f]{6}$/.test(v)) v = QnA.defaults[n];
       o[n] = v;
@@ -106,7 +113,7 @@
       o[n] = v === '' ? QnA.defaults[n] : v;
     });
     if (!o.start) o.start = '1';
-    ['footer', 'saveProgress', 'animate', 'scroll', 'injectCss'].forEach(function (n) {
+    ['btnBold', 'footer', 'saveProgress', 'animate', 'scroll', 'injectCss'].forEach(function (n) {
       if (typeof o[n] === 'string') o[n] = !/^(false|0|no|off)$/i.test(o[n]);
       else o[n] = !!o[n];
     });
@@ -207,7 +214,7 @@
    * Pairs are separated by semicolons, so in a label's text ";" is written %3B (and "%" %25).
    */
   var SETTINGS_KEYS = ['fontFamily', 'fontSize', 'lineHeight', 'colWidth', 'framePad', 'radius', 'compBg', 'compTxt', 'compLink',
-    'usrBg', 'usrTxt', 'usrLink', 'bodyBg', 'bodyTxt', 'bodyLink', 'chatStyle'].concat(LABEL_KEYS, ['footer', 'saveProgress', 'start']);
+    'usrBg', 'usrTxt', 'usrLink', 'bodyBg', 'bodyTxt', 'bodyLink', 'btnBg', 'btnTxt', 'btnBold', 'btnBorder', 'btnDivider', 'chatStyle'].concat(LABEL_KEYS, ['footer', 'saveProgress', 'start']);
   var SETTINGS_RE = /(^|\n)[ \t]*Settings:([^\n]*)\s*$/i;
 
   /** Split markup into { markup (without the tag), settings (object, or null when there is no tag) }. */
@@ -561,6 +568,16 @@
   /*  CSS (port of lib/css.php)                                          */
   /* ------------------------------------------------------------------ */
  
+  // a colour `t` of the way from hex colour `a` to hex colour `b` (both six digits, no #)
+  function mixHex(a, b, t) {
+    var out = '';
+    for (var i = 0; i < 6; i += 2) {
+      var v = Math.round(parseInt(a.substr(i, 2), 16) * (1 - t) + parseInt(b.substr(i, 2), 16) * t);
+      out += (v < 16 ? '0' : '') + v.toString(16);
+    }
+    return out;
+  }
+
   QnA.css = function (opts, scope) {
     var o = normalizeOptions(opts);
     var lh = o.lineHeight, r = o.radius;
@@ -574,6 +591,12 @@
     // and their arrow; answers stay bubbles, set 8px further down.
     var llm = o.chatStyle === 'llm';
     var qBg = llm ? o.bodyBg : o.compBg, qTxt = llm ? o.bodyTxt : o.compTxt, qLink = llm ? o.bodyLink : o.compLink;
+    // Buttons. The hover shade is the background moved 1/14 of the way to the text colour, which for the
+    // default eeeeee / 000000 is the dddddd it has always been, and darkens a light button / lightens a dark one.
+    var btnHover = mixHex(o.btnBg, o.btnTxt, 1 / 14);
+    var btn = 'background:#' + o.btnBg + ';', btnTxt = 'color:#' + o.btnTxt + ';' + (o.btnBold ? 'font-weight:bold;' : '');
+    var btnOver = 'background:#' + btnHover + ';';
+    var creditLinks = o.btnTxt !== QnA.defaults.btnTxt;   // see div.credit_text below
     var qBox = llm ? 'border-radius:0;padding:8px 0 0 0;margin:0;' : 'border-radius:' + r + 'px;' + pad + 'margin-right:' + (r + 30) + 'px;';
     return [
       scope ? '' : 'script[type="text/qna"],#rawmarkup{display:none;}',
@@ -593,22 +616,24 @@
       '' + S + 'div.ans_text a:link,' + S + 'div.ans_text a:hover,' + S + 'div.ans_text a:active,' + S + 'div.ans_text a:visited{color:#' + o.usrLink + ';}',
       '' + S + 'div.ans_arrow{float:right;width:0;height:0;border-left:10px solid transparent;border-right:5px solid transparent;border-top:15px solid #' + o.usrBg + ';margin:0 ' + (r + 5) + 'px;}',
       '' + S + 'div.choices{float:left;width:100%;margin:15px 0 0 0;}',
-      '' + S + 'div.standard_buttons{float:left;width:100%;margin-top:5px;border-top:1px solid #ddd;padding-top:12px;}',
-      '' + S + 'div.credits{float:left;width:100%;background:#eee;margin:0 0 15px 0;}',
-      // credits always sit on grey, so they keep black text and standard link colours whatever the body colours are
-      '' + S + 'div.credit_text{' + font + 'color:#000;padding:4px 15px 10px 15px;}',
-      '' + S + 'div.credit_text a:link{color:#0000ee;}',
-      '' + S + 'div.credit_text a:visited{color:#551a8b;}',
+      '' + S + 'div.standard_buttons{float:left;width:100%;margin-top:5px;border-top:1px solid #' + o.btnDivider + ';padding-top:12px;}',
+      '' + S + 'div.credits{float:left;width:100%;' + btn + 'margin:0 0 15px 0;}',
+      // the credits box is dressed like the buttons: their background and text colour (Button Body), but never their bold.
+      // Its links keep the standard blue / purple while the button text is the default black; with any other
+      // text colour they take it (still underlined), since standard link colours are only safe on a light box
+      '' + S + 'div.credit_text{' + font + 'color:#' + o.btnTxt + ';padding:4px 15px 10px 15px;}',
+      '' + S + 'div.credit_text a:link{color:#' + (creditLinks ? o.btnTxt : '0000ee') + ';}',
+      '' + S + 'div.credit_text a:visited{color:#' + (creditLinks ? o.btnTxt : '551a8b') + ';}',
       '' + S + 'li.error{list-style-type:none;background:#ffdddd;margin:10px 0 0 0;padding:5px;}',
       '' + S + '.qpad{float:left;padding:0 ' + (lh * 0.75) + 'px;}',
-      '' + S + 'a.sbutton{float:left;' + font + 'width:48%;background:#eee;border-radius:8px;' + bpad + 'margin:0 0 3px 0;border:solid 1px #888;text-align:center;color:#000;text-decoration:none;cursor:pointer;}',
-      '' + S + 'a.sbutton:hover,' + S + 'a.sbutton:active{background:#ddd;}',
-      '' + S + 'a.qabutton{float:left;' + font + 'width:100%;background:#eee;border-radius:8px;' + bpad + 'margin:0 0 8px 0;border:solid 1px #888;text-align:left;color:#000;text-decoration:none;cursor:pointer;box-sizing:border-box;}',
-      '' + S + 'a.qabutton:hover,' + S + 'a.qabutton:active{background:#ddd;}',
-      '' + S + 'div.xdiv{float:left;width:100%;margin:0 0 8px 0;background:#eee;border:solid 1px #888;border-radius:8px;box-sizing:border-box;}',
-      '' + S + 'input.xinput{box-sizing:border-box;float:left;width:100%;' + font + 'background:#fff;border-top-left-radius:8px;border-top-right-radius:8px;padding:' + (lh * 0.5) + 'px ' + (lh * 0.5) + 'px ' + (lh * 0.6) + 'px ' + (lh * 0.5) + 'px;border:solid 0 #888;border-bottom:solid 1px #888;text-align:left;color:#000;}',
-      '' + S + 'a.xbutton{float:left;width:100%;text-align:left;' + font + 'background:#eee;border-radius:8px;' + bpad + 'color:#000;text-decoration:none;cursor:pointer;}',
-      '' + S + 'a.xbutton:hover,' + S + 'a.xbutton:active{border-top-left-radius:0;border-top-right-radius:0;background:#ddd;}',
+      '' + S + 'a.sbutton{float:left;' + font + 'width:48%;' + btn + 'border-radius:8px;' + bpad + 'margin:0 0 3px 0;border:solid 1px #' + o.btnBorder + ';text-align:center;' + btnTxt + 'text-decoration:none;cursor:pointer;}',
+      '' + S + 'a.sbutton:hover,' + S + 'a.sbutton:active{' + btnOver + '}',
+      '' + S + 'a.qabutton{float:left;' + font + 'width:100%;' + btn + 'border-radius:8px;' + bpad + 'margin:0 0 8px 0;border:solid 1px #' + o.btnBorder + ';text-align:left;' + btnTxt + 'text-decoration:none;cursor:pointer;box-sizing:border-box;}',
+      '' + S + 'a.qabutton:hover,' + S + 'a.qabutton:active{' + btnOver + '}',
+      '' + S + 'div.xdiv{float:left;width:100%;margin:0 0 8px 0;' + btn + 'border:solid 1px #' + o.btnBorder + ';border-radius:8px;box-sizing:border-box;}',
+      '' + S + 'input.xinput{box-sizing:border-box;float:left;width:100%;' + font + 'background:#fff;border-top-left-radius:8px;border-top-right-radius:8px;padding:' + (lh * 0.5) + 'px ' + (lh * 0.5) + 'px ' + (lh * 0.6) + 'px ' + (lh * 0.5) + 'px;border:solid 0 #' + o.btnBorder + ';border-bottom:solid 1px #' + o.btnBorder + ';text-align:left;color:#000;}',
+      '' + S + 'a.xbutton{float:left;width:100%;text-align:left;' + font + '' + btn + 'border-radius:8px;' + bpad + '' + btnTxt + 'text-decoration:none;cursor:pointer;}',
+      '' + S + 'a.xbutton:hover,' + S + 'a.xbutton:active{border-top-left-radius:0;border-top-right-radius:0;' + btnOver + '}',
       '' + S + '.qna-jump{float:left;width:100%;height:1px;}',
       '' + S + '.qna-pending{float:left;width:100%;position:relative;min-height:' + (llm ? lh + 18 : Math.round(lh * 2.2 + 25)) + 'px;}',
       '' + S + '.qna-pending .qna-typing{position:absolute;top:0;left:0;width:100%;margin:5px 0 0 0;}',
@@ -620,7 +645,7 @@
       '' + S + '.qna-dots i:nth-child(3){animation-delay:.4s;}',
       scope ? '' : '@keyframes qna-blink{0%,80%,100%{opacity:.35;transform:translateY(0);}40%{opacity:1;transform:translateY(-2px);}}',
       scope ? '' : '@keyframes qna-fadein{from{opacity:0;}to{opacity:1;}}',
-      '' + S + '.qna-footer{float:left;width:100%;margin:15px 0 0 0;border-top:solid 1px #ddd;}',
+      '' + S + '.qna-footer{float:left;width:100%;margin:15px 0 0 0;border-top:solid 1px #' + o.btnDivider + ';}',
       '' + S + '.qna-spacer{float:left;width:100%;height:0;}',
       '' + S + '.qna-footer p{text-align:center;}',
       '' + S + '.qna-error-list{margin:0;padding:0;font-family:Verdana,Geneva,sans-serif;font-size:13px;}'

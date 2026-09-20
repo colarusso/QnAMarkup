@@ -225,6 +225,45 @@ function check(name, cond, info) {
   await p.setContent(page(chat + '\n\nSettings: chat_style=llm\n', 'data-chat-style="sms"')); await p.waitForTimeout(200);
   check('chat style: set by the Settings tag, overridden by the attribute; junk means SMS', await p.evaluate(() => document.querySelector('.qna').qna.options.chatStyle === 'sms' && QnA.parse('Q: a\n\nSettings: chatStyle=llm').settings.chatStyle === 'llm' && QnA.normalizeOptions({ chatStyle: 'irc' }).chatStyle === 'sms'));
 
+  /* ---- button colours, bold, divider ---- */
+  const btnOf = () => p.evaluate(() => { const g = (s, prop) => { const e = document.querySelector(s); return e ? getComputedStyle(e)[prop] : null; };
+    return { bg: g('.qabutton', 'backgroundColor'), txt: g('.qabutton', 'color'), weight: g('.qabutton', 'fontWeight'), sBg: g('.sbutton', 'backgroundColor'), sTxt: g('.sbutton', 'color'), sWeight: g('.sbutton', 'fontWeight'), sBorder: g('.sbutton', 'borderTopColor'), qBorder: g('.qabutton', 'borderTopColor'), xdivBorder: g('.xdiv', 'borderTopColor'), xinBorder: g('.xinput', 'borderBottomColor'),
+      std: g('.standard_buttons', 'borderTopColor'), foot: g('.qna-footer', 'borderTopColor'), xBg: g('.xbutton', 'backgroundColor'), xTxt: g('.xbutton', 'color'), xWeight: g('.xbutton', 'fontWeight'), xdiv: g('.xdiv', 'backgroundColor'), xin: g('.xinput', 'backgroundColor'), opts: document.querySelector('.qna').qna.options }; });
+  const btnMarkup = 'Q: Hello\nA: Hi\n\tQ(name): What is your name?\n\tX:\n\t\tQ: Bye\nA: Other\n\tQ: Pick\n\tA: One\n\t\tQ: x';
+  await p.setContent(page(btnMarkup)); await p.waitForTimeout(200);
+  await clickAnswer('Other'); await p.waitForSelector('.sbutton');
+  const b0 = await btnOf();
+  check('buttons: defaults are unchanged (eee / 000 / normal weight / ddd rules)', b0.bg === 'rgb(238, 238, 238)' && b0.txt === 'rgb(0, 0, 0)' && b0.weight === '400' && b0.std === 'rgb(221, 221, 221)' && b0.foot === 'rgb(221, 221, 221)' && b0.sBorder === 'rgb(136, 136, 136)' && b0.opts.btnBorder === '888888' && b0.opts.btnBold === false, b0);
+  check('buttons: default hover shade is still #dddddd', await p.evaluate(() => /a\.qabutton:hover,a\.qabutton:active\{background:#dddddd;\}/.test(QnA.css({})) && /a\.sbutton:active\{background:#dddddd;\}/.test(QnA.css({})) && /a\.xbutton:active\{[^}]*background:#dddddd;\}/.test(QnA.css({}))));
+  await p.setContent(page(btnMarkup, 'data-btn-bg="#102030" data-btn-txt="FFEEDD" data-btn-bold="true" data-btn-border="00aa55" data-btn-divider="aa0000"')); await p.waitForTimeout(200);
+  await clickAnswer('Other'); await p.waitForSelector('.sbutton');
+  const b1a = await btnOf();
+  await p.click('.qna-back'); await p.waitForTimeout(500);
+  await clickAnswer('Hi'); await p.waitForSelector('.xbutton');
+  const b1 = Object.assign(await btnOf(), { bg: b1a.bg, txt: b1a.txt, weight: b1a.weight, qBorder: b1a.qBorder });
+  check('buttons: background and text colour apply to answer, standard and text-input buttons', [b1.bg, b1.sBg, b1.xBg, b1.xdiv].every(c => c === 'rgb(16, 32, 48)') && [b1.txt, b1.sTxt, b1.xTxt].every(c => c === 'rgb(255, 238, 221)'), b1);
+  check('buttons: bold applies to every button; input field stays white', [b1.weight, b1.sWeight, b1.xWeight].every(w => w === '700') && b1.xin === 'rgb(255, 255, 255)' , b1);
+  check('buttons: border colour applies to buttons, the text-input box and the line under its field', [b1.sBorder, b1.qBorder, b1.xdivBorder, b1.xinBorder].every(c => c === 'rgb(0, 170, 85)'), b1);
+  check('buttons: divider colours the top border of standard_buttons and qna-footer', b1.std === 'rgb(170, 0, 0)' && b1.foot === 'rgb(170, 0, 0)', b1);
+  check('buttons: hover shade is derived from the two colours (dark buttons lighten)', await p.evaluate(() => /a\.qabutton:hover,a\.qabutton:active\{background:#212f3c;\}/.test(QnA.css({ btnBg: '102030', btnTxt: 'ffeedd' }))));
+  // the credits box follows the button background and text colour, but not the bold
+  const credOf = () => p.evaluate(() => { document.querySelector('.qna-credits-link').click(); const g = (s, prop) => getComputedStyle(document.querySelector(s))[prop];
+    return { bg: g('.credits', 'backgroundColor'), txt: g('.credit_text', 'color'), weight: g('.credit_text p:nth-child(2)', 'fontWeight'), link: g('.credit_text a', 'color'), shown: g('.credits', 'display') }; });
+  const credMarkup = 'Title: T\nAuthor: <a href="https://example.com/never-visited">Me</a>\n' + btnMarkup;
+  await p.setContent(page(credMarkup)); await p.waitForTimeout(200);
+  const c0 = await credOf();
+  check('credits: defaults unchanged (eee, black, standard link blue)', c0.shown === 'block' && c0.bg === 'rgb(238, 238, 238)' && c0.txt === 'rgb(0, 0, 0)' && c0.link === 'rgb(0, 0, 238)' && c0.weight === '400', c0);
+  await p.setContent(page(credMarkup, 'data-btn-bg="102030" data-btn-txt="ffeedd" data-btn-bold="true"')); await p.waitForTimeout(200);
+  const c1 = await credOf();
+  check('credits: take the button background and text colour; links follow the text colour', c1.bg === 'rgb(16, 32, 48)' && c1.txt === 'rgb(255, 238, 221)' && c1.link === 'rgb(255, 238, 221)', c1);
+  check('credits: bold buttons leave the credit text unchanged', c1.weight === '400' && await p.evaluate(() => getComputedStyle(document.querySelector('.qabutton')).fontWeight) === '700', c1);
+  const bt = await p.evaluate(() => ({ tag: QnA.settingsTag({ btn_bg: '123456', btnBold: 'true' }), round: QnA.splitSettings('Q: a\n\nSettings: btnBg=123456; btn_txt=abcdef; btnBold=true; btnDivider=zzz').settings, norm: QnA.normalizeOptions({ btnBg: 'red', btnDivider: '#ABCDEF', btnBold: '0', btn_border: '#00AA55' }) }));
+  check('buttons: Settings tag, legacy names and validation', /bodyLink=0000ff; btnBg=123456; btnTxt=000000; btnBold=true; btnBorder=888888; btnDivider=dddddd; chatStyle=sms;/.test(bt.tag) && bt.round.btnBg === '123456' && bt.round.btnTxt === 'abcdef' && bt.round.btnBold === 'true' && bt.norm.btnBg === 'eeeeee' && bt.norm.btnDivider === 'abcdef' && bt.norm.btnBorder === '00aa55' && bt.norm.btnBold === false, bt);
+  await p.setContent(page(btnMarkup + '\n\nSettings: btnBg=123456; btnBold=true; btnDivider=00aa00\n', 'data-btn-bg="654321"')); await p.waitForTimeout(200);
+  await clickAnswer('Other'); await p.waitForSelector('.sbutton');
+  const b2 = await btnOf();
+  check('buttons: set by the Settings tag, overridden by the attribute', b2.bg === 'rgb(101, 67, 33)' && b2.weight === '700' && b2.std === 'rgb(0, 170, 0)', b2);
+
   /* ---- button and footer link text ---- */
   await p.setContent(page(chat, 'data-label-save="Send" data-label-back="&lt;b&gt;Back&lt;/b&gt;" data-label-restart="Again; 100%" data-label-credits="about" data-label-edit="remix" data-label_code="make one"')); await p.waitForTimeout(200);
   await clickAnswer('Hi');

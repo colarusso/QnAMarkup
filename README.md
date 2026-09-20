@@ -6,7 +6,7 @@ interpreter plus a new editor: no server-side code, so a QnA can be hosted on
 any static host or dropped into an existing page with two `<script>` tags.
 
 ```html
-<script src="https://www.qnamarkup.org/dist/2.1.0/qna.min.js"></script>
+<script src="https://www.qnamarkup.org/dist/2.2.0/qna.min.js"></script>
 <script type="text/qna">
 Q: Would you like to embed a QnA?
 A: Yes.
@@ -74,6 +74,7 @@ the editor's Settings tab (camelCase or the original snake_case both work):
         data-comp-bg="336699" data-comp-txt="ffffff" data-comp-link="e3fbfc"
         data-usr-bg="eeeeee" data-usr-txt="000000" data-usr-link="0000ff"
         data-body-bg="ffffff" data-body-txt="000000" data-body-link="0000ff"
+        data-btn-bg="eeeeee" data-btn-txt="000000" data-btn-bold="false" data-btn-border="888888" data-btn-divider="dddddd"
         data-chat-style="sms" data-label-back="GO BACK ONE" data-label-restart="START OVER"
         data-footer="false" data-start="1" data-target="#render-here">
 …
@@ -96,9 +97,26 @@ the editor's Settings tab (camelCase or the original snake_case both work):
   background behind the conversation (and of the whole page in the viewer /
   full-page outputs, which carry `<body class="qna-page">`), and the colour of
   text and links outside the bubbles (Before/After content, footer). The
-  credits box always sits on grey, so it keeps black text and standard link
-  colours. The Body Text font family, size and line height apply to the whole
+  credits box follows the buttons instead (see the Button Body below). The Body Text font family, size and line height apply to the whole
   body, credits included.
+* `data-btn-bg`, `data-btn-txt`, `data-btn-bold` — the "Button Body": the
+  background and text colour of every button (answer buttons `a.qabutton`,
+  the text-input box `div.xdiv` / `a.xbutton`, and GO BACK ONE / START OVER
+  `a.sbutton`), and whether their text is bold (`true` / `false`, default
+  `false`). The hover shade is derived from the two colours (the background
+  moved 1/14 of the way towards the text colour, which for the defaults is the
+  `#ddd` it always was), so a dark button lightens on hover and a light one
+  darkens. The text field inside the input box stays black on white. The
+  credits box (`div.credits`, `div.credit_text`) takes the same background and
+  text colour, but not the bold. Its links keep the standard blue / purple
+  while the button text is the default black; with any other button text
+  colour they take that colour (still underlined), so they stay readable on a
+  dark box.
+* `data-btn-border`, `data-btn-divider` — the "Borders": the outline of the
+  buttons and of the text-input box, including the line between its field and
+  its button (default `888888`), and the top border of `div.standard_buttons`
+  and `.qna-footer`, the two rules that act as dividers near the buttons
+  (default `dddddd`).
 * `data-target` — CSS selector of the element to render into (default: a new
   `<div class="qna">` inserted right after the markup element).
 * `data-footer="false"` — hide the credits / edit / code-your-own footer.
