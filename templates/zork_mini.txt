@@ -1,5 +1,5 @@
 Title: Zork mini preview
-Description: This is NOT a faitful port of Zork from its <a href="https://opensource.microsoft.com/blog/2025/11/20/preserving-code-that-shaped-generations-zork-i-ii-and-iii-go-open-source/" target="_blank">open source release</a>. It is a short adaptation meant to demonstrate some features of QnA Markup, esp. the formatting options under <i>Settings</i>.
+Description: This is NOT a full port of Zork from its <a href="https://opensource.microsoft.com/blog/2025/11/20/preserving-code-that-shaped-generations-zork-i-ii-and-iii-go-open-source/" target="_blank">open source release</a>. It is a short adaptation meant to demonstrate some features of QnA Markup, esp. the formatting optionnder <i>Settings</i>. Zork I has been relased under an <a href="https://github.com/historicalsource/zork1/blob/master/LICENSE" target="_blank">MIT license</a>.
 
 Q(west_closed):[West of House] You are standing in an open field west of a white house. The front door is boarded, and a small closed mailbox stands beside the path.
 A: Open the mailbox
@@ -256,6 +256,5 @@ A: Climb the chimney
     Q(30.2): You squeeze upward and emerge in the Kitchen. This excerpt ends here; behind you, the troll remains defeated and the house objects remain where you left them. GOTO:thanks
 
 Q(thanks): Thanks for playing! Visit <a href="https://www.qnamarkup.org/" target="_blank">QnAMarkup.org</a> to learn more about QnA. Then head over to the <a href="https://en.wikipedia.org/wiki/Zork" target="_blank">Zork Wikipedia page</a> to lean more about our inspiration. To edit the code of this QnA, click on the "edit" link below.
-
 
 Settings: fontFamily='Courier New', Courier, monospace; fontSize=16; lineHeight=18; colWidth=500; framePad=15; radius=15; compBg=5489eb; compTxt=ffffff; compLink=e3fbfc; usrBg=000000; usrTxt=00e447; usrLink=a2f6af; bodyBg=000000; bodyTxt=00e447; bodyLink=a2f6af; btnBg=00b438; btnTxt=000000; btnBold=true; btnBorder=000000; btnDivider=0c511a; chatStyle=llm; labelSave=Save above text as answer.; labelBack=UNDO; labelRestart=RESTART; labelCredits=credits; labelEdit=edit; labelCode=code your own; footer=true; saveProgress=false; start=1

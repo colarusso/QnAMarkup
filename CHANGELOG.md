@@ -62,6 +62,16 @@ with six digits).
   explains why and points to the compressed form, Embed Code and HTML full
   page. The link stays in the pane to copy or try. The limits are `LINK_MAX`
   in `editor.js`.
+* **Fixed: with word wrap on, the caret could sit a few characters to the
+  right of where typing landed.** The coloured text is a layer beneath a
+  transparent text area, and the two must wrap identically. When the text
+  area's scrollbar takes up room (Windows and Linux; macOS with a mouse
+  attached or *Show scroll bars: Always*), its text column was about 15px
+  narrower than the layer's. Lines that wrap at a space mostly hid this, but a
+  long URL is broken wherever the column ends, so from there on the visible
+  text and the real text were about two characters apart. The layer now gives
+  up the same room as the scrollbar (`syncGutter()` in `editor.js`), also when
+  the scrollbar comes and goes.
 
 ## 2.1.0 — chat styles and editable button text
 

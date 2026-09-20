@@ -235,10 +235,26 @@
     (lastResult && !lastResult.ok ? lastResult.errors : []).forEach(function (e) { if (e.line) errLines[e.line] = true; });
     return out.map(function (h, i) { return '<span class="ln' + (errLines[i + 1] ? ' err' : '') + '">' + h + '\n</span>'; }).join('');
   }
+  // The coloured text is a layer under a transparent textarea, so the two must wrap lines identically or
+  // the caret drifts away from the text it edits. A scrollbar that takes up room (Windows/Linux, and macOS
+  // with a mouse attached or "Show scroll bars: always") narrows the textarea's text column but not the
+  // layer's, which never scrolls on its own. Lines that wrap at a space usually hide the difference; a long
+  // URL, broken wherever the column ends, shows it as edits landing a couple of characters left of the
+  // caret. So the layer gives up the same room: its right / bottom padding grows by the scrollbar's size.
+  var gutter = { w: -1, h: -1, padR: 0, padB: 0 };
+  function syncGutter() {
+    var w = ta.offsetWidth - ta.clientWidth, h = ta.offsetHeight - ta.clientHeight;   // the textarea has no border
+    if (w === gutter.w && h === gutter.h) return;
+    if (gutter.w < 0) { var cs = getComputedStyle(ta); gutter.padR = parseFloat(cs.paddingRight) || 0; gutter.padB = parseFloat(cs.paddingBottom) || 0; }
+    gutter.w = w; gutter.h = h;
+    hlEl.style.paddingRight = (gutter.padR + w) + 'px';
+    hlEl.style.paddingBottom = (gutter.padB + h) + 'px';
+  }
   var lastHl = null, hlErrKey = '';
   function refreshHighlight() {
     var ek = lastResult && !lastResult.ok ? lastResult.errors.map(function (e) { return e.line; }).join(',') : '';
     if (ta.value !== lastHl || ek !== hlErrKey) { lastHl = ta.value; hlErrKey = ek; hlEl.innerHTML = highlight(ta.value); }
+    syncGutter();
     hlEl.scrollTop = ta.scrollTop; hlEl.scrollLeft = ta.scrollLeft;
     requestAnimationFrame(refreshHighlight);
   }

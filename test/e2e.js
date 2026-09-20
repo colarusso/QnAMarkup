@@ -795,6 +795,30 @@ server.listen(0, async () => {
     check('x script: empty brackets are reported with the line', await page.$eval('#status', e => e.className === 'err') && /Line 2:[\s\S]*empty/.test(await (await pv()).$eval('#qna', e => e.innerText)));
     await page.evaluate(() => { localStorage.clear(); });
 
+    /* ---- word wrap with a scrollbar that takes up room: the coloured layer must wrap exactly as the textarea does ---- */
+    {
+      // headless Chromium hides scrollbars by default; this browser shows classic 15px ones, as Windows/Linux and macOS-with-a-mouse do
+      const sbBrowser = await chromium.launch({ ignoreDefaultArgs: ['--hide-scrollbars'] });
+      const sp = await (await sbBrowser.newContext({ viewport: { width: 1300, height: 700 } })).newPage();
+      await sp.goto(base); await sp.waitForTimeout(1200);
+      await sp.addStyleTag({ content: '#markup::-webkit-scrollbar{width:15px;height:15px}' });
+      await sp.check('#wrap');
+      const longUrl = 'https://www.example.com/' + 'averyveryverylongpathsegmentwithoutanybreaks'.repeat(6) + '?x=1';
+      await sp.fill('#markup', Array.from({ length: 60 }, (_, i) => 'Q(' + (i + 1) + '): See <a href="' + longUrl + '">this link</a> please\nA: ok').join('\n')); await sp.waitForTimeout(500);
+      const wr = await sp.evaluate(() => { const ta = document.getElementById('markup'), hl = document.getElementById('hl'); const box = e => { const c = getComputedStyle(e); return e.clientWidth - parseFloat(c.paddingLeft) - parseFloat(c.paddingRight); };
+        // where the first line's text actually wraps in the layer, against a plain mirror of the textarea's text column
+        const breaks = el => { const r = document.createRange(), out = []; let top = null, n = 0; const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); let t; while ((t = w.nextNode())) for (let i = 0; i < t.length; i++, n++) { r.setStart(t, i); r.setEnd(t, i + 1); const rc = r.getClientRects()[0]; if (!rc || !rc.width) continue; if (top !== null && rc.top > top + 2) out.push(n); top = rc.top; } return out; };
+        const m = document.createElement('div'), cs = getComputedStyle(ta); m.style.cssText = 'position:absolute;visibility:hidden;left:0;top:0;box-sizing:content-box;padding:0;border:0;'; ['font', 'tabSize', 'whiteSpace', 'overflowWrap', 'wordBreak', 'letterSpacing'].forEach(k => { m.style[k] = cs[k]; }); m.style.width = box(ta) + 'px'; m.textContent = ta.value.split('\n')[0]; document.body.appendChild(m);
+        const res = { bar: ta.offsetWidth - ta.clientWidth, ta: box(ta), hl: box(hl), hlBreaks: breaks(hl.querySelector('.ln')), taBreaks: breaks(m) }; m.remove(); return res; });
+      check('wrap: (test browser shows a scrollbar that takes up room)', wr.bar > 0, wr);
+      check('wrap: highlight layer has the same text column as the textarea beside a scrollbar', wr.ta === wr.hl, wr);
+      check('wrap: a long URL breaks at the same characters in both', wr.hlBreaks.length >= 2 && JSON.stringify(wr.hlBreaks) === JSON.stringify(wr.taBreaks), wr);
+      await sp.fill('#markup', 'Q: short\nA: ok\n\tQ: done'); await sp.waitForTimeout(400);
+      const wr2 = await sp.evaluate(() => { const ta = document.getElementById('markup'), hl = document.getElementById('hl'); return { bar: ta.offsetWidth - ta.clientWidth, padR: getComputedStyle(hl).paddingRight, taPadR: getComputedStyle(ta).paddingRight }; });
+      check('wrap: the extra padding goes away with the scrollbar', wr2.bar === 0 && wr2.padR === wr2.taPadR, wr2);
+      await sbBrowser.close();
+    }
+
     check('no page errors', errors.length === 0, errors);
   } catch (e) { failed++; console.error(e); }
   await browser.close(); server.close();
