@@ -6,6 +6,175 @@ plus `js/interactive.js` at github.com/colarusso/QnAMarkup). Everything below
 is measured against that version; the markup language itself is unchanged,
 and QnAs written for the old editor run as they did before.
 
+## 2.4.0 — loadQnA(), Q Sharing and prior answers
+
+Changes since 2.3.0. The library is published at `dist/2.4.0/`; earlier
+versions are untouched. Nothing changes for a QnA that does not call the new
+function: same parse, same output, same flowchart. Progress saved by 2.3.0
+still loads.
+
+### Language
+
+* **`loadQnA(url, find, replace)`**, a new predefined function: bring another
+  QnA into the conversation. From an answer's script the loaded QnA's first
+  question takes the place of the question that would have followed the
+  answer (typing dots while it is fetched). `url`: a raw markup file, an HTML
+  page with a `<script type="text/qna">` (the first one), or an editor /
+  viewer link (`#z=`, `#j=`, `?markup=` decoded locally; `?source=` followed).
+  Relative URLs resolve against the page, or against the loading QnA's own
+  URL when the call is made from a loaded one. A fetch that fails, a page
+  with no QnA, or a file with errors shows a "[QnA: could not load …]" bubble
+  (reason in the console) with GO BACK ONE available.
+  * The loaded QnA's `Title:`, `Author:`, `Description:`, `Before:`, `After:`
+    and `Settings:` are ignored; the host's styling and footer apply.
+  * `find` / `replace`: the loaded question `find` is replaced by the host's
+    `replace`; any arrival there (GOTO:, goto(), nesting) continues in the
+    host. `find` may be an object of several pairs.
+  * **Units.** Each loaded QnA is a unit with prefix `L1`, `L2`, … numbered
+    per host instance in load order, however deep the loading goes; labels
+    and machine-made names are prefixed (`1.1` → `L1.1.1`), author names are
+    kept (shared) or prefixed when Q Sharing is off. A unit's `GOTO:` targets
+    are resolved before prefixing so they stay inside it; `goto()`, `getvar()`
+    and `<x>name</x>` in a unit look in that unit first. `json_str()` covers
+    every unit.
+  * **GO BACK ONE and saved progress.** A load is recorded on the answer's
+    history entry (`jumps: [{url, text, redirect}]`) with the fetched text, so
+    replay re-installs the unit from the text: nothing is fetched again, and
+    a changed remote file cannot break saved labels. `pre.jumps` covers a
+    load made from a script in the first question.
+  * **Parser.** A `Q` nested under an answer whose script calls `loadQnA()`
+    is an error ("An answer that calls loadQnA() cannot have a Q beneath it…").
+    Answers carry `loads` (the URL literal, or `true`), `returns` (literal
+    `replace` targets as labels) and `jumps` (literal `goto()` targets);
+    questions carry `jumps` from their inline scripts.
+* **Q Sharing** (`qShare`, `data-q-share`, `q_share=0` in plain links,
+  default on) and **prior answers.** With it on, a question whose variable
+  already holds a value set by a *different* unit is filled in instead of
+  asked: an `X` takes the value; an `A` question takes the button with the
+  same value, else, after a `confirm`, the single button that matches once
+  both are reduced to lower-case letters, digits and emoji (`\p{L}`,
+  `\p{N}`, `\p{Extended_Pictographic}`; HTML stripped first); no match, or
+  two alike, asks with no dialog. The exchange is drawn (question, then
+  `labelEarlier` + answer) with no pause, recorded as a history entry flagged
+  `auto`, runs the answer's `[javascript:…]` (a `goto()` there replaces its
+  next question), collects `DOC:` and appears in `transcript()`; the variable
+  keeps its value and origin. A filled-in question reached again in the same
+  run is asked (so a `GOTO:` loop in the loaded QnA cannot spin), as is a
+  unit's own question. GO BACK ONE stops on an auto entry: the question is
+  asked, an `X` field prefilled. Replays never re-match or re-confirm.
+  `QnA.normalizeValue(s)` exposes the comparison.
+* Two more of the built-in sentences become labels: `labelEmpty` ("Your
+  answer appears to be empty.", the alert for a blank text field;
+  `data-label-empty`, `label_empty=`) under *Text input* in the Button Text
+  card, and `labelEditWarn` ("You are about to edit a copy of this QnA. Any
+  edits will not change this instance.", the alert behind the footer's edit
+  link; `data-label-edit-warn`, `label_edit_warn=`) under *Edit* in Footer
+  Link Text. Both follow *Text input* / *Edit* in the `Settings:` tag.
+* Two new labels: `labelEarlier` ("Earlier you entered:") and `labelConfirm`
+  ("It looks like you may have answered this before; click OK to use
+  <x>answer</x> as your answer."), with `data-label-earlier` /
+  `data-label-confirm`, `label_earlier=` / `label_confirm=`, the `Settings:`
+  tag (`;` in the confirm text is `%3B`) and `config.js` defaults.
+
+### Flowchart
+
+* An answer that calls `loadQnA()` leads to an "External QnA" box (dashed
+  outline, captioned with the file name when the URL is a literal). Each
+  literal `replace` target gets a dotted "JS GOTO" edge from the box.
+* A literal `goto('name')` in an answer's or a question's script is a dotted
+  "JS GOTO" edge (`stroke-dasharray: 1.5 4`, round caps) to the target, as
+  against the dashed `GOTO` edge. Computed targets draw nothing.
+
+### Editor
+
+* Settings screen: a **Q Sharing** card (Yes / No) before a **Prior Answers**
+  card (the two labels), which sits next to Button Text. Q Sharing = No
+  greys out and disables Prior Answers. Both travel with the QnA like every
+  other setting, and Restore Defaults / `config.js` `defaults` know them.
+
+### Docs
+
+* **Bots Building Bots** (`syntax/#bots`) and the `skills/qna-markup/` skill:
+  `SKILL.md` (frontmatter + the workflow and rules an assistant needs),
+  `reference.md` (full syntax, error messages, predefined functions, running
+  and embedding), `examples/` (branching, letter/DOC, quiz/goto: all parsed
+  by the build and by `test/compare.js`) and `scripts/check.js` (validates
+  files with a copy of `dist/qna.js` that `build.js` refreshes). `build.js`
+  zips the folder to `skills/qna-markup.zip` (needs `zip`); `--site` ships
+  `skills/` whole. The page explains installing it in the Claude app, Claude
+  Code / Cowork, the API, and by pasting for other assistants.
+* Syntax page: the three "Advanced Usage" passages (A, X, DOC) are folded
+  into `<details>` boxes, closed by default; `syntax/syntax.js` (external, so
+  the editor origin's CSP allows it) opens the box holding the target of a
+  `#links`-style link or hash change. A stray duplicate `</body></html>` at
+  the end of the page was removed.
+* Syntax page: `loadQnA()` section (sources, CORS, find/replace, sharing,
+  matching, GO BACK ONE, flowchart, nesting), flowchart note under `goto()`,
+  pointer from Loading a Remote QnA. README, DEPLOY (CORS for `examples/`
+  and `templates/`).
+
+### Tests
+
+* runtime.js: loadQnA and prior-answer scenarios over a routed origin
+  (load_host / load_sub / load_sub2 fixtures under `test/fixtures_runtime/`),
+  sources, failures, nesting, restore, parser fields and the nested-Q error.
+  e2e.js: Settings cards, outputs, Settings tag, file round trip, flowchart
+  boxes and edges, the error in the editor, and a load from the sandboxed
+  preview (served with CORS by test/serve.js).
+
+## 2.3.0 — goto() and getvar()
+
+Changes since 2.2.0. The library is published at `dist/2.3.0/`; earlier
+versions are untouched, so pages that pin them keep working. Nothing about
+existing QnAs changes: the parser is the same, and so is the flowchart.
+
+### Language
+
+* **`goto(target)`**, a new predefined JavaScript function: jump to the `Q`
+  named (or numbered) `target`, from a script. It runs on the same machinery
+  as the `GOTO:` tag (`showQuestion`), so the target's `DOC:` is collected, a
+  `GOTO:` chain at the target is followed, and the transcript reads the same.
+  * In an answer's script (`A[javascript:…]`, `X[javascript:…]`) the target
+    *replaces* the question that would have followed the answer. That question
+    has already been drawn (hidden behind the typing dots) by the time the
+    script runs, so it is rolled back: its bubbles, `DOC:`, transcript lines
+    and, for an answer with nothing beneath it, the "[QnA: missing question]"
+    bubble. Calling `goto()` twice in one script: the last call wins.
+  * In a script inside a `Q`, the jump is queued and made when the question is
+    on screen, like a `GOTO:` ending it.
+  * At any other time (timer, fetch callback, the host page) a question still
+    behind the typing dots is shown at once and the target is added after it.
+  * **GO BACK ONE and saved progress.** Each jump is recorded on the history
+    entry of the answer it followed (`{label, value, skip, jumps}`; jumps made
+    before the first answer are kept separately and saved as `pre`). A redraw
+    replays the recorded jumps and ignores `goto()` calls (`this.replaying`),
+    so nothing is re-run and a random jump is not re-rolled. GO BACK ONE pops
+    the answer together with its jumps. Progress saved by 2.2.0 still loads.
+  * An unknown target shows the usual "[QnA: missing question …]" bubble and
+    logs to the console. Numeric targets in JavaScript are not renumbered by
+    the editor; named targets are safer.
+  * Not drawn in the flowchart (it is built from the tags only).
+* **`getvar(name)`**: the saved value of a question's variable, or
+  `undefined`. Both functions are globals and `QnA.goto` / `QnA.getvar`, and
+  methods of an instance.
+
+### Fixed
+
+* GO BACK ONE put the text of an undone `X` answer back in its field only when
+  that field belonged to the first question; the redraw used it up on the
+  first question drawn. It now goes to the last.
+
+### Editor
+
+* Both *embed the library in the page* boxes (Embed Code and HTML full page)
+  start checked. The editor remembers the boxes under new keys, so a browser
+  that last used 2.2.0 gets the new default once and its own choice after.
+* *Save HTML to File* and the flowchart's *Save as PNG* / *Save as SVG* are
+  named like *Save to File*: the title, tidied, then the date and time
+  (`My_QnA_2026-09-21T10-30.html`, `My_QnA_flowchart_….png`); without a title,
+  the placeholders `QnA_page_…` and `QnA_flowchart_…` (it was a fixed
+  `QnA_page.html`, and `QnA_markup_flowchart_…`).
+
 ## 2.2.0 — button colors and borders
 
 Changes since 2.1.0. The library is published at `dist/2.2.0/`; `dist/2.1.0/`

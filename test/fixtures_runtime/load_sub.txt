@@ -1,0 +1,18 @@
+Title: Sub
+Before: <p id="subbefore">ignored</p>
+Q(name): (Sub) What is your name?
+X[javascript:window.subx = (window.subx || 0) + 1]:
+	Q(pet): (Sub) Cat or dog?
+	A[javascript:window.subcat = (window.subcat || 0) + 1]: cat
+		Q(n): (Sub) Pick a number under 3.
+		X:
+			Q(check): <script>if (getvar('n') > 2) goto('n')</script>(Sub) Good.
+			A: finish
+				Q: GOTO:done
+	A: dog
+		Q: (Sub) Dogs. GOTO:done
+	A: neither
+		Q: (Sub) Load more? 
+		A[javascript:loadQnA('sub2.txt')]: yes
+Q(done): (Sub) That's all from the sub.
+Settings: fontSize=40; labelBack=SUB BACK

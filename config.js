@@ -44,9 +44,10 @@
     // as it renders: a setting it does not mention takes the library's default, not the one given here.
     defaults: {
       // Body Text
-      fontFamily: 'Verdana, Geneva, sans-serif',   // one not in the editor's list is added to it
-      fontSize: 14,
-      lineHeight: 20,
+      //fontFamily: 'Verdana, Geneva, sans-serif',   // one not in the editor's list is added to it
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif",
+      fontSize: 16,
+      lineHeight: 22,
       // Body Colors
       bodyBg: 'ffffff',
       bodyTxt: '000000',
@@ -73,11 +74,18 @@
       btnDivider: 'dddddd',        // the rules above GO BACK ONE / START OVER and above the footer
       // Button Text
       labelSave: 'Save above text as answer.',
+      labelEmpty: 'Your answer appears to be empty.',
       labelBack: 'GO BACK ONE',
       labelRestart: 'START OVER',
+      // Q Sharing (QnAs loaded with loadQnA())
+      qShare: true,                // a question already answered under the same name in another loaded QnA is filled in, not asked
+      // Prior Answers
+      labelEarlier: 'Earlier you entered:',
+      labelConfirm: 'It looks like you may have answered this before; click OK to use <x>answer</x> as your answer.',
       // Footer Link Text
       labelCredits: 'credits',
       labelEdit: 'edit',
+      labelEditWarn: 'You are about to edit a copy of this QnA. Any edits will not change this instance.',
       labelCode: 'code your own',
       // Behavior
       footer: true,

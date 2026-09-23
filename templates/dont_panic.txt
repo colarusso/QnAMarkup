@@ -1,0 +1,18 @@
+Title: The Ultimate Question?
+Description: A sample QnA demonstrating how you can use QnA and JavaScript to make decisions about how a user moves through the interview.
+
+Q(number): What's the answer to the ultimate question of life, the universe and everything?
+X[javascript:
+	if (getvar('number')==42) {
+		goto('right')
+	} else if (getvar('number')<42){
+		goto('low')
+	} else if (getvar('number')>42){
+		goto('high')} else {goto('nan')
+	}]:
+Q(right): That's right!
+Q(low): Too low. GOTO:number
+Q(high): Too High. GOTO:number
+Q(nan): So it turns out the answer is a number, and that's not a number. Sorry I can't read things like "one" or "two," numerals only. GOTO:number
+
+Settings: fontFamily=-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif; fontSize=16; lineHeight=22; colWidth=500; framePad=15; radius=15; compBg=5489eb; compTxt=ffffff; compLink=e3fbfc; usrBg=eeeeee; usrTxt=000000; usrLink=0000ff; bodyBg=ffffff; bodyTxt=000000; bodyLink=0000ff; btnBg=eeeeee; btnTxt=000000; btnBold=false; btnBorder=888888; btnDivider=dddddd; chatStyle=sms; qShare=true; labelSave=Save above text as answer.; labelEmpty=Your answer appears to be empty.; labelBack=GO BACK ONE; labelRestart=START OVER; labelCredits=credits; labelEdit=edit; labelEditWarn=You are about to edit a copy of this QnA. Any edits will not change this instance.; labelCode=code your own; labelEarlier=Earlier you entered:; labelConfirm=It looks like you may have answered this before%3B click OK to use <x>answer</x> as your answer.; footer=true; saveProgress=false; start=1

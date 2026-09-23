@@ -82,5 +82,20 @@ for (const file of files) {
   else if (KNOWN[name]) console.log(`KNOWN ${name} — ${KNOWN[name]}\n      ` + diffs.join('\n      ').slice(0, 600));
   else { failures++; console.log(`FAIL  ${name}\n  ` + diffs.join('\n  ')); }
 }
+// The qna-markup skill's examples and the QnA snippets in its SKILL.md / reference.md must parse
+// (they are what an assistant patterns its output on; the build checks the examples too).
+{
+  const skill = path.join(__dirname, '..', 'skills', 'qna-markup');
+  const items = ls(path.join(skill, 'examples')).filter(f => f.endsWith('.txt')).map(f => [path.basename(f), fs.readFileSync(f, 'utf8')]);
+  for (const md of ['SKILL.md', 'reference.md']) {
+    const text = fs.readFileSync(path.join(skill, md), 'utf8');
+    [...text.matchAll(/```\n([\s\S]*?)```/g)].map(m => m[1]).filter(b => /^(Title|Q)/m.test(b)).forEach((b, i) => items.push([md + ' snippet ' + (i + 1), b]));
+  }
+  for (const [name, text] of items) {
+    const r = QnA.parse(text);
+    if (r.ok) console.log('PASS  skill: ' + name);
+    else { failures++; console.log('FAIL  skill: ' + name + '\n  ' + r.errors.map(e => (e.line ? 'line ' + e.line + ': ' : '') + e.message.replace(/<[^>]*>/g, '')).join('\n  ')); }
+  }
+}
 console.log(failures ? `\n${failures} unexpected failure(s)` : '\nAll fixtures match (apart from documented deviations).');
 process.exit(failures ? 1 : 0);

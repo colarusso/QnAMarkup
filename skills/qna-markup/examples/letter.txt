@@ -1,0 +1,24 @@
+Title: Letter to my landlord
+Description: Collects facts with X tags, assembles a letter with DOC tags, shows it with showdoc().
+
+Q(name): What is your full name?
+X:
+	Q(address): What is the address of the property (street, town)?
+	X:
+		Q(problem): In a sentence, what needs repairing?
+		X:
+			Q(reported): When did you first tell the landlord about it?
+			X:
+				DOC: Dear Landlord,<br><br>I am writing about the property at <x>address</x>.<br><br>On <x>reported</x> I told you that <x>problem</x>. It has still not been fixed.<br><br>
+				Q(urgent): Is the problem making the home unsafe or unhealthy?
+				A: Yes
+					DOC: This is affecting my health and safety, so I ask you to arrange the repair within 7 days.<br><br>
+					Q: GOTO:closing
+				A: No
+					DOC: Please arrange the repair within 28 days.<br><br>
+					Q: GOTO:closing
+DOC: If I do not hear from you by then, I will contact the local housing office.<br><br>Yours sincerely,<br><x>name</x>
+Q(closing): Here is your letter. Check it, then print or save it.
+A[javascript:showdoc('Read the letter through. You can edit it here before printing or saving.')]: Show my letter
+A: Start over and change my answers
+	Q: GOTO:name

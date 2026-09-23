@@ -12,7 +12,8 @@
   var STYLE_KEYS = ['fontFamily', 'fontSize', 'lineHeight', 'colWidth', 'framePad', 'radius', 'compBg', 'compTxt', 'compLink', 'usrBg', 'usrTxt', 'usrLink', 'bodyBg', 'bodyTxt', 'bodyLink', 'btnBg', 'btnTxt', 'btnBorder', 'btnDivider'];
   var COLOR_KEYS = ['compBg', 'compTxt', 'compLink', 'usrBg', 'usrTxt', 'usrLink', 'bodyBg', 'bodyTxt', 'bodyLink', 'btnBg', 'btnTxt', 'btnBorder', 'btnDivider'];
   var COMP_KEYS = ['compBg', 'compTxt', 'compLink'];   // System Text colours: not used (so greyed out) when the chat style is LLM
-  var LABEL_KEYS = ['labelSave', 'labelBack', 'labelRestart', 'labelCredits', 'labelEdit', 'labelCode'];
+  var LABEL_KEYS = ['labelSave', 'labelEmpty', 'labelBack', 'labelRestart', 'labelCredits', 'labelEdit', 'labelEditWarn', 'labelCode', 'labelEarlier', 'labelConfirm'];
+  var PRIOR_KEYS = ['labelEarlier', 'labelConfirm'];   // the Prior Answers card: only used (so greyed out) when Q Sharing is on
   var LS_KEY = 'qna-editor-state';
   var libText = window.QNA_LIB_SOURCE || null;   // library source, for the "embed the library" option (dist/qna.inline.js)
   var lastResult = null;
@@ -32,7 +33,7 @@
   });
 
   /* ---------- style options ---------- */
-  var SETTINGS_KEYS = STYLE_KEYS.concat(['btnBold', 'chatStyle'], LABEL_KEYS, ['footer', 'start', 'saveProgress']);
+  var SETTINGS_KEYS = STYLE_KEYS.concat(['btnBold', 'chatStyle', 'qShare'], LABEL_KEYS, ['footer', 'start', 'saveProgress']);
   // The Settings screen's defaults: the library's, with anything config.js sets (defaults: {...}) on top.
   // Only Settings-screen options count, and each goes through the library's validation. These are what a
   // first visit and "Restore Defaults" show. Outputs are still compared with the LIBRARY's defaults
@@ -52,6 +53,7 @@
     STYLE_KEYS.forEach(function (k) { o[k] = $(k).value; });   // disabled (LLM) System Text fields still hold, and give, their values
     o.btnBold = $('btnBold').checked;
     o.chatStyle = $('chatStyle').value;
+    o.qShare = $('qShare').value === 'true';
     LABEL_KEYS.forEach(function (k) { o[k] = $(k).value.trim() || DEFAULTS[k]; });   // blank = the default text
     o.footer = $('footer').value === 'true';
     o.saveProgress = $('saveProgress').value === 'true';
@@ -73,6 +75,8 @@
     $('btnBold').checked = o.btnBold === true;
     $('chatStyle').value = o.chatStyle;
     syncChatStyle();
+    $('qShare').value = String(o.qShare !== false);
+    syncQShare();
     LABEL_KEYS.forEach(function (k) { $(k).value = o[k]; });
     $('footer').value = String(o.footer !== false);
     $('saveProgress').value = String(o.saveProgress === true);
@@ -89,6 +93,13 @@
     });
   }
   $('chatStyle').addEventListener('change', syncChatStyle);
+  // Q Sharing off: nothing is filled in from prior answers, so the Prior Answers texts are not used
+  function syncQShare() {
+    var off = $('qShare').value === 'false';
+    PRIOR_KEYS.forEach(function (k) { $(k).disabled = off; $(k).closest('label').classList.toggle('off', off); });
+    $('prior_answers').classList.toggle('off', off);
+  }
+  $('qShare').addEventListener('change', syncQShare);
   LABEL_KEYS.forEach(function (k) {
     $(k).addEventListener('input', function () { scheduleLive(); });
     // a label left blank means the default, so show it
@@ -299,13 +310,21 @@
     // colons are not allowed in file names on Windows (and show as "/" on macOS), so the time uses a dash
     return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + 'T' + z(d.getHours()) + '-' + z(d.getMinutes());
   }
-  function markupFilename() {
+  // Every file the editor saves is named the same way: the QnA's Title: (spaces to underscores, anything
+  // but letters, digits, _ and - dropped) or, when there is no title, a placeholder; then what the file is,
+  // when that is not plain from the rest (`suffix`); then the date and time.
+  function outputFilename(placeholder, suffix, ext) {
     var title = '';
     try { title = QnA.parse(ta.value).header.titleText || ''; } catch (e) {}
     var name = title.trim().replace(/\s+/g, '_').replace(/[^A-Za-z0-9_\-]/g, '').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
-    return (name || 'QnA_markup') + '_' + stamp() + '.txt';
+    return (name ? name + (suffix ? '_' + suffix : '') : placeholder) + '_' + stamp() + '.' + ext;
   }
+  function markupFilename() { return outputFilename('QnA_markup', '', 'txt'); }
+  function htmlFilename() { return outputFilename('QnA_page', '', 'html'); }
+  function flowFilename(ext) { return outputFilename('QnA_flowchart', 'flowchart', ext); }
   window.markupFilename = markupFilename;
+  window.htmlFilename = htmlFilename;
+  window.flowFilename = flowFilename;
   // The saved file is the markup plus, as its last line, the Settings screen as a hidden Settings: tag.
   function markupForFile() {
     return QnA.splitSettings(ta.value).markup.replace(/\s+$/, '') + '\n\n' + QnA.settingsTag(getOptions()) + '\n';
@@ -354,7 +373,7 @@
   $('flow_png').addEventListener('click', function () {
     if (!flow) return;
     flow.toPng(2).then(function (blob) {
-      var name = markupFilename().replace(/\.txt$/, '') .replace(/_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}$/, '') + '_flowchart_' + stamp() + '.png';
+      var name = flowFilename('png');
       if (typeof blob === 'string') { var a = document.createElement('a'); a.href = blob; a.download = name; document.body.appendChild(a); a.click(); a.remove(); return; }
       var url = URL.createObjectURL(blob), a2 = document.createElement('a'); a2.href = url; a2.download = name; document.body.appendChild(a2); a2.click();
       setTimeout(function () { URL.revokeObjectURL(url); a2.remove(); }, 0);
@@ -362,7 +381,7 @@
   });
   $('flow_svg').addEventListener('click', function () {
     if (!flow) return;
-    var name = markupFilename().replace(/\.txt$/, '').replace(/_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}$/, '') + '_flowchart_' + stamp() + '.svg';
+    var name = flowFilename('svg');
     var blob = new Blob([flow.toSvg()], { type: 'image/svg+xml' }), url = URL.createObjectURL(blob), a = document.createElement('a');
     a.href = url; a.download = name; document.body.appendChild(a); a.click();
     setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 0);
@@ -515,11 +534,12 @@
       // Plain, human-readable form: the legacy query-string format the PHP editor used.
       var q = 'markup=' + encodeURIComponent(markup);
       Object.keys(opts).forEach(function (k) {
-        var legacy = { fontFamily: 'font_family', fontSize: 'font_size', lineHeight: 'line_height', colWidth: 'col_width', framePad: 'frame_pad', radius: 'radius', compBg: 'comp_bg', compTxt: 'comp_txt', compLink: 'comp_link', usrBg: 'usr_bg', usrTxt: 'usr_txt', usrLink: 'usr_link', bodyBg: 'body_bg', bodyTxt: 'body_txt', bodyLink: 'body_link', start: 'start', btnBg: 'btn_bg', btnTxt: 'btn_txt', btnBorder: 'btn_border', btnDivider: 'btn_divider', chatStyle: 'chat_style', labelSave: 'label_save', labelBack: 'label_back', labelRestart: 'label_restart', labelCredits: 'label_credits', labelEdit: 'label_edit', labelCode: 'label_code' }[k];
+        var legacy = { fontFamily: 'font_family', fontSize: 'font_size', lineHeight: 'line_height', colWidth: 'col_width', framePad: 'frame_pad', radius: 'radius', compBg: 'comp_bg', compTxt: 'comp_txt', compLink: 'comp_link', usrBg: 'usr_bg', usrTxt: 'usr_txt', usrLink: 'usr_link', bodyBg: 'body_bg', bodyTxt: 'body_txt', bodyLink: 'body_link', start: 'start', btnBg: 'btn_bg', btnTxt: 'btn_txt', btnBorder: 'btn_border', btnDivider: 'btn_divider', chatStyle: 'chat_style', labelSave: 'label_save', labelBack: 'label_back', labelRestart: 'label_restart', labelCredits: 'label_credits', labelEdit: 'label_edit', labelCode: 'label_code', labelEarlier: 'label_earlier', labelConfirm: 'label_confirm', labelEmpty: 'label_empty', labelEditWarn: 'label_edit_warn' }[k];
         if (legacy) q += '&' + legacy + '=' + encodeURIComponent(opts[k]);
         else if (k === 'footer' && opts[k] === false) q += '&sharing=2';
         else if (k === 'saveProgress' && opts[k] === true) q += '&save_progress=1';
         else if (k === 'btnBold' && opts[k] === true) q += '&btn_bold=1';
+        else if (k === 'qShare' && opts[k] === false) q += '&q_share=0';
       });
       setUrl(VIEWER + '?' + q);
     } else {
@@ -623,14 +643,14 @@
   $('copy_embed').addEventListener('click', function () { copy('embed_text'); });
   $('copy_html').addEventListener('click', function () { copy('html_text'); });
   //$('save_embed').addEventListener('click', function () { QnA.save2('QnA_embed.html', $('embed_text').value); });
-  $('save_html').addEventListener('click', function () { QnA.save2('QnA_page.html', $('html_text').value); });
+  $('save_html').addEventListener('click', function () { QnA.save2(htmlFilename(), $('html_text').value); });
 
   /* ---------- persistence ---------- */
   function saveState() {
     try {
       localStorage.setItem(LS_KEY, JSON.stringify({
         markup: ta.value, options: getOptions(), wrap: $('wrap').checked, live: $('live').checked, output: outSel.value,
-        linkMode: linkMode(), inlineLib: $('inline_lib').checked, inlineLibEmbed: $('inline_lib_embed').checked,
+        linkMode: linkMode(), embedLib: $('inline_lib').checked, embedLibEmbed: $('inline_lib_embed').checked,
         rightW: window.paneSizes ? window.paneSizes().rightW : undefined, rightH: window.paneSizes ? window.paneSizes().rightH : undefined
       }));
     } catch (e) {}
@@ -657,7 +677,7 @@
     return QnA.decodeHash(frag).catch(function (e) { alert('Could not read the QnA from this link: ' + e.message); return null; });
   }
 
-  if (!libText) { $('inline_lib_embed').disabled = true; $('inline_lib').disabled = true; $('inline_lib').parentNode.title = 'dist/qna.inline.js did not load; run build.js.'; }
+  if (!libText) { $('inline_lib_embed').disabled = true; $('inline_lib').disabled = true; $('inline_lib_embed').checked = false; $('inline_lib').checked = false; $('inline_lib').parentNode.title = 'dist/qna.inline.js did not load; run build.js.'; }
 
   /* ---------- resizable panes ---------- */
   (function () {
@@ -755,8 +775,10 @@
       if (st.output === 'snippet') st.output = 'embed';
       if (st.output) showOutput(st.output);
       if (st.linkMode) { var lm = document.querySelector('input[name=link_mode][value=' + st.linkMode + ']'); if (lm) lm.checked = true; }
-      if (st.inlineLib && !$('inline_lib').disabled) $('inline_lib').checked = true;
-      if (st.inlineLibEmbed && !$('inline_lib_embed').disabled) $('inline_lib_embed').checked = true;
+      // both "embed the library" boxes start checked (since 2.3.0); only an explicit choice made since then unchecks one
+      // (the state's older inlineLib / inlineLibEmbed keys recorded the old unchecked default, so they are not read)
+      if (st.embedLib === false) $('inline_lib').checked = false;
+      if (st.embedLibEmbed === false) $('inline_lib_embed').checked = false;
     }
     update();
   });

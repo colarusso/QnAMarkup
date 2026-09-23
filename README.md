@@ -6,7 +6,7 @@ interpreter plus a new editor: no server-side code, so a QnA can be hosted on
 any static host or dropped into an existing page with two `<script>` tags.
 
 ```html
-<script src="https://www.qnamarkup.org/dist/2.2.0/qna.min.js"></script>
+<script src="https://www.qnamarkup.org/dist/2.4.0/qna.min.js"></script>
 <script type="text/qna">
 Q: Would you like to embed a QnA?
 A: Yes.
@@ -91,8 +91,21 @@ the editor's Settings tab (camelCase or the original snake_case both work):
 * `data-label-save`, `data-label-back`, `data-label-restart` — the text of the
   built-in buttons ("Save above text as answer.", "GO BACK ONE", "START OVER").
   `data-label-credits`, `data-label-edit`, `data-label-code` — the text of the
-  footer links ("credits", "edit", "code your own"). Plain text, not HTML; up
-  to 200 characters; blank means the standard wording.
+  footer links ("credits", "edit", "code your own"). `data-label-empty` — the
+  alert when the text field is submitted blank ("Your answer appears to be
+  empty."); `data-label-edit-warn` — the alert behind the footer's edit link
+  ("You are about to edit a copy of this QnA. Any edits will not change this
+  instance."). Plain text, not HTML; up to 200 characters; blank means the
+  standard wording.
+* `data-q-share` — `true` (the default) or `false`: whether a variable name
+  given by an author means the same thing in every QnA brought in with
+  `loadQnA()`, so a question already answered under that name is filled in
+  rather than asked (see *Loading other QnAs* below). `data-label-earlier`
+  ("Earlier you entered:") is put before such a filled-in answer, and
+  `data-label-confirm` ("It looks like you may have answered this before;
+  click OK to use <x>answer</x> as your answer.") is the confirm dialog shown
+  when the earlier answer only roughly matches a button; `<x>answer</x>` stands
+  for the button's text. Both are plain text like the other labels.
 * `data-body-bg`, `data-body-txt`, `data-body-link` — the "Body Colors": the
   background behind the conversation (and of the whole page in the viewer /
   full-page outputs, which carry `<body class="qna-page">`), and the colour of
@@ -211,7 +224,88 @@ Set `window.QNA_NO_AUTOINIT = true` before loading the library, or add
 All of the original helpers are available as globals, so existing QnAs with
 `A[javascript:…]` buttons keep working: `transcript(format)`, `doc()`,
 `json_str()`, `mail2(to, subject, body)`, `save2(filename, content)`,
-`submit2(action, method, docAs, instructions, transcriptAs, jsonAs, target)`.
+`submit2(action, method, docAs, instructions, transcriptAs, jsonAs, target)`,
+and since 2.3.0 `goto`, `getvar` and (2.4.0) `loadQnA`, described below.
+New in 2.3.0: `goto(target)` jumps to a question by name or id, exactly as a
+`GOTO:` tag does, so a script can drive the interview, and `getvar(name)`
+returns a saved answer (or `undefined`):
+
+```
+Q(number): What's the answer to the ultimate question?
+X[javascript:if (getvar('number') == 42) { goto('right') } else { goto('wrong') }]:
+Q(right): That's right!
+Q(wrong): Nope. GOTO:number
+```
+
+Called from an answer's script, `goto()` replaces the question that would
+otherwise follow that answer (so the `X` above needs none beneath it); from a
+script inside a `Q` it acts like a `GOTO:` at the end of that question; at any
+other time it adds the target after the question showing. Jumps are recorded
+with the answer they followed, so *GO BACK ONE* and saved progress redraw the
+conversation as it happened, without running scripts again. A `goto()` whose
+target is a literal is drawn in the flowchart as a dotted "JS GOTO" edge
+(computed targets are not). Prefer named targets: numbers inside JavaScript
+are not renumbered by the editor.
+
+### Writing QnAs with an AI assistant
+
+`skills/qna-markup/` is a skill (a `SKILL.md` with a language reference,
+three checked examples and a checker script) that teaches an assistant such
+as Claude to write QnA Markup: "encode the process in this document as a
+QnA", "help me write a QnA about X". `node build.js` refreshes the checker's
+copy of the library, parses the examples and zips the folder to
+`skills/qna-markup.zip`. Installation for the Claude app, Claude Code, the API
+and other assistants is described on the syntax page under *Bots Building
+Bots* (`syntax/#bots`).
+
+### Loading other QnAs
+
+New in 2.4.0: `loadQnA(url, find, replace)` brings another QnA into the
+conversation. Called from an answer's script, the loaded QnA's first question
+takes the place of the question that would have followed that answer (an
+answer that calls it may not have a `Q` nested beneath it; the parser reports
+one). `url` is a raw markup file, an HTML page with a `<script type="text/qna">`
+(the first is used), or an editor/viewer link (`#z=…`, `?markup=…`, `?source=…`,
+decoded locally). It is fetched by the visitor's browser, so cross-origin
+files need CORS headers. The loaded QnA's header tags and `Settings:` are
+ignored; the host's styling applies.
+
+```
+Q(name): What is your name?
+X:
+	Q(help): What do you need help with?
+	A[javascript:loadQnA('https://example.com/housing.txt', 'done', 'next')]: A housing problem
+	A: Something else
+		Q: Tell us more…
+Q(next): Thanks, <x>name</x>.
+```
+
+`find` / `replace` bring the visitor back: any arrival at the loaded question
+`find` (by `GOTO:`, `goto()` or nesting) continues at the host's question
+`replace`; an object (`{done: 'next', quit: 'bye'}`) redirects several.
+
+With **Q Sharing** on (`data-q-share`, default `true`) an author-given
+variable name means the same thing in every unit of the conversation: a
+question whose variable was already set by *another* QnA is filled in rather
+than asked, drawn as the question plus "Earlier you entered: …" (an `X` takes
+the value as typed; an `A` question takes the button with the same value, or,
+after a confirm dialog, the one that matches once case, spaces, punctuation
+and symbols are ignored, letters, digits and emoji being all that count; no
+match, or two alike, asks). A filled-in answer runs its own `[javascript:…]`,
+collects its `DOC:`, appears in the transcript, and is one GO BACK ONE step
+(going back onto it asks the question, with the text in the field). A unit
+re-asking its own question (a `GOTO:` loop) still asks. Machine-made names
+(`1.2.1`) are never shared; with Q Sharing off nothing is.
+
+Internally each loaded QnA is a *unit* with a prefix (`L1`, `L2`, … in load
+order, however deep the loading goes): labels become `L1.1.1`, machine names
+too, author names stay (or are prefixed when sharing is off). `goto()`,
+`getvar()` and relative URLs in a loaded QnA's scripts resolve within that
+QnA first. Each load is recorded, with the fetched text, on the history entry
+of the answer that made it, so GO BACK ONE and saved progress restore the
+same conversation without fetching again. In the flowchart a loading answer
+leads to an "External QnA" box, with dotted "JS GOTO" edges back to the
+`replace` questions.
 They are also namespaced under `QnA.*`, and a page that already defines a
 global of the same name keeps its own.
 

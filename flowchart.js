@@ -11,6 +11,11 @@
  * target; a question that is *only* a GOTO is not drawn at all — the answer
  * leading to it goes straight to the target. Answers with nothing under them
  * end in a small terminal dot. Questions with a DOC tag carry a page marker.
+ * Two things a script can do are drawn when their arguments are literals:
+ * an answer that calls loadQnA() leads to an "External QnA" box (its
+ * find/replace targets get dotted "JS GOTO" edges back from the box), and
+ * a goto('name') in an answer's or question's script is a dotted "JS GOTO"
+ * edge to that question.
  *
  * Drag nodes to rearrange; drag the background to pan; wheel to zoom.
  * Lines can be rearranged too: the label in the middle of a line (a small
@@ -52,9 +57,13 @@
       '.qf-doc-line{stroke:' + t.bg + ';stroke-width:1;}',
       '.qf-edge{fill:none;stroke:#6b7280;stroke-width:1.5;}',
       '.qf-edge.qf-goto{stroke-dasharray:6 4;}',
+      '.qf-edge.qf-jsgoto{stroke-dasharray:1.5 4;stroke-linecap:round;}',
+      '.qf-node.qf-external rect{fill:none;stroke:' + t.bg + ';stroke-width:1.5;stroke-dasharray:5 3;}',
+      '.qf-node.qf-external text{fill:' + t.bg + ';}',
+      '.qf-node.qf-external .qf-id{fill:' + t.bg + ';}',
       '.qf-label{font-family:' + t.font + ';font-size:' + t.labelFs + 'px;fill:#1d2330;}',
       '.qf-label.qf-var{font-style:italic;}',
-      '.qf-label.qf-goto{font-size:' + Math.max(8, t.labelFs - 1) + 'px;}',
+      '.qf-label.qf-goto,.qf-label.qf-jsgoto{font-size:' + Math.max(8, t.labelFs - 1) + 'px;}',
       '.qf-label-bg{fill:#fff;fill-opacity:.9;stroke:none;}',
       '.qf-handle{cursor:grab;}',
       '.qf-handle:hover .qf-label-bg,.qf-handle.qf-moved .qf-label-bg{stroke:#9aa1ab;stroke-width:1;}',
@@ -118,10 +127,24 @@
       var node = { id: q.label, name: q.name, lines: lines, doc: q.doc !== null, w: t.nodeW, h: PAD_Y * 2 + t.fs + lines.length * t.lh, children: [], x: 0, y: 0 };
       nodes.push(node); drawn[q.label] = node;
     });
+    var externals = [];
     result.answers.forEach(function (a) {
       var from = drawn[a.parent];
       if (!from) return;
       var label = a.isVar ? ('Input: ' + from.name) : truncate(stripHtml(a.text) || (a.value ? stripHtml(a.value) : '(blank)'), 34);
+      if (a.loads) {
+        // loadQnA(): the loaded QnA takes over here. Its file name captions the box when the URL is a literal.
+        var file = typeof a.loads === 'string' ? a.loads.replace(/[?#][\s\S]*$/, '').replace(/\/+$/, '').split('/').pop() || a.loads : '';
+        var ext = { id: 'ext-' + a.label, external: true, name: 'External QnA', lines: [truncate(file || (typeof a.loads === 'string' ? a.loads : ''), 30)], w: t.nodeW, h: PAD_Y * 2 + t.fs + t.lh, children: [], x: 0, y: 0 };
+        if (!ext.lines[0]) { ext.lines = ['External QnA']; ext.name = ''; }
+        nodes.push(ext); externals.push(ext); from.children.push(ext);
+        edges.push({ key: 'a:' + a.label, from: from, to: ext, label: label, isVar: a.isVar, jump: false });
+        (a.returns || []).forEach(function (r) {
+          var rt = resolve(r);
+          if (rt && drawn[rt]) edges.push({ key: 'r:' + a.label + ':' + rt, from: ext, to: drawn[rt], label: 'JS GOTO', jsgoto: true, jump: true });
+        });
+        return;
+      }
       var target = resolve(a.label);
       if (target && drawn[target]) {
         var to = drawn[target];
@@ -140,6 +163,17 @@
         if (t && drawn[t]) edges.push({ key: 'g:' + n.id, from: n, to: drawn[t], label: 'GOTO', goto: true, jump: true });
       }
     });
+    // goto('name') written as a literal in a script: a dotted edge from the question whose script it is
+    // (a question's own <script>, or the script of one of its answers) to the target
+    var jsSeen = {};
+    var jsEdge = function (fromLabel, target) {
+      var n = drawn[fromLabel], to = resolve(target);
+      if (!n || !to || !drawn[to] || jsSeen[fromLabel + '>' + to]) return;
+      jsSeen[fromLabel + '>' + to] = true;
+      edges.push({ key: 'j:' + fromLabel + ':' + to, from: n, to: drawn[to], label: 'JS GOTO', jsgoto: true, jump: true });
+    };
+    result.questions.forEach(function (q) { (q.jumps || []).forEach(function (j) { jsEdge(q.label, j); }); });
+    result.answers.forEach(function (a) { (a.jumps || []).forEach(function (j) { jsEdge(a.parent, j); }); });
     // roots: drawn nodes that are not any tree child
     var isChild = {};
     nodes.concat(ends).forEach(function (n) { n.children.forEach(function (c) { isChild[c.id] = true; }); });
@@ -213,13 +247,13 @@
     /* --- edges --- */
     var edgeEls = g.edges.map(function (e) {
       var grp = el('g', {}, edgeLayer);
-      var cls = 'qf-edge' + (e.goto ? ' qf-goto' : e.isVar ? ' qf-var' : '');
+      var cls = 'qf-edge' + (e.goto ? ' qf-goto' : e.jsgoto ? ' qf-jsgoto' : e.isVar ? ' qf-var' : '');
       var path = el('path', { 'class': cls, 'marker-end': 'url(#qf-arrow)' }, grp);
       // the handle: the label (or, for a line without one, a small grip dot) can be dragged to re-route the line
       var handle = el('g', { 'class': 'qf-handle', 'data-edge': e.key }, grp);
       var tip = el('title', {}, handle); tip.textContent = 'Drag to move this line · double-click to reset it';
       var bg = el('rect', { 'class': 'qf-label-bg', rx: 3, ry: 3 }, handle);
-      var txt = el('text', { 'class': 'qf-label' + (e.goto ? ' qf-goto' : e.isVar ? ' qf-var' : ''), 'text-anchor': 'middle' }, handle);
+      var txt = el('text', { 'class': 'qf-label' + (e.goto ? ' qf-goto' : e.jsgoto ? ' qf-jsgoto' : e.isVar ? ' qf-var' : ''), 'text-anchor': 'middle' }, handle);
       txt.textContent = e.label;
       var grip = null, hit = null;
       if (!e.label) { hit = el('circle', { 'class': 'qf-grip-hit', r: 11 }, handle); grip = el('circle', { 'class': 'qf-grip', r: 4 }, handle); }
@@ -291,7 +325,7 @@
       nodeEls.push({ n: g.start, grp: sg });
     }
     g.nodes.forEach(function (n) {
-      var grp = el('g', { 'class': 'qf-node', 'data-id': n.id }, nodeLayer);
+      var grp = el('g', { 'class': 'qf-node' + (n.external ? ' qf-external' : ''), 'data-id': n.id }, nodeLayer);
       el('rect', { width: n.w, height: n.h }, grp);
       var id = el('text', { 'class': 'qf-id', x: PAD_X, y: PAD_Y + t.fs * 0.7 }, grp); id.textContent = n.name;
       var tx = el('text', { x: PAD_X, y: PAD_Y + t.fs + t.lh - 4 }, grp);
@@ -323,7 +357,7 @@
       var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       all.forEach(function (n) { minX = Math.min(minX, n.x - n.w / 2); maxX = Math.max(maxX, n.x + n.w / 2); minY = Math.min(minY, n.y); maxY = Math.max(maxY, n.y + n.h); });
       // jump edges bow out sideways
-      var bow = g.edges.some(function (e) { return e.jump || e.goto; }) ? 130 : 0;
+      var bow = g.edges.some(function (e) { return e.jump || e.goto || e.jsgoto; }) ? 130 : 0;
       minX -= bow; maxX += bow;
       // lines that were re-routed by hand can reach outside the boxes
       g.edges.forEach(function (e) {

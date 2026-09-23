@@ -1,6 +1,6 @@
 {
   "name": "qna-markup",
-  "version": "2.2.0",
+  "version": "2.4.0",
   "description": "Client-side interpreter and editor for QnA Markup — turn structured text into interactive question-and-answer sessions.",
   "main": "dist/qna.js",
   "browser": "dist/qna.min.js",

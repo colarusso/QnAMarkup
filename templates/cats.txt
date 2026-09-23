@@ -1,0 +1,67 @@
+Title: Cat videos?
+Description: This interview contains multitudes. Yes, it's a string of cat videos, but it's also part of a set. Something you can view as part of the QnA <a href="https://www.qnamarkup.org/?source=https://www.qnamarkup.org/templates/all_together.txt" target="_blank">All together now</a>.
+
+Q(cats): <img src="https://media.giphy.com/media/Ov5NiLVXT8JEc/giphy.gif"/>
+<br><br> More cat videos?
+A: Yes
+	Q(1.1):GOTO:cats2
+A: No
+	Q(1.2):GOTO:end
+Q(cats2): <img src="https://media.giphy.com/media/gl8ymnpv4Sqha/giphy.gif"/>
+<br><br> More cat videos?
+A: Yes
+	Q(2.1):GOTO:cats3
+A: No
+	Q(2.2):GOTO:end
+Q(cats3): <img src="https://media.giphy.com/media/kvrvnB158J4fm/giphy.gif"/>
+<br><br> More cat videos?
+A: Yes
+	Q(3.1):GOTO:cats4
+A: No
+	Q(3.2):GOTO:end
+Q(cats4): <img src="https://media.giphy.com/media/xBAreNGk5DapO/giphy.gif"/>
+<br><br> More cat videos?
+A: Yes
+	Q(4.1):GOTO:cats5
+A: No
+	Q(4.2):GOTO:end
+Q(cats5): <img src="https://media.giphy.com/media/BLCHvwl9C5j1u/giphy.gif"/>
+<br><br> More cat videos?
+A: Yes
+	Q(5.1):GOTO:cats6
+A: No
+	Q(5.2):GOTO:end
+Q(cats6): <img src="https://media.giphy.com/media/10dU7AN7xsi1I4/giphy.gif"/>
+<br><br> More cat videos?
+A: Yes
+	Q(6.1):GOTO:cats7
+A: No
+	Q(6.2):GOTO:end
+Q(cats7): <img src="https://media.giphy.com/media/hPyONzUYJhLZS/giphy.gif"/>
+<br><br> More cat videos?
+A: Yes
+	Q(7.1):GOTO:cats8
+A: No
+	Q(7.2):GOTO:end
+Q(cats8): <img src="https://media.giphy.com/media/Endx3eMpqmpZ6/giphy.gif"/> <br><br> I know, those are puppies, but they're sooo cute.
+<br><br> More cat videos?
+A: Yes
+	Q(8.1):GOTO:cats9
+A: No
+	Q(8.2):GOTO:end
+Q(cats9): <img src="https://media.giphy.com/media/5scVaYq4hKA7u/giphy.gif"/>
+<br><br> More cat videos?
+A: Yes
+	Q(9.1):GOTO:cats10
+A: No
+	Q(9.2):GOTO:end
+Q(cats10): <img src="https://media.giphy.com/media/t7MWRoExDRF72/giphy.gif"/>
+<br><br> More cat videos?
+A: Yes
+	Q(10.1):GOTO:cats
+A: No
+	Q(10.2):GOTO:end
+
+Q(end): <img src="https://media.giphy.com/media/3oxHQi7H2L27ilG1Da/giphy.gif"/><br><br>Bye then.
+
+Settings: fontFamily=-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif; fontSize=16; lineHeight=22; colWidth=500; framePad=15; radius=15; compBg=5489eb; compTxt=ffffff; compLink=e3fbfc; usrBg=eeeeee; usrTxt=000000; usrLink=0000ff; bodyBg=ffffff; bodyTxt=000000; bodyLink=0000ff; btnBg=eeeeee; btnTxt=000000; btnBold=false; btnBorder=888888; btnDivider=dddddd; chatStyle=sms; qShare=true; labelSave=Save above text as answer.; labelEmpty=Your answer appears to be empty.; labelBack=GO BACK ONE; labelRestart=START OVER; labelCredits=credits; labelEdit=edit; labelEditWarn=You are about to edit a copy of this QnA. Any edits will not change this instance.; labelCode=code your own; labelEarlier=Earlier you entered:; labelConfirm=It looks like you may have answered this before%3B click OK to use <x>answer</x> as your answer.; footer=true; saveProgress=false; start=1

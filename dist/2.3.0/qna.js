@@ -61,8 +61,6 @@
     labelCredits: 'credits',
     labelEdit: 'edit',
     labelCode: 'code your own',
-    labelEmpty: 'Your answer appears to be empty.',   // the alert when an X tag's field is submitted blank
-    labelEditWarn: 'You are about to edit a copy of this QnA. Any edits will not change this instance.',   // the alert behind the footer's edit link
     // QnAs loaded into this one with loadQnA() (see Instance.prototype.loadQnA)
     qShare: true,           // an author-named variable means the same thing in every loaded QnA: a question whose answer is already known is not asked again
     labelEarlier: 'Earlier you entered:',   // put before the known answer when such a question is filled in
@@ -87,10 +85,9 @@
     btn_bg: 'btnBg', btn_txt: 'btnTxt', btn_bold: 'btnBold', btn_border: 'btnBorder', btn_divider: 'btnDivider',
     label_save: 'labelSave', label_back: 'labelBack', label_restart: 'labelRestart',
     label_credits: 'labelCredits', label_edit: 'labelEdit', label_code: 'labelCode',
-    q_share: 'qShare', label_earlier: 'labelEarlier', label_confirm: 'labelConfirm',
-    label_empty: 'labelEmpty', label_edit_warn: 'labelEditWarn'
+    q_share: 'qShare', label_earlier: 'labelEarlier', label_confirm: 'labelConfirm'
   };
-  var LABEL_KEYS = ['labelSave', 'labelEmpty', 'labelBack', 'labelRestart', 'labelCredits', 'labelEdit', 'labelEditWarn', 'labelCode', 'labelEarlier', 'labelConfirm'];
+  var LABEL_KEYS = ['labelSave', 'labelBack', 'labelRestart', 'labelCredits', 'labelEdit', 'labelCode', 'labelEarlier', 'labelConfirm'];
  
   function normalizeOptions(opts) {
     var o = {}, k;
@@ -946,7 +943,7 @@
       edit.href = self.options.editorUrl + '#' + hash;
     }).catch(function () {});
     edit.addEventListener('click', function () {
-      alert(self.options.labelEditWarn);
+      alert('You are about to edit a copy of this QnA. Any edits will not change this instance.');
     });
   };
  
@@ -1527,7 +1524,7 @@
       var input = root.document.getElementById('Xi-' + label);
       var v = input ? trim(input.value) : '';
       if (v === '') {
-        alert(this.options.labelEmpty);
+        alert('Your answer appears to be empty.');
         if (input) input.focus();
         return false;
       }

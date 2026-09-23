@@ -4,7 +4,7 @@ const path = require('path');
 const { chromium } = require('playwright');
 
 const lib = fs.readFileSync(path.join(__dirname, '..', 'src', 'qna.js'), 'utf8');
-const fx = n => fs.readFileSync(path.join(__dirname, 'fixtures', n), 'utf8');
+const fx = n => fs.readFileSync(path.join(__dirname, /^(goto|load)_/.test(n) ? 'fixtures_runtime' : 'fixtures', n), 'utf8');
 const tpl = n => fs.readFileSync(path.join(__dirname, 'oracle', 'templates', n), 'utf8');
 
 function page(markup, attrs = '') {
@@ -26,10 +26,10 @@ function check(name, cond, info) {
   const p = await ctx.newPage();
   const errors = [];
   p.on('pageerror', e => errors.push(String(e)));
-  p.on('dialog', async d => { dialogs.push(d.message()); await d.dismiss(); });
-  let dialogs = [];
+  p.on('dialog', async d => { dialogs.push(d.message()); if (d.type() === 'confirm' && confirmOk) await d.accept(); else await d.dismiss(); });
+  let dialogs = [], confirmOk = false;
 
-  const bubbles = () => p.$$eval('#QandA .question_text, #QandA .ans_text', els => els.map(e => (e.className.includes('ans') ? 'U:' : 'B:') + e.textContent.trim()));
+  const bubbles = () => p.$$eval('#QandA .question_text, #QandA .ans_text', els => els.map(e => { const c = e.cloneNode(true); c.querySelectorAll('script,style').forEach(s => s.remove()); return (e.className.includes('ans') ? 'U:' : 'B:') + c.textContent.trim(); }));
   const buttons = () => p.$$eval('#Choices a.qabutton', els => els.map(e => e.textContent.trim()));
   const clickAnswer = async (text) => {
     const el = (await p.$$('#Choices a.qabutton')).filter(async () => true);
@@ -303,6 +303,194 @@ function check(name, cond, info) {
   check('x script: [] and brackets without javascript: are errors, either side of the colon', [xe.empty, xe.emptyR].every(a => a.length === 1 && /^2:.*These are empty/.test(a[0])) && [xe.noPrefix, xe.noPrefixR].every(a => a.length === 1 && /^2:.*prefix is missing/.test(a[0])), xe);
   check('x script: two brackets, or a space before the bracket, are errors', xe.two.length === 1 && /single/.test(xe.two[0]) && xe.space.length === 1 && /no space/.test(xe.space[0]), xe);
   check('x script: parsed on either side; kept in the code; plain X unchanged', xe.left === 'a()' && xe.right === 'a()' && xe.bare === '' && xe.plain === '' && /\nX\[javascript:a\(\)\]:\n/.test(xe.code), xe);
+
+  /* ---- goto() and getvar() ---- */
+  const typeX = async (v, how) => { await p.fill('input.xinput', v); if (how === 'click') await p.click('.xbutton'); else await p.press('input.xinput', 'Enter'); await p.waitForTimeout(600); };
+  for (const attrs of ['', 'data-animate="false"']) {
+    const tag = 'goto' + (attrs ? ' (no animation)' : '') + ': ';
+    await p.setContent(page(fx('goto_number.txt'), attrs));
+    await p.waitForSelector('input.xinput');
+    const Q = "B:What's the answer to the ultimate question of life, the universe and everything?";
+    await typeX('7');
+    check(tag + 'jumps to the named question, which follows its own GOTO:', (await bubbles()).join('|') === [Q, 'U:7', 'B:Too low.', Q].join('|'), await bubbles());
+    await typeX('99', 'click');
+    check(tag + 'second pass, other branch', (await bubbles()).slice(-3).join('|') === ['U:99', 'B:Too High.', Q].join('|'), await bubbles());
+    await typeX('fish');
+    check(tag + 'getvar() returns the saved text', (await bubbles()).slice(-3).join('|') === ['U:fish', "B:So it turns out the answer is a number, and that's not a number.", Q].join('|'), await bubbles());
+    await p.click('.qna-back'); await p.waitForTimeout(300);
+    check(tag + 'GO BACK ONE undoes the answer and its jump, text back in the field', (await bubbles()).slice(-3).join('|') === ['U:99', 'B:Too High.', Q].join('|') && (await bubbles()).length === 7 && await p.inputValue('input.xinput') === 'fish', await bubbles());
+    await p.click('.qna-back'); await p.waitForTimeout(300); await p.click('.qna-back'); await p.waitForTimeout(300);
+    check(tag + 'GO BACK ONE all the way to the first question', (await bubbles()).join('|') === Q && await p.inputValue('input.xinput') === '7', await bubbles());
+    await typeX('42');
+    check(tag + 'no "missing question" bubble, the end has no choices', (await bubbles()).join('|') === [Q, 'U:42', "B:That's right!"].join('|') && await p.$('input.xinput') === null && await p.$('.qna-back') !== null, await bubbles());
+    check(tag + 'transcript() and getvar()', await p.evaluate(() => transcript() + '|' + getvar('number') + '|' + getvar('nope')) === "BOT: What's the answer to the ultimate question of life, the universe and everything?\nUSER: 42\nBOT: That's right!\n|42|undefined");
+    check(tag + 'nothing left behind the typing indicator', await p.$('.qna-pending') === null && await p.$('.qna-typing') === null);
+  }
+  // Magic 8 ball: numeric targets, random, loops for ever
+  await p.setContent(page(fx('goto_8ball.txt')));
+  await p.waitForSelector('input.xinput');
+  for (let i = 0; i < 4; i++) await typeX('Will it rain ' + i + '?');
+  const eight = await bubbles();
+  check('goto 8 ball: each answer is followed by a reply and "Another question?"', eight.length === 13 && [0, 1, 2, 3].every(i => eight[1 + i * 3] === 'U:Will it rain ' + i + '?' && /^B:/.test(eight[2 + i * 3]) && eight[3 + i * 3] === 'B:Another question? Ask away.'), eight);
+  await p.click('.qna-back'); await p.waitForTimeout(300); await p.click('.qna-back'); await p.waitForTimeout(300);
+  const eight2 = await bubbles();
+  check('goto 8 ball: GO BACK ONE keeps the replies already given (no re-roll)', eight2.length === 7 && eight2.join('|') === eight.slice(0, 7).join('|') && await p.inputValue('input.xinput') === 'Will it rain 2?', eight2);
+  check('goto 8 ball: the flowchart data is untouched (goto() is not a GOTO:)', await p.evaluate(() => { const r = QnA.current.result; return r.ok && r.questions.filter(q => q.goto !== null).length === 21 && r.questions[0].goto === null; }));
+  // an answer's own next question is replaced; a goto() in a Q's script; one made later; saved progress
+  const gmix = 'Q(a): Start\nA[javascript:if (window.skip) goto("z")]: go\n\tDOC: child doc\n\tQ(child): Child\n\tA: on\n\t\tQ(c2): After child\nQ(s): Script <script>goto("z")<\\/script>\nQ(z): Zed\nA: more\n\tQ(z2): Zed two';
+  // (served from an http origin: localStorage is not available to setContent pages)
+  await p.route('http://qna.test/*', r => r.fulfill({ contentType: 'text/html', body: page(gmix, 'data-save-progress="true"') }));
+  await p.goto('http://qna.test/mix');
+  await p.evaluate(() => { localStorage.clear(); window.skip = false; });
+  await clickAnswer('go');
+  check('goto mix: without goto() the answer leads to its own question', (await bubbles()).join('|') === 'B:Start|U:go|B:Child', await bubbles());
+  await p.click('.qna-back'); await p.waitForTimeout(300);
+  await p.evaluate(() => { window.skip = true; });
+  await clickAnswer('go');
+  check('goto mix: goto() in an answer script replaces that question (and its DOC)', (await bubbles()).join('|') === 'B:Start|U:go|B:Zed' && await p.evaluate(() => doc()) === '' && JSON.stringify(await buttons()) === '["more"]', [await bubbles(), await p.evaluate(() => doc())]);
+  await p.evaluate(() => { setTimeout(() => goto('s'), 0); }); await p.waitForTimeout(700);
+  check('goto mix: called later it adds the target; a goto() in a Q script is followed', (await bubbles()).join('|') === 'B:Start|U:go|B:Zed|B:Script|B:Zed', await bubbles());
+  const savedHist = await p.evaluate(() => JSON.parse(localStorage.getItem(QnA.current.progressKey())).history);
+  check('goto mix: jumps are saved with the answer', JSON.stringify(savedHist) === '[{"label":"1.1","value":null,"skip":true,"jumps":["3","2","3"]}]', savedHist);
+  await p.goto('http://qna.test/mix2'); await p.waitForTimeout(600);
+  check('goto mix: saved progress restores the jumps without re-running them', (await bubbles()).join('|') === 'B:Start|U:go|B:Zed|B:Script|B:Zed', await bubbles());
+  await clickAnswer('more');
+  await p.click('.qna-back'); await p.waitForTimeout(300); await p.click('.qna-back'); await p.waitForTimeout(300);
+  check('goto mix: GO BACK ONE past the jumps', (await bubbles()).join('|') === 'B:Start' && JSON.stringify(await buttons()) === '["go"]', await bubbles());
+  await p.evaluate(() => localStorage.clear());
+
+  /* ---- loadQnA() and prior answers ---- */
+  {
+    const files = { 'sub/sub.txt': fx('load_sub.txt'), 'sub/sub2.txt': fx('load_sub2.txt') };
+    let fetched = [];
+    const serve = async (attrs, extra) => { await p.unroute('http://load.test/**'); await p.route('http://load.test/**', r => {
+      const u = new URL(r.request().url()), f = u.pathname.slice(1);
+      if (f === 'host.html') return r.fulfill({ contentType: 'text/html', body: page(fx('load_host.txt'), attrs || '') });
+      if (extra && extra[f] !== undefined) { fetched.push(f); return r.fulfill(extra[f]); }
+      if (files[f] !== undefined) { fetched.push(f); return r.fulfill({ contentType: 'text/plain', body: files[f] }); }
+      fetched.push(f); return r.fulfill({ status: 404, body: 'nope' });
+    }); };
+    const loaded = async (n) => { await p.waitForFunction(n => document.querySelectorAll('#QandA .question_text').length >= n, n, { timeout: 4000 }); await p.waitForTimeout(500); };
+    const HOST = ['B:Welcome. What is your name?', 'U:Ada', 'B:Do you have a cat or a dog, Ada?', 'U:A cat!', 'B:Ready to load another QnA?', 'U:Yes, load it.'];
+    await serve('data-save-progress="true"');
+    await p.goto('http://load.test/host.html'); await p.evaluate(() => localStorage.clear()); await p.goto('http://load.test/host.html?v=again');
+    await p.waitForSelector('input.xinput');
+    await typeX('Ada'); await clickAnswer('A cat!'); await clickAnswer('Yes, load it.');
+    await loaded(6);
+    check('load: the loaded QnA starts where the answer\'s question would be; questions already answered in the host are filled in', (await bubbles()).join('|') === HOST.concat(['B:(Sub) What is your name?', 'U:Earlier you entered: Ada', 'B:(Sub) Cat or dog?', 'U:Earlier you entered: cat', 'B:(Sub) Pick a number under 3.']).join('|'), await bubbles());
+    check('load: fetched once, relative to the page; no missing-question bubble; no confirm for an exact match', fetched.join(',') === 'sub/sub.txt' && !/missing/.test((await bubbles()).join('|')) && dialogs.length === 0, [fetched, dialogs]);
+    check('load: filled-in answers ran their scripts; the loaded Before: and Settings: are ignored', await p.evaluate(() => window.subx === 1 && window.subcat === 1 && !document.getElementById('subbefore') && getComputedStyle(document.querySelector('.question_text')).fontSize === '14px' && document.querySelector('.qna-back').textContent === 'GO BACK ONE'), await p.evaluate(() => [window.subx, window.subcat]));
+    check('load: labels prefixed; author names shared; machine names prefixed; json_str() has every unit', await p.evaluate(() => { const i = QnA.current; return i.current === 'L1.1.1.1' && i.byLabel['L1.1'].name === 'name' && i.byLabel['L1.1.1.1'].name === 'n' && JSON.stringify(Object.keys(JSON.parse(json_str())).sort()) === JSON.stringify(['1.1.1.2', 'L1.1.1.3', 'check', 'done', 'end', 'go', 'n', 'name', 'pet']) && JSON.parse(json_str()).pet === 'cat' && i.byLabel['L1.1.1.1.1'].name === 'check'; }), await p.evaluate(() => { const i = QnA.current; return [i.current, i.byLabel['L1.1'].name, i.byLabel['L1.1.1.1'].name, i.byLabel['L1.1.1.1.1'].name, json_str()]; }));
+    check('load: the history records the auto answers and the load with its text', await p.evaluate(() => { const h = QnA.current.history; return h.length === 5 && h[2].skip === true && h[2].jumps.length === 1 && h[2].jumps[0].url === 'http://load.test/sub/sub.txt' && /^Title: Sub/.test(h[2].jumps[0].text) && h[2].jumps[0].redirect.done === '2' && h[3].auto === true && h[3].value === 'Ada' && h[4].auto === true && h[4].value === null; }), await p.evaluate(() => JSON.stringify(QnA.current.history.map(e => [e.label, e.value, e.auto, e.skip, (e.jumps || []).map(j => typeof j === 'string' ? j : 'load')]))));
+    // a goto() inside a loaded question's script resolves within the loaded QnA
+    await typeX('5');
+    check('load: goto() in a loaded Q resolves to the loaded QnA\'s question', (await bubbles()).slice(-3).join('|') === 'U:5|B:(Sub) Good.|B:(Sub) Pick a number under 3.' && await p.$('input.xinput') !== null, await bubbles());
+    await typeX('2'); await clickAnswer('finish');
+    check('load: find/replace: arriving at the loaded "done" (via GOTO) continues at the host\'s "end"', (await bubbles()).slice(-4).join('|') === 'U:2|B:(Sub) Good.|U:finish|B:Back home. Bye.' && await p.$('input.xinput') === null && (await buttons()).length === 0, await bubbles());
+    check('load: transcript() carries the whole conversation', /USER: Earlier you entered: Ada\nBOT: \(Sub\) Cat or dog\?\nUSER: Earlier you entered: cat\n/.test(await p.evaluate(() => transcript())));
+    // GO BACK ONE, back through the loaded QnA and its filled-in answers
+    await p.click('.qna-back'); await p.waitForTimeout(300);
+    check('load: GO BACK ONE from the host end returns into the loaded QnA', (await bubbles()).slice(-1)[0] === 'B:(Sub) Good.' && JSON.stringify(await buttons()) === '["finish"]', await bubbles());
+    await p.click('.qna-back'); await p.waitForTimeout(300);
+    check('load: GO BACK ONE again: the X field holds the number', (await bubbles()).slice(-1)[0] === 'B:(Sub) Pick a number under 3.' && await p.inputValue('input.xinput') === '2', await bubbles());
+    await p.click('.qna-back'); await p.waitForTimeout(300); await p.click('.qna-back'); await p.waitForTimeout(300);
+    check('load: GO BACK ONE stops on a filled-in A question and shows its buttons', (await bubbles()).slice(-1)[0] === 'B:(Sub) Cat or dog?' && JSON.stringify(await buttons()) === '["cat","dog","neither"]' && fetched.length === 1, [await bubbles(), fetched]);
+    await p.click('.qna-back'); await p.waitForTimeout(300);
+    check('load: GO BACK ONE stops on a filled-in X question with the answer in the field', (await bubbles()).slice(-1)[0] === 'B:(Sub) What is your name?' && await p.inputValue('input.xinput') === 'Ada', await bubbles());
+    await typeX('Bob');
+    check('load: an edited answer sets the shared variable; the earlier bubble keeps its text', (await bubbles()).slice(-4, -1).join('|') === 'U:Bob|B:(Sub) Cat or dog?|U:Earlier you entered: cat' && await p.evaluate(() => getvar('name') === 'Bob' && QnA.current.varUnit.name === 'L1' && document.querySelectorAll('#QandA .ans_text')[0].textContent === 'Ada'), await p.evaluate(() => [getvar('name'), QnA.current.varUnit.name, document.querySelectorAll('#QandA .ans_text')[0].textContent]));
+    check('load: scripts ran for the typed X and the re-filled A, never for redraws', await p.evaluate(() => window.subx === 2 && window.subcat === 2), await p.evaluate(() => [window.subx, window.subcat]));
+    // saved progress: restored from the stored text, nothing fetched
+    fetched = [];
+    await p.goto('http://load.test/host.html?v=restore'); await p.waitForTimeout(800);
+    check('load: saved progress restores the loaded QnA from the stored text, without fetching', (await bubbles()).join('|') === HOST.concat(['B:(Sub) What is your name?', 'U:Bob', 'B:(Sub) Cat or dog?', 'U:Earlier you entered: cat', 'B:(Sub) Pick a number under 3.']).join('|') && fetched.length === 0 && await p.evaluate(() => QnA.current.byLabel['L1.1'].unit === 'L1'), [await bubbles(), fetched]);
+    // nested load with a relative URL (resolved against the loaded QnA's URL), goto(2) inside it
+    await p.click('.qna-back'); await p.waitForTimeout(300);
+    check('load: GO BACK ONE after a restore', (await bubbles()).slice(-1)[0] === 'B:(Sub) Cat or dog?' && JSON.stringify(await buttons()) === '["cat","dog","neither"]', await bubbles());
+    await clickAnswer('neither'); await clickAnswer('yes'); await loaded(7);
+    check('load: a loaded QnA loads another, relative to its own URL', fetched.join(',') === 'sub/sub2.txt' && (await bubbles()).slice(-2).join('|') === 'U:yes|B:(Sub2) One.' && await p.evaluate(() => QnA.current.current === 'L2.1'), [fetched, await bubbles()]);
+    await clickAnswer('two');
+    check('load: nested unit prefixes are L1 / L2; <x>1</x> in Sub2 is its own (machine-named) variable', (await bubbles()).slice(-2).join('|') === 'U:two|B:(Sub2) Two. two' && await p.evaluate(() => QnA.current.current === 'L2.2' && QnA.current.history.slice(-1)[0].label === 'L2.1.1' && QnA.current.history.slice(-1)[0].skip === true), await bubbles());
+    await p.evaluate(() => localStorage.clear());
+
+    // confirm on a normalized match; no confirm when nothing matches; the confirm text is a setting
+    const hostB = 'Q(pet): Pet?\nA(cat): A cat!\n\tQ(go): Load?\n\tA[javascript:loadQnA("pets.txt")]: go\nA(bird): Bird\n\tQ: GOTO:go\nA(Fish): Fish\n\tQ: GOTO:go';
+    const petsSub = 'Q(pet): (Sub) Which pet?\nA: Cat\n\tQ(c): (Sub) Meow.\nA: Dog\n\tQ(d): (Sub) Woof.\nA: Fish!\n\tQ(f1): (Sub) Blub.\nA: fish.\n\tQ(f2): (Sub) Glub.';
+    for (const [pick, ok, expect, want] of [['A cat!', true, 'U:Earlier you entered: Cat|B:(Sub) Meow.', 1], ['A cat!', false, 'B:(Sub) Which pet?', 1], ['Bird', true, 'B:(Sub) Which pet?', 0], ['Fish', true, 'B:(Sub) Which pet?', 0]]) {
+      dialogs = []; confirmOk = ok;
+      await p.route('http://load.test/pets.txt', r => r.fulfill({ contentType: 'text/plain', body: petsSub }));
+      await p.route('http://load.test/hostb.html', r => r.fulfill({ contentType: 'text/html', body: page(hostB, 'data-label-confirm="Use &lt;x&gt;answer&lt;/x&gt;?" data-label-earlier="Before:"') }));
+      await p.goto('http://load.test/hostb.html'); await p.waitForSelector('a.qabutton');
+      await clickAnswer(pick); await clickAnswer('go'); await loaded(3);
+      const b = await bubbles();
+      check('confirm: ' + pick + (ok ? ' / OK' : ' / Cancel') + ' -> ' + (want ? 'asked' : 'no dialog') + (expect.indexOf('Before') >= 0 ? ', taken with the Prior Answers text' : ', question shown'), b.slice(-(expect.split('|').length)).join('|') === expect.replace('Earlier you entered:', 'Before:') && dialogs.length === want && (!want || dialogs[0] === 'Use Cat?'), [b, dialogs]);
+    }
+    confirmOk = false;
+    // a loop inside the loaded QnA re-asks a question that was filled in once; qShare off shares nothing
+    const hostC = 'Q(n): Number?\nX:\n\tQ: Load?\n\tA[javascript:loadQnA("loop.txt")]: go';
+    const loopSub = 'Q(n): (Sub) Number?\nX:\n\tQ(low): (Sub) Too low. GOTO:n';
+    await p.route('http://load.test/loop.txt', r => r.fulfill({ contentType: 'text/plain', body: loopSub }));
+    for (const share of [true, false]) {
+      await p.route('http://load.test/hostc.html', r => r.fulfill({ contentType: 'text/html', body: page(hostC, share ? '' : 'data-q-share="false"') }));
+      await p.goto('http://load.test/hostc.html'); await p.waitForSelector('input.xinput');
+      await typeX('1'); await clickAnswer('go'); await loaded(3);
+      const b = await bubbles();
+      if (share) check('prior: a loaded question filled in once is asked again when its own GOTO loops back', b.slice(-4).join('|') === 'B:(Sub) Number?|U:Earlier you entered: 1|B:(Sub) Too low.|B:(Sub) Number?' && await p.$('input.xinput') !== null, b);
+      else check('prior: with qShare off nothing is filled in and the loaded names are prefixed', b.slice(-1)[0] === 'B:(Sub) Number?' && await p.evaluate(() => QnA.current.byLabel['L1.1'].name === 'L1.n' && json_str() === '{"n":"1","1.1":"go","L1.n":""}'), [b, await p.evaluate(() => json_str())]);
+    }
+    // sources: an HTML page, a viewer link with ?markup=, a ?source= link, a #z= link; failures
+    const hostD = 'Q: Pick\nA[javascript:loadQnA("page.html")]: html\nA[javascript:loadQnA("i/?markup=Q%3A%20(Q)%20From%20a%20query%0AA%3A%20ok")]: query\nA[javascript:loadQnA("i/?source=/sub/sub2.txt")]: source\nA[javascript:loadQnA(window.zlink)]: z\nA[javascript:loadQnA("missing.txt")]: missing\nA[javascript:loadQnA("bad.txt")]: bad\nA[javascript:loadQnA("plain.html")]: noqna';
+    const extra = {
+      'page.html': { contentType: 'text/html', body: '<!DOCTYPE html><html><body><p>x</p><script type="text/qna">\nQ: (Page) Hi <script>window.pg=1<\\/script>\nA: ok\n</script></body></html>' },
+      'bad.txt': { contentType: 'text/plain', body: 'Q: no answers here' },
+      'plain.html': { contentType: 'text/html', body: '<!DOCTYPE html><html><body>nothing</body></html>' }
+    };
+    await serve('', extra);
+    await p.route('http://load.test/hostd.html', r => r.fulfill({ contentType: 'text/html', body: page(hostD, 'data-animate="false"') }));
+    for (const [pick, expect] of [['html', 'B:(Page) Hi'], ['query', 'B:(Q) From a query'], ['source', 'B:(Sub2) One.'], ['z', 'B:(Z) Zed'], ['missing', 'B:[QnA: could not load http://load.test/missing.txt: HTTP 404]'], ['bad', /^B:\[QnA: could not load http:\/\/load\.test\/bad\.txt: the QnA has errors/], ['noqna', 'B:[QnA: could not load http://load.test/plain.html: the page has no <script type="text/qna">]']]) {
+      fetched = [];
+      await p.goto('http://load.test/hostd.html'); await p.waitForSelector('a.qabutton');
+      await p.evaluate(() => QnA.encodeHash({ markup: 'Q: (Z) Zed\nA: k' }).then(h => { window.zlink = 'http://load.test/i/#' + h; }));
+      await clickAnswer(pick); await p.waitForTimeout(600);
+      const last = (await bubbles()).slice(-1)[0];
+      check('load source ' + pick, typeof expect === 'string' ? last === expect : expect.test(last), [last, fetched]);
+      if (pick === 'html') check('load source html: scripts in the loaded page\'s QnA run; <\\/script> unescaped', await p.evaluate(() => window.pg === 1));
+      if (pick === 'query' || pick === 'z') check('load source ' + pick + ': decoded locally, nothing fetched', fetched.length === 0, fetched);
+      if (pick === 'missing') check('load: after a failure GO BACK ONE is offered and works', await p.$('.qna-back') !== null && (await p.click('.qna-back'), await p.waitForTimeout(300), (await bubbles()).length === 1), await bubbles());
+    }
+    // the other way round: a loaded QnA answers first, then the host's own question is filled in; a filled-in
+    // answer whose script calls goto() replaces its next question; loadQnA() from a script inside a question
+    const hostE = 'Q(1): <script>if (window.autoload) loadQnA("e.txt", "done", "name")</script>Load?\nA[javascript:loadQnA("e.txt", "done", "name")]: go\nQ(name): (Host) Your name?\nX:\n\tQ(hi): Hi <x>name</x>.\n\tA[javascript:goto("bye")]: ok\n\t\tQ: never shown\nQ(bye): Bye <x>name</x>.';
+    const subE = 'Q(name): (Sub) Name?\nX:\n\tQ(hi): (Sub) Hello <x>name</x>.\n\tA[javascript:goto("done")]: ok\n\t\tQ: never shown\nQ(done): (Sub) Done.';
+    await p.route('http://load.test/e.txt', r => r.fulfill({ contentType: 'text/plain', body: subE }));
+    await p.route('http://load.test/hoste.html*', r => r.fulfill({ contentType: 'text/html', body: page(hostE, 'data-save-progress="true"') }));
+    await p.goto('http://load.test/hoste.html'); await p.evaluate(() => localStorage.clear()); await p.goto('http://load.test/hoste.html?v=1'); await p.waitForSelector('a.qabutton');
+    await clickAnswer('go'); await loaded(2);
+    await typeX('Eve'); await clickAnswer('ok');
+    check('prior: a name answered in the loaded QnA fills in the host\'s question; goto() in a filled-in A replaces its next question', (await bubbles()).join('|') === 'B:Load?|U:go|B:(Sub) Name?|U:Eve|B:(Sub) Hello Eve.|U:ok|B:(Host) Your name?|U:Earlier you entered: Eve|B:Hi Eve.|U:Earlier you entered: ok|B:Bye Eve.' && (await buttons()).length === 0, await bubbles());
+    await p.goto('http://load.test/hoste.html?v=2'); await p.waitForTimeout(600);
+    check('prior: all of that is restored from saved progress', (await bubbles()).join('|') === 'B:Load?|U:go|B:(Sub) Name?|U:Eve|B:(Sub) Hello Eve.|U:ok|B:(Host) Your name?|U:Earlier you entered: Eve|B:Hi Eve.|U:Earlier you entered: ok|B:Bye Eve.', await bubbles());
+    await p.evaluate(() => localStorage.clear());
+    await p.route('http://load.test/hoste.html*', r => r.fulfill({ contentType: 'text/html', body: '<script>window.autoload = true</script>' + page(hostE, 'data-save-progress="true"') }));
+    await p.goto('http://load.test/hoste.html?v=3'); await loaded(2);
+    check('load: loadQnA() from a script inside the first question loads after it (recorded before any answer)', (await bubbles()).join('|') === 'B:Load?|B:(Sub) Name?' && await p.evaluate(() => QnA.current.pre.jumps.length === 1 && typeof QnA.current.pre.jumps[0] === 'object'), await bubbles());
+    await typeX('Zed');
+    await p.goto('http://load.test/hoste.html?v=4'); await p.waitForTimeout(600);
+    check('load: … and is restored from saved progress too', (await bubbles()).join('|') === 'B:Load?|B:(Sub) Name?|U:Zed|B:(Sub) Hello Zed.', await bubbles());
+    await p.evaluate(() => localStorage.clear());
+    await p.unroute('http://load.test/**');
+  }
+  // the parser: an answer that loads may not have a Q beneath it; what it reads from scripts
+  {
+    const QnA = require('../src/qna.js');
+    const e = m => QnA.parse(m).errors.map(x => x.line + ':' + x.message.replace(/<[^>]+>/g, '').slice(0, 60));
+    const nested = e('Q: a\nA[javascript:loadQnA("x.txt")]: go\n\tQ: under\nQ: b\nX[javascript:if (1) loadQnA("y")]:\n\tQ: under x');
+    check('parse: a Q under an answer that calls loadQnA() is an error (A and X)', nested.length === 2 && /^3:An answer that calls loadQnA\(\) cannot have a Q beneath it/.test(nested[0]) && /^6:/.test(nested[1]), nested);
+    check('parse: loadQnA() without a nested Q is fine, beside answers that have one', e('Q: a\nA[javascript:loadQnA("x.txt")]: go\nA: stay\n\tQ: here').length === 0);
+    const r = QnA.parse('Q(a): A <script>goto("c")</script>\nA[javascript:loadQnA("f.txt", "done", "c")]: one\nA[javascript:loadQnA(u, {end: "a", x: "zz"})]: two\nA[javascript:goto(3); goto("nope"); goto(\'c\')]: three\n\tQ: under three\nQ(c): C\nA: k');
+    check('parse: answers carry loads / returns / jumps as labels; unknown targets dropped', JSON.stringify(r.answers.map(x => [x.loads, x.returns, x.jumps])) === '[["f.txt",["2"],[]],[true,["1"],[]],[null,[],["2"]],[null,[],[]]]' && JSON.stringify(r.questions.map(q => q.jumps)) === '[["2"],[],[]]', [r.answers.map(x => [x.loads, x.returns, x.jumps]), r.questions.map(q => q.jumps)]);
+    check('normalizeValue: case, spaces, punctuation and tags dropped; letters, digits and emoji kept', QnA.normalizeValue(' <b>Yes</b>, Please!! 👍🏽 #1 ') === 'yesplease👍🏽1' && QnA.normalizeValue('Café') === 'café' && QnA.normalizeValue('&lt;3') === '3', QnA.normalizeValue(' <b>Yes</b>, Please!! 👍🏽 #1 '));
+  }
 
   check('no page errors', errors.length === 0, errors);
   await browser.close();

@@ -1,0 +1,6 @@
+Q(number): What's the answer to the ultimate question of life, the universe and everything?
+X[javascript:if (getvar('number')==42) {goto('right')} else if (getvar('number')<42){goto('low')} else if (getvar('number')>42){goto('high')} else {goto('nan')}]:
+Q(right): That's right!
+Q(low): Too low. GOTO:number
+Q(high): Too High. GOTO:number
+Q(nan): So it turns out the answer is a number, and that's not a number. GOTO:number

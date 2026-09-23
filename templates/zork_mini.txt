@@ -1,4 +1,4 @@
-Title: Zork mini preview
+Title: Zork mini
 Description: This is NOT a full port of Zork from its <a href="https://opensource.microsoft.com/blog/2025/11/20/preserving-code-that-shaped-generations-zork-i-ii-and-iii-go-open-source/" target="_blank">open source release</a>. It is a short adaptation meant to demonstrate some features of QnA Markup, esp. the options under <i>Settings</i>. Like the Z-Machine before it, QnA let's us interpret different underlying files using one common specification. Zork I has been relased under an <a href="https://github.com/historicalsource/zork1/blob/master/LICENSE" target="_blank">MIT license</a>.
 
 Q(west_closed):[West of House] You are standing in an open field west of a white house. The front door is boarded, and a small closed mailbox stands beside the path.

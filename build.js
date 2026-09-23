@@ -143,6 +143,34 @@ function buildTemplates() {
   console.log('templates.js     ' + Object.keys(templates).join(', '));
 }
  
+// --- the qna-markup skill ----------------------------------------------------
+// skills/qna-markup/ teaches an AI assistant to write QnA Markup (see syntax/#bots). The build
+// gives its checker script a copy of the library, parses every example the skill ships (the build
+// fails if one has errors, as with templates) and zips the folder for people who install skills
+// by uploading a zip. The zip's top-level folder is qna-markup/, as the upload flow expects.
+function buildSkill() {
+  const dir = path.join(root, 'skills', 'qna-markup');
+  if (!fs.existsSync(dir)) return;
+  fs.copyFileSync(path.join(root, 'dist', 'qna.js'), path.join(dir, 'scripts', 'qna.js'));
+  delete require.cache[require.resolve(path.join(root, 'src', 'qna.js'))];
+  const QnA = require(path.join(root, 'src', 'qna.js'));
+  const exDir = path.join(dir, 'examples'), files = fs.readdirSync(exDir).filter(f => f.endsWith('.txt')).sort();
+  let bad = 0;
+  for (const f of files) {
+    const r = QnA.parse(fs.readFileSync(path.join(exDir, f), 'utf8'));
+    if (!r.ok) { bad++; console.error('skill example ' + f + ': ' + r.errors.map(e => (e.line ? 'line ' + e.line + ': ' : '') + e.message.replace(/<[^>]*>/g, '')).join('; ')); }
+  }
+  if (bad) throw new Error(bad + ' skill example(s) have errors (see above).');
+  const zip = path.join(root, 'skills', 'qna-markup.zip');
+  try {
+    fs.rmSync(zip, { force: true });
+    execFileSync('zip', ['-qr', '-X', zip, 'qna-markup', '-x', '*.DS_Store'], { cwd: path.join(root, 'skills'), stdio: ['ignore', 'pipe', 'pipe'] });
+    console.log('skills/qna-markup.zip ' + kb(zip) + ' (' + files.length + ' examples checked)');
+  } catch (e) {
+    console.warn('skills/qna-markup.zip not written (is "zip" installed?): ' + (e.message || e).split('\n')[0]);
+  }
+}
+
 // --- deployable sites --------------------------------------------------------
 // The site is served from two origins (config.js): the editor and library from
 // editorOrigin, the viewer and document page from viewerOrigin. This assembles
@@ -156,11 +184,12 @@ function buildSite() {
       const from = path.join(root, item), to = path.join(dest, item);
       if (!fs.existsSync(from)) throw new Error('site: missing ' + item);
       fs.mkdirSync(path.dirname(to), { recursive: true });
-      fs.cpSync(from, to, { recursive: true, filter: f => !/(^|\/)(\.DS_Store|.*\.txt|.*\.json|README\.md)$/.test(f) || /templates\.js$/.test(f) });
+      // (templates ship as templates.js only; the skill folder ships whole, its .txt and .md included)
+      fs.cpSync(from, to, { recursive: true, filter: f => /(^|\/)skills(\/|$)/.test(f) ? !/\.DS_Store$/.test(f) : (!/(^|\/)(\.DS_Store|.*\.txt|.*\.json|README\.md)$/.test(f) || /templates\.js$/.test(f)) });
     }
   };
   const org = path.join(out, 'org'), net = path.join(out, 'net');
-  copy(org, ['index.html', 'editor.js', 'preview.html', 'flowchart.js', 'config.js', 'site.js', 'favicon.ico', 'images', 'css', 'syntax', 'templates', 'examples', 'LICENSE', 'dist']);
+  copy(org, ['index.html', 'editor.js', 'preview.html', 'flowchart.js', 'config.js', 'site.js', 'favicon.ico', 'images', 'css', 'syntax', 'templates', 'examples', 'skills', 'LICENSE', 'dist']);
   copy(net, ['i', 'doc', 'config.js', 'site.js', 'favicon.ico', 'images', 'css', 'LICENSE', 'dist/qna.min.js', 'dist/meta.js']);
   // the viewer/doc origin needs no editor: a bare index sends people to it
   fs.writeFileSync(path.join(net, 'index.html'), '<!DOCTYPE html><meta charset="utf-8"><title>QnA Markup</title><script src="dist/meta.js"></script><script src="config.js"></script><script>location.replace(window.QNA_CONFIG.editorUrl);</script><p>This host renders QnAs. The editor is at <a id="e" href="https://www.qnamarkup.org/">www.qnamarkup.org</a>.</p>\n');
@@ -177,6 +206,7 @@ function run() {
     if (args.includes('--site') && args.includes('--allow-unminified')) throw new Error('--site cannot be combined with --allow-unminified: a released build must be minified. Run "npm install" so esbuild is available.');
     if (!args.includes('--templates')) buildLibrary();
     buildTemplates();
+    if (!args.includes('--templates')) buildSkill();
     if (args.includes('--site')) buildSite();
     return true;
   } catch (e) { console.error('ERROR: ' + e.message); return false; }

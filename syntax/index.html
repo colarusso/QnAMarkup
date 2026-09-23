@@ -13,9 +13,11 @@
 <meta property="og:description" content="An open source tool for turning structured text into an interactive set of questions and answers. Designed for people with no programming experience, it can be used to build expert systems and perform rules-based document construction.">
 
 <!--
-  Static documentation page. It shares the editor's look (header, fonts, colours) but uses no
-  JavaScript: every link is written out in full. Cross-site links go to the rendering domain,
-  www.qnamarkup.net; same-site links are relative to this folder on www.qnamarkup.org.
+  Static documentation page. It shares the editor's look (header, fonts, colours). Every link is
+  written out in full; the only script (syntax.js, external so the editor origin's CSP allows it)
+  unfolds an "Advanced Usage" box when a link points at something inside it. Cross-site links go to
+  the rendering domain, www.qnamarkup.net; same-site links are relative to this folder on
+  www.qnamarkup.org.
 -->
 <style>
   :root {
@@ -54,6 +56,16 @@
   main p { margin: 10px 0; }
   main ul { margin: 8px 0; }
   main img { max-width: 100%; }
+  /* "Advanced Usage": folded away until wanted (syntax.js opens one when a link points inside it) */
+  details.advanced { margin: 14px 0; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); padding: 0 14px; clear: both; }
+  details.advanced > summary { cursor: pointer; font-weight: 600; padding: 9px 0; color: var(--accent-dark); list-style: none; }
+  details.advanced > summary::-webkit-details-marker { display: none; }
+  details.advanced > summary::before { content: "▸"; display: inline-block; width: 16px; transition: transform .15s; }
+  details.advanced[open] > summary::before { transform: rotate(90deg); }
+  details.advanced[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+  details.advanced > summary::after { content: " (click to expand)"; font-weight: normal; color: var(--muted); font-size: 13px; }
+  details.advanced[open] > summary::after { content: " (click to collapse)"; }
+  details.advanced > :last-child { margin-bottom: 12px; }
   a.anchor { display: block; float: right; width: 22px; height: 16px; background: url("../images/link.png") no-repeat center; }
 
   /* code, styled like the editor: monospace, line-number gutter, the same colours */
@@ -121,15 +133,15 @@
 <h1>Syntax &amp; Usage (How-To Guide)</h1>
 
 <div class="aside">
-<img class="better" src="https://www.davidcolarusso.com/flowcharts/images/better.jpg" alt="Flowchart from the quick start guide">
+<a href="QnA_Quick_Start.pdf" target="_blank"><img class="better" src="https://www.davidcolarusso.com/flowcharts/images/better.jpg" alt="Flowchart from the quick start guide"></a>
 <p>Not up for a full syntax lesson? Download and print this three-page quick start guide. It has pretty flowcharts.</p>
 <p style="text-align:center"><a href="QnA_Quick_Start.pdf" target="_blank">Quick Start Guide</a></p>
 </div>
 
 <p>
-QnA is a <a href="https://en.wikipedia.org/wiki/Markup_language" target="_blank">markup language</a> for people with little or no programming experience. It was designed with attorneys in mind and transforms blocks of text into interactive question and answer sessions (QnAs). These QnAs can be used as stand-alone <a href="https://en.wikipedia.org/wiki/Expert_system" target="_blank">expert systems</a> or in the aid of rule-based document construction. See <a href="#santa">example below</a>. Plus, they can be <a href="https://www.qnamarkup.net/i/?source=https://www.qnamarkup.org/templates/game.txt" target="_blank">fun</a>, the entire project is <a href="http://en.wikipedia.org/wiki/Open_source" target="_blank">open source</a>, and as a bonus, ever QnA can be turned into a flowchart. 
+QnA is a <a href="https://en.wikipedia.org/wiki/Markup_language" target="_blank">markup language</a> for people with little or no programming experience. It was designed with attorneys in mind and transforms blocks of text into interactive question and answer sessions (QnAs). These QnAs can be used as stand-alone <a href="https://en.wikipedia.org/wiki/Expert_system" target="_blank">expert systems</a> or in the aid of rule-based document construction. See <a href="#santa">example below</a>. Plus, they can be <a href="https://www.qnamarkup.net/i/?source=https://www.qnamarkup.org/templates/game.txt" target="_blank">fun</a>, the entire project is <a href="http://en.wikipedia.org/wiki/Open_source" target="_blank">open source</a>, and as a bonus, every QnA can be turned into a flowchart. 
 </p><p>
-Authors define behavior by placing text after one of ten tags<sup><a href="#settings" style="text-decoration-line: none;">&dagger;</a></sup> described below. On this page, you'll find everything you need to write your own QnA. Assuming an average reading speed of 180 words per minute, this entire page should only take about 20 minutes to read. Of course, you should probably <a href="../">open the QnA editor</a> and play around as you read. So it might take an hour before you're an expert. ;)  
+Authors define behavior by placing text after one of ten tags<sup><a href="#settings" style="text-decoration-line: none;">&dagger;</a></sup> described below. On this page, you'll find everything you need to write your own QnA. Assuming an average reading speed of 275 words per minute, this entire page should only take a little over 20 minutes to read. Of course, you should probably <a href="../">open the QnA editor</a> and play around as you read. So it might take an hour before you're an expert. ;)  
 </p><p>
 If you're pressed for time, start with the <a href="#body">Body</a> section. That's where all the exciting stuff happens, and you can build a very respectable QnA with body tags alone. Alternatively, you could try our <a href="QnA_Quick_Start.pdf" target=_blank>quick start guide</a>.
 </p>
@@ -138,13 +150,14 @@ If you're pressed for time, start with the <a href="#body">Body</a> section. Tha
 </p>
 <h3>Sections</h3>
 <ul>
-	<li><a href="#header">Header</a><!--(364 words) assuming 180 words/min => -->  (~2 min. to read)</li>
-	<li><a href="#body">Body</a> <!-- (1,658 words) --> (~9.5 min. to read)</li>
+	<li><a href="#header">Header</a>  (~1.5 min. to read)</li>
+	<li><a href="#body">Body</a> (~4.5 min. to read) <b>← This is all you really need</b></li>
+	<li><a href="#scripts">Predefined Javascript Functions</a> (~8 min. to read)</li>
 	<li><a href="#yourscripts">Adding Your Own Scripts</a> (~1 min. to read)</li>
-	<li><a href="#scripts">Predefined Javascript Functions</a> <!--(525 words)--> (~3 min. to read)</li>
-	<li><a href="#docs">Document Parsers &amp; Editors</a> <!--(731 words)--> (~4 min. to read)</li>
 	<li><a href="#remote">Loading a Remote QnA</a> (~1 min. to read)</li>
 	<li><a href="#embedding">Embedding a QnA in Your Own Page</a> (~1 min. to read)</li>
+	<li><a href="#docs">Document Parsers &amp; Editors</a> (~3 min. to read)</li>
+	<li><a href="#bots">Bots Building Bots</a> (~2 min. to read)</li>
 </ul>
 <div class="divider"></div>
 
@@ -221,6 +234,7 @@ The <em>Body</em> is where you define questions and answers along with the text 
 </p>
 <p>If the target of a <code>GOTO</code> is removed or the <code><font color=red><em>variable_name</em></font></code> shows up more than once before the ids are  recalculated: the <code>GOTO</code> is declared ambiguous, and an error is thrown. If the target of a <code>GOTO</code> is renumbered, in most cases, the <code>GOTO</code> is renumbered as well. Remember, such an update only happens if you click <i><b>Update Outputs</b></i> in the editor. It is not triggered by the <i>live preview</i>.</p>  
 <p>Note: <code>DOC:</code> tags (<a href="#doc">described below</a>) are included when a user is moved to a target location.</p>
+<p>To make the same kind of jump from JavaScript, see the <code>goto()</code> function (<a href="#goto()">described below</a>).</p>
 	
 
 <h2><a name="a" href="#a" class="anchor"></a>
@@ -238,7 +252,7 @@ The <em>Body</em> is where you define questions and answers along with the text 
 			</p>
 <pre><span class="ln">Q: </span><span class="ln">A: </span><span class="ln">A:</span><span class="ln">A:</span><span class="ln">		Q:</span><span class="ln">		A:</span><span class="ln">		A:</span></pre>
 
-			<p><b>Advanced Usage:</b></p>
+<details class="advanced"><summary>Advanced Usage</summary>
 			<p>
 			<p>
 			<a name="variables" href="#variables" class="anchor"></a>
@@ -278,9 +292,8 @@ The <em>Body</em> is where you define questions and answers along with the text 
 <div class="code"><pre><span class="ln">Q<font color=purple>(<font color=red>1</font>)</font>: <font color=black>Do you want to see something neat?</font></span><span class="ln">A: <font color=black>Yes.</font></span><span class="ln">	Q<font color=purple>(<font color=red>1.1</font>)</font>: <font color=black>Cool. Click away.</font></span><span class="ln">	A<font color=purple>[<font color=red>javascript:save2('transcript.txt', transcript());</font>]</font>: <font color=black>Save conversation.</font></span><span class="ln">		Q<font color=purple>(<font color=red>1.1.1</font>)</font>:GOTO:<font color=red>1</font></span><span class="ln">A: <font color=black>No.</font></span><span class="ln">	Q<font color=purple>(<font color=red>1.2</font>)</font>:GOTO:<font color=red>1</font></span></pre>
 <div class="edit"><a href="../?source=https://colarusso.github.io/QnAMarkup/examples/source/neat.txt&sharing=2" target="_QnA">edit this QnA in a new window ↗</a></div></div>
 <div class="live"><iframe title="Live example" src="https://www.qnamarkup.net/i/?source=https://colarusso.github.io/QnAMarkup/examples/source/neat.txt&sharing=2" style="height:300px"></iframe></div>
-</div>	
-	
-
+</div>
+</details>
 
 	<h2><code>X:</code><a name="x" href="#x" class="anchor"></a></h2>
 	
@@ -300,9 +313,7 @@ The <em>Body</em> is where you define questions and answers along with the text 
 	<p>
 	Note: as with <code>A</code> tags, the replacement of <code>&lt;x&gt;<font color=red><em>variable_name</em></font>&lt;/x&gt;</code> with user values includes text inside <code>DOC:</code> tags (<a href="#doc">described below</a>). 
 	</p>
-	<p>
-		<b>Advanced Usage:</b>
-	</p>
+<details class="advanced"><summary>Advanced Usage</summary>
 	<p>When the <code>X</code> tag is used, as with the <code>A</code> tag, in addition to the replacement described above, user answers are stored in the interview itself. So if you use the <code>submit2()</code> function (<a href="#submit2()">described below</a>) user variables will be passed along. Also, you can get at these values using Javascript's innerHTML property: <a href="http://www.w3schools.com/jsref/prop_html_innerhtml.asp" target="_blank">document.getElementById("variable_name").innerHTML</a>.</p>
 	
 	<p>
@@ -313,7 +324,8 @@ The <em>Body</em> is where you define questions and answers along with the text 
 	<p>The brackets may fall before or after the colon, <code>X<font color=purple>[<font color=red>javascript:</font>]</font>:</code> or <code>X:<font color=purple>[<font color=red>javascript:</font>]</font></code>; unlike the <code>A</code> tag, it makes no difference which. Keep the bracket right against the colon, with no space between them. Empty brackets (<code>X<font color=purple>[]</font>:</code>), or brackets whose contents lack the <code>javascript:</code> prefix, are reported as errors, as is more than one set of brackets.</p>
 	<p>As with <code>A</code> tags, the bracket may run over several lines: each line is trimmed, <code>//</code> comments are removed, and a literal <code>]</code> is written <code>\]</code>. In the QnA below, once a name is typed it is read back from the document and placed in the page's title.</p>
 <div class="code"><pre><span class="ln">Q<font color=purple>(<font color=red>name</font>)</font>: <font color=black>What is your name?</font></span><span class="ln">X<font color=purple>[</font><font color=red>javascript:</font></span><span class="ln"><font color=red>	// "name" now holds what was typed</font></span><span class="ln"><font color=red>	var n = document.getElementById("name").value;</font></span><span class="ln"><font color=red>	document.title = "A QnA for " + n;</font></span><span class="ln"><font color=purple>]:</font></span><span class="ln">	Q: <font color=black>Nice to meet you </font>&lt;x&gt;<font color=red>name</font>&lt;/x&gt;<font color=black>.</font></span></pre></div>
-	<p>The code is only run when the user answers. It is not run again when the conversation is redrawn, for example after <em>GO BACK ONE</em> or when saved progress is restored. It has the same reach as a script in an <code>A</code> tag: the predefined functions (<a href="#scripts">described below</a>) and anything defined by a script in your <code>Before:</code> tag can be called from it.</p>
+	<p>The code is only run when the user answers. It is not run again when the conversation is redrawn, for example after <em>GO BACK ONE</em> or when saved progress is restored. It has the same reach as a script in an <code>A</code> tag: the predefined functions (<a href="#scripts">described below</a>) and anything defined by a script in your <code>Before:</code> tag can be called from it. In particular, <code>goto()</code> (<a href="#goto()">described below</a>) lets the code choose the next question based on what was typed.</p>
+</details>
 
 	<h2><code>DOC: <font color=black><em>text/html</em></font></code><a name="doc" href="#doc" class="anchor"></a></h2>
 	
@@ -327,25 +339,19 @@ The <em>Body</em> is where you define questions and answers along with the text 
 <div class="live"><iframe title="Live example" src="https://www.qnamarkup.net/i/?source=https://colarusso.github.io/QnAMarkup/examples/source/shopping_list.txt&sharing=2" style="height:555px;min-width:350px;max-width:auto;"></iframe></div>
 </div>			
 		
-	<p>
-		<b>Advanced Usage:</b>
-	</p>
+<details class="advanced"><summary>Advanced Usage</summary>
 	<p>You can make use of the <code>submit2()</code> function (<a href="#submit2()">described below</a>) to pass your document to an editor. So instead of saving a document directly to ones computer, a user could have a chance to edit their document before saving.</p>
 	<p>
 	Note: the <code>DOC:</code> content is just text. It doesn't matter if it's HTML, markdown, LaTeX, CommonAccord, whatever you like. 
 	</p>
-	
+</details>
+
 <center><a href="#top" class="top">↑ Back to top</a></center>
 
-<h2>Adding Your Own Scripts<a name="yourscripts" href="#yourscripts" class="anchor"></a></h2>
-<p>A QnA can carry its own Javascript. Place it in <code>&lt;script&gt;</code> tags, just as you would in an HTML page, inside a <code>Before:</code> or <code>After:</code> tag or in the text of a <code>Q</code>. Scripts run in the order they are written, and anything they define is available to the rest of the page: to later scripts, and to the <em>href</em> of any <code>A</code> tag. You can load a library too (<code>&lt;script src="https://..."&gt;&lt;/script&gt;</code>); the scripts written after it wait until it has loaded.</p>
-<p>Scripts in <code>Before:</code> and <code>After:</code> run once, before the first question is shown. A script in a <code>Q</code> runs each time that question is shown (including when the conversation is redrawn after <i>GO BACK ONE</i>). For example, the QnA below defines a function in its header, uses it in a question, and again from a button.</p>
-<div class="code"><pre><span class="ln">Before: <font color=black>&lt;script&gt;</font></span><span class="ln"><font color=black>function greet(name) { return "Hello, " + name + "!"; }</font></span><span class="ln"><font color=black>&lt;/script&gt;</font></span><span class="ln">&#8203;</span><span class="ln">Q<font color=purple>(<font color=red>name</font>)</font>: <font color=black>What is your name?</font></span><span class="ln">X:</span><span class="ln">	Q<font color=purple>(<font color=red>1.1</font>)</font>: <font color=black>&lt;span id="hi"&gt;&lt;/span&gt;</font></span><span class="ln"><font color=black>	&lt;script&gt;document.getElementById("hi").textContent = greet(JSON.parse(json_str()).name);&lt;/script&gt;</font></span><span class="ln">	A<font color=purple>[<font color=red>javascript:alert(greet("again"));</font>]</font>: <font color=black>Say it again.</font></span></pre></div>
-<p>If you copy a QnA into a web page by hand, remember that the markup itself sits inside a <code>&lt;script type="text/qna"&gt;</code> tag, so any closing <code>&lt;/script&gt;</code> within it must be written <code>&lt;\/script&gt;</code>. The editor's <i>Embed Code</i> and <i>HTML</i> outputs take care of this for you.</p>
-<center><a href="#top" class="top">↑ Back to top</a></center>
+
 
 <h2>Predefined Javascript Functions<a name="scripts" href="#scripts" class="anchor"></a></h2>
-<p>All interactive QnA documents come preloaded with a set of five <a href="http://www.w3schools.com/js/js_functions.asp" target="_blank">Javascript functions</a>. As described above, these can be called from an <code>A</code> tag using the syntax: <code>A<font color=purple>[<font color=red>javascript:<em>function_name</em>();</font>]</font>:</code>. Below we'll explain what each of these functions do.</p>	
+<p>All interactive QnA documents come preloaded with a set of <a href="http://www.w3schools.com/js/js_functions.asp" target="_blank">Javascript functions</a>. As described above, these can be called from an <code>A</code> tag using the syntax: <code>A<font color=purple>[<font color=red>javascript:<em>function_name</em>();</font>]</font>:</code>. Below we'll explain what each of these functions do.</p>	
 
 
 <a name="transcript"></a>
@@ -383,6 +389,43 @@ The <em>Body</em> is where you define questions and answers along with the text 
 		<p>This function will return a JSON string containg the QnA's variable names and values as key-value pairs. For example, when selected, the following tag will display the the QnA's variables as a JSON string: <code>A<font color=purple>[<font color=red>javascript:alert(json_str());</font>]</font>: <font color=black>button text</code></code>.</p>
 		<p>
 		
+<a name="getvar"></a>
+<h2><code>getvar(<font color=red><em>variable_name</em></font>);</code><a name="getvar()" href="#getvar()" class="anchor"></a></h2>
+
+		<p>This function returns the value saved for the <code>Q</code> tag named <code><font color=red><em>variable_name</em></font></code>: the text typed into an <code>X</code> tag, or the value of the <code>A</code> tag chosen. If that question has not been answered it returns <code>undefined</code>. For example, <code>X<font color=purple>[<font color=red>javascript:alert('Hello ' + getvar('name'));</font>]</font>:</code>.</p>
+
+
+<a name="goto_fn"></a>
+<h2><code>goto(<font color=red><em>variable_name</em></font>);</code><a name="goto()" href="#goto()" class="anchor"></a></h2>
+
+		<p>This function moves the user to the <code>Q</code> tag targeted by <code><font color=red><em>variable_name</em></font></code>, just as a <code>GOTO:</code> tag does (<a href="#goto">described above</a>), only from JavaScript. That lets a script decide where the conversation goes next. As with <code>GOTO:</code>, the target's <code>DOC:</code> tag is included, and if the target itself ends in a <code>GOTO:</code> that is followed too. For example, the QnA below checks a typed answer with <code>getvar()</code> (<a href="#getvar()">described below</a>) and picks the next question accordingly.</p>
+<div class="code"><pre><span class="ln">Q<font color=purple>(<font color=red>number</font>)</font>: <font color=black>What's the answer to the ultimate question of life, the universe and everything?</font></span><span class="ln">X<font color=purple>[</font><font color=red>javascript:</font></span><span class="ln"><font color=red>	var n = getvar('number');</font></span><span class="ln"><font color=red>	if (n == 42) { goto('right') }</font></span><span class="ln"><font color=red>	else if (n &lt; 42) { goto('low') }</font></span><span class="ln"><font color=red>	else if (n &gt; 42) { goto('high') }</font></span><span class="ln"><font color=red>	else { goto('nan') }</font></span><span class="ln"><font color=purple>]:</font></span><span class="ln">Q<font color=purple>(<font color=red>right</font>)</font>: <font color=black>That's right!</font></span><span class="ln">Q<font color=purple>(<font color=red>low</font>)</font>: <font color=black>Too low.</font> GOTO:<font color=red>number</font></span><span class="ln">Q<font color=purple>(<font color=red>high</font>)</font>: <font color=black>Too high.</font> GOTO:<font color=red>number</font></span><span class="ln">Q<font color=purple>(<font color=red>nan</font>)</font>: <font color=black>So it turns out the answer is a number, and that's not a number.</font> GOTO:<font color=red>number</font></span></pre></div>
+		<p>The target may be a name or a number, so <code><font color=red>goto(Math.floor(Math.random() * 20) + 2)</font></code> jumps to one of questions 2 through 21 at random. Prefer names where you can: unlike the targets of <code>GOTO:</code> tags, a number inside your JavaScript is not updated when the editor renumbers your questions.</p>
+		<p>Where the jump lands depends on where <code>goto()</code> is called from:</p>
+		<ul>
+		<li>In the script of an answer, <code>A<font color=purple>[<font color=red>javascript:&hellip;</font>]</font>:</code> or <code>X<font color=purple>[<font color=red>javascript:&hellip;</font>]</font>:</code>, the target takes the place of the question that would otherwise follow that answer. So an answer whose script always calls <code>goto()</code> needs no question of its own beneath it, and one that calls it only some of the time falls through to the question beneath it the rest of the time.</li>
+		<li>In a script inside a <code>Q</code> tag, the jump is made once that question has been displayed, as if its text had ended in <code>GOTO:</code>.</li>
+		<li>Called at any other time (from a timer, say, or once a request for data has come back), the target is added after the question then showing.</li>
+		</ul>
+		<p><em>GO BACK ONE</em> works as it does everywhere else: it undoes the user's last answer together with any jump that followed it, and returns them to the question they answered (with their text back in the field, if it was an <code>X</code> tag). The jumps a user actually made are remembered with their answers, so when the conversation is redrawn (after <em>GO BACK ONE</em>, or when saved progress is restored) it is redrawn as it was, without running your scripts again. A random jump, for instance, is not rolled a second time.</p>
+		<p>In the <em>flowchart</em>, a <code>goto()</code> whose target is written out, <code>goto('right')</code>, is drawn as a dashed line marked <em>JS GOTO</em> from the question whose script it is (or whose answer's script it is) to the target, to tell it from the dashed line of a <code>GOTO</code> tag. A target worked out at run time, like the random one above, cannot be drawn. Inside a QnA loaded with <code>loadQnA()</code> (<a href="#loadQnA()">described below</a>), <code>goto()</code> and <code>getvar()</code> look in that QnA first.</p>
+
+
+<a name="loadQnA"></a>
+<h2><code>loadQnA(<font color=red><em>url</em></font>, <font color=red><em>find</em></font>, <font color=red><em>replace</em></font>);</code><a name="loadQnA()" href="#loadQnA()" class="anchor"></a></h2>
+
+		<p>This function brings another QnA into the conversation. Called from an answer's script, <code>A<font color=purple>[<font color=red>javascript:loadQnA('&hellip;')</font>]</font>:</code> or <code>X<font color=purple>[<font color=red>javascript:loadQnA('&hellip;')</font>]</font>:</code>, it fetches the QnA at <code><font color=red><em>url</em></font></code> and shows its first question in place of the question that would otherwise have followed the answer. From there the visitor is in the loaded QnA: its questions, answers, <code>GOTO</code> tags, <code>DOC:</code> tags and scripts all work as they would on their own, and they are drawn in the style of the QnA that loaded them (the loaded QnA's <code>Title:</code>, <code>Author:</code>, <code>Description:</code>, <code>Before:</code>, <code>After:</code> and hidden <code>Settings:</code> tag are ignored). Because the loaded QnA takes the answer's place, an answer that calls <code>loadQnA()</code> may not have a <code>Q</code> tag nested beneath it; the editor reports one as an error. Where the loaded QnA ends, the conversation ends, unless you bring it back with <code><font color=red><em>find</em></font></code> and <code><font color=red><em>replace</em></font></code> (below).</p>
+		<p><code><font color=red><em>url</em></font></code> may point at a text file of QnA Markup (the kind the <code>source</code> parameter takes, <a href="#remote">described below</a>), at a web page with a QnA embedded in it (the first <code>&lt;script type="text/qna"&gt;</code> on the page is used), or at a link made by the editor's <em>Link</em> output, which carries the QnA inside it. A relative URL is resolved against the page the QnA is on, or, for a call made from a loaded QnA, against that QnA's own URL. As with the <code>source</code> parameter, the file is fetched by the visitor's browser, so it must be served over HTTPS with <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS" target="_blank">CORS</a> headers that allow cross-origin reads (this also applies in the editor's preview, even for files on the editor's own server). If the file cannot be fetched, or is not a well-formed QnA, the conversation shows a message saying so, and the visitor can go back.</p>
+		<p><b>Coming back: <code>find</code> and <code>replace</code>.</b> The loaded QnA knows nothing about the one that loaded it, so the return trip is set up by the loading author. <code><font color=red><em>find</em></font></code> names a question in the loaded QnA and <code><font color=red><em>replace</em></font></code> a question in your own: whenever the visitor would arrive at <code><font color=red><em>find</em></font></code>, by a <code>GOTO</code>, by <code>goto()</code>, or by answering the question above it, they arrive at <code><font color=red><em>replace</em></font></code> instead. So a loaded QnA that ends in <code>Q(done): Thanks.</code> can be sent anywhere you like with <code>loadQnA('&hellip;', 'done', 'next')</code>. To redirect several questions, pass an object: <code>loadQnA('&hellip;', {done: 'next', quit: 'bye'})</code>.</p>
+		<p>In the QnA below, an intake asks for a name, then hands over to one of two other QnAs (housing or family), and picks up again at <code>next</code> when either of them reaches its <code>done</code>.</p>
+<div class="code"><pre><span class="ln">Title: <font color=black>Intake</font></span><span class="ln">Q<font color=purple>(<font color=red>name</font>)</font>: <font color=black>What is your name?</font></span><span class="ln">X:</span><span class="ln">	Q<font color=purple>(<font color=red>help</font>)</font>: <font color=black>Hi &lt;x&gt;<font color=red>name</font>&lt;/x&gt;. What do you need help with?</font></span><span class="ln">	A<font color=purple>[</font><font color=red>javascript:loadQnA('https://example.com/housing.txt', 'done', 'next')</font><font color=purple>]:</font> <font color=black>A housing problem</font></span><span class="ln">	A<font color=purple>[</font><font color=red>javascript:loadQnA('https://example.com/family.txt', 'done', 'next')</font><font color=purple>]:</font> <font color=black>A family matter</font></span><span class="ln">	A: <font color=black>Something else</font></span><span class="ln">		Q<font color=purple>(<font color=red>other</font>)</font>: <font color=black>Tell us more.</font></span><span class="ln">		X:</span><span class="ln">			Q<font color=purple>(<font color=red>other2</font>)</font>: GOTO:<font color=red>next</font></span><span class="ln">Q<font color=purple>(<font color=red>next</font>)</font>: <font color=black>Thanks, &lt;x&gt;<font color=red>name</font>&lt;/x&gt;.</font></span></pre></div>
+		<p>And here is <code>housing.txt</code>, which works on its own as well:</p>
+<div class="code"><pre><span class="ln">Title: <font color=black>Housing</font></span><span class="ln">Q<font color=purple>(<font color=red>name</font>)</font>: <font color=black>First, what is your name?</font></span><span class="ln">X:</span><span class="ln">	Q<font color=purple>(<font color=red>issue</font>)</font>: <font color=black>&lt;x&gt;<font color=red>name</font>&lt;/x&gt;, is this about an eviction or repairs?</font></span><span class="ln">	A(eviction): <font color=black>An eviction</font></span><span class="ln">		Q<font color=purple>(<font color=red>eviction</font>)</font>: <font color=black>Did you get a notice to quit?</font></span><span class="ln">		A: <font color=black>Yes</font></span><span class="ln">			Q<font color=purple>(<font color=red>e1</font>)</font>: GOTO:<font color=red>done</font></span><span class="ln">		A: <font color=black>No</font></span><span class="ln">			Q<font color=purple>(<font color=red>e2</font>)</font>: GOTO:<font color=red>done</font></span><span class="ln">	A(repairs): <font color=black>Repairs</font></span><span class="ln">		Q<font color=purple>(<font color=red>r1</font>)</font>: GOTO:<font color=red>done</font></span><span class="ln">Q<font color=purple>(<font color=red>done</font>)</font>: <font color=black>That is all we need about housing.</font></span></pre></div>
+		<p><b>Sharing answers between QnAs.</b> Both QnAs above ask for a <code>name</code>. With <em>Q Sharing</em> on (the default; it is on the editor's <i>Settings</i> screen), a variable name given by an author means the same thing in every QnA loaded into a conversation, so when the housing QnA reaches its own <code>Q(name)</code>, the question is not asked again. It is filled in from the earlier answer, and shown to the visitor as the question followed by the answer prefixed with the <em>Prior Answers</em> text, "Earlier you entered:" (also on the <i>Settings</i> screen, so it can be changed or translated). The variable keeps the value it already had. This works in both directions: had the housing QnA been loaded first, the intake's <code>Q(name)</code> would have been filled in instead. Only names you have given count; the numbered names the editor makes up (<code>1.2.1</code>) are never shared. And a QnA re-asking one of its own questions, as a <code>GOTO</code> loop does, is still asked, as is a question that was filled in once and reached again later. With <em>Q Sharing</em> off, nothing is shared: every loaded QnA keeps its variables to itself.</p>
+		<p>For an <code>X</code> tag the earlier answer is simply entered. For a question with <code>A</code> tags, the answer whose value (<a href="#a">the parenthetical, or the button text</a>) is the same as the earlier one is chosen. If none is exactly the same, the values are compared again with case, spaces, punctuation and other symbols ignored (letters, numbers and emoji are all that count), so <code>Yes.</code> matches <code>yes</code>; because that is a guess, the visitor is asked first, in a dialog whose text is the <em>Confirm text</em> on the <i>Settings</i> screen, with <code>&lt;x&gt;answer&lt;/x&gt;</code> standing for the button. <em>OK</em> takes the answer; <em>Cancel</em> asks the question. When no answer matches either way, or two answers match alike, the question is asked, without a dialog. A filled-in answer counts as an answer in every way: its <code>[javascript:&hellip;]</code> runs, its <code>DOC:</code> content is collected, and it appears in <code>transcript()</code>.</p>
+		<p><em>GO BACK ONE</em> treats a filled-in answer as one step: going back onto it asks the question, an <code>X</code> field with the earlier text in it, ready to edit, and the new answer is what the variable holds from then on. Everything a loaded QnA adds is remembered with the visitor's answers, as text, so <em>GO BACK ONE</em> and saved progress (<em>Save visitor progress</em>) redraw the conversation exactly as it happened, without fetching anything again.</p>
+		<p>In the <em>flowchart</em>, an answer that calls <code>loadQnA()</code> leads to a box marked <em>External QnA</em> (captioned with the file's name when the URL is written out). A loaded QnA can itself call <code>loadQnA()</code>, as many levels deep as you like; each loaded QnA gets its own numbered names, so nothing collides.</p>
+
 
 <a name="mail2"></a>
 <h2><code>mail2(<font color=red><em>to</em></font>, <font color=red><em>subject</em></font>, <font color=red><em>body</em></font>);</code><a name="mailto()" href="#mailto()" class="anchor"></a></h2>
@@ -409,7 +452,40 @@ The <em>Body</em> is where you define questions and answers along with the text 
 		
 
 <center><a href="#top" class="top">↑ Back to top</a></center>
-	
+
+
+<h2>Adding Your Own Scripts<a name="yourscripts" href="#yourscripts" class="anchor"></a></h2>
+<p>A QnA can carry its own Javascript. Place it in <code>&lt;script&gt;</code> tags, just as you would in an HTML page, inside a <code>Before:</code> or <code>After:</code> tag or in the text of a <code>Q</code>. Scripts run in the order they are written, and anything they define is available to the rest of the page: to later scripts, and to the <em>href</em> of any <code>A</code> tag. You can load a library too (<code>&lt;script src="https://..."&gt;&lt;/script&gt;</code>); the scripts written after it wait until it has loaded.</p>
+<p>Scripts in <code>Before:</code> and <code>After:</code> run once, before the first question is shown. A script in a <code>Q</code> runs each time that question is shown (including when the conversation is redrawn after <i>GO BACK ONE</i>). For example, the QnA below defines a function in its header, uses it in a question, and again from a button.</p>
+<div class="code"><pre><span class="ln">Before: <font color=black>&lt;script&gt;</font></span><span class="ln"><font color=black>function greet(name) { return "Hello, " + name + "!"; }</font></span><span class="ln"><font color=black>&lt;/script&gt;</font></span><span class="ln">&#8203;</span><span class="ln">Q<font color=purple>(<font color=red>name</font>)</font>: <font color=black>What is your name?</font></span><span class="ln">X:</span><span class="ln">	Q<font color=purple>(<font color=red>1.1</font>)</font>: <font color=black>&lt;span id="hi"&gt;&lt;/span&gt;</font></span><span class="ln"><font color=black>	&lt;script&gt;document.getElementById("hi").textContent = greet(JSON.parse(json_str()).name);&lt;/script&gt;</font></span><span class="ln">	A<font color=purple>[<font color=red>javascript:alert(greet("again"));</font>]</font>: <font color=black>Say it again.</font></span></pre></div>
+<p>If you copy a QnA into a web page by hand, remember that the markup itself sits inside a <code>&lt;script type="text/qna"&gt;</code> tag, so any closing <code>&lt;/script&gt;</code> within it must be written <code>&lt;\/script&gt;</code>. The editor's <i>Embed Code</i> and <i>HTML</i> outputs take care of this for you.</p>
+<center><a href="#top" class="top">↑ Back to top</a></center>
+
+
+<h2>Loading a Remote QnA<a name="remote" href="#remote" class="anchor"></a></h2>
+<p>
+If you have a text file containing QnA Markup at a URL, you can pass that URL to the stand-alone viewer or the editor using the <code>source</code> parameter:
+</p>
+<code><font color=black>[<em>QnA instance's URL</em>]/i/</font><font color=purple>?source=</font><font color=red>[<em>QnA text file's URL</em>]</font></code>
+<p>For example:</p>
+<code><font color=black>https://www.qnamarkup.net/i/</font><font color=purple>?source=</font><font color=red>https://colarusso.github.io/QnAMarkup/examples/source/first_q.txt</font></code> (<a href="https://www.qnamarkup.net/i/?source=https://colarusso.github.io/QnAMarkup/examples/source/first_q.txt" target="_blank">view link</a>)
+<p>The file is fetched by the visitor's browser, so it must be served over HTTPS with <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS" target="_blank">CORS</a> headers that allow cross-origin reads. GitHub Pages, raw GitHub URLs, and most static hosts do this. Style options may be appended (e.g., <code>&amp;font_size=16</code>).</p>
+<p>The same kind of file can be loaded into a running conversation with the <code>loadQnA()</code> function (<a href="#loadQnA()">described above</a>).</p>
+<p>You do not need a remote file to share a QnA, though. The editor's <em>Link</em> output packs the whole QnA into the link itself (compressed), and its <em>HTML</em> outputs give you a page you can host anywhere.</p>
+<center><a href="#top" class="top">↑ Back to top</a></center>
+
+
+<h2>Embedding a QnA in Your Own Page<a name="embedding" href="#embedding" class="anchor"></a></h2>
+<p>The interpreter is a single JavaScript file served from <code>www.qnamarkup.org</code> (or host it yourself). Put your markup in a <code>&lt;script type="text/qna"&gt;</code> tag and it renders in place:</p>
+<pre><span class="ln">&lt;script src="https://www.qnamarkup.org/dist/2.4.0/qna.min.js"&gt;&lt;/script&gt;</span><span class="ln">&lt;script type="text/qna"&gt;</span><span class="ln">Q: Would you like to embed a QnA?</span><span class="ln">A: Yes.</span><span class="ln">	Q: Then you already have.</span><span class="ln">&lt;/script&gt;</span></pre>
+<p>The markup goes in a <code>script</code> tag with type <code>text/qna</code> because the browser leaves the contents of such a tag exactly as written (tabs, HTML and all). 
+	</p>
+<details class="advanced"><summary>Advanced Usage</summary>
+	Style options go on the same tag as <code>data-</code> attributes, e.g. <code>data-comp-bg="336699" data-font-size="16" data-footer="false"</code>; the option names match the editor's Settings tab. <code>data-chat-style="llm"</code> shows questions as plain text on the page, like a chat assistant's replies, instead of in speech bubbles, and the text of the built-in buttons and footer links can be changed with <code>data-label-save</code>, <code>data-label-back</code>, <code>data-label-restart</code>, <code>data-label-credits</code>, <code>data-label-edit</code> and <code>data-label-code</code> (e.g. <code>data-label-back="Previous"</code>). The buttons themselves are colored with <code>data-btn-bg</code> (background) and <code>data-btn-txt</code> (text), <code>data-btn-bold="true"</code> sets their text in bold, <code>data-btn-border</code> colors the buttons' outline, and <code>data-btn-divider</code> colors the thin dividing lines above the go back / start over buttons and above the footer. <code>data-save-progress="true"</code> remembers a visitor's answers in their browser so they can leave and come back (off by default). Use <code>data-target="#some-id"</code> to render somewhere other than right after the script tag. The one sequence that cannot appear inside a script tag is a closing <code>&lt;/script&gt;</code>; write it as <code>&lt;\/script&gt;</code> if you ever need it. However, if you're working the editor, it will take care of this for you, escaping the closing script before providing you with code.</p>
+<p>The editor's <em>Embed Code</em> output writes a version-pinned URL together with an <code>integrity</code> hash, so your page keeps loading exactly the library it was written against no matter what is released later. Copy that rather than typing the tag by hand.</p>
+</details>
+<center><a href="#top" class="top">↑ Back to top</a></center>
+
 
 <h2>Document Parsers &amp; Editors<a name="docs" href="#docs" class="anchor"></a></h2>
 <p>My hope is that this section will grow into a list of parsers as people point me to various parsers around the web. The basic idea is that by using the <code>submit2()</code> function in conjunction with a document parser/editor, it is possible to hold up the document created by a QnA for review by a person. Imagine a QnA that used a combination of <code>DOC:</code> and <code>X:</code> tags to craft a custom document for a <em>pro se</em> litigant. At the end of the QnA, that document can be passed to a parser and the user can take some time to edit the text before printing or saving it. The thing is that the <code>DOC:</code> tag doesn't really care what format its content is in. It could be HTML, markdown, or LaTex. By passing that content to a parser, it can be rendered and placed in a form that's easier for a user to digest.</p>	
@@ -445,22 +521,28 @@ The <em>Body</em> is where you define questions and answers along with the text 
 
 <center><a href="#top" class="top">↑ Back to top</a></center>
 
-<h2>Loading a Remote QnA<a name="remote" href="#remote" class="anchor"></a></h2>
-<p>
-If you have a text file containing QnA Markup at a URL, you can pass that URL to the stand-alone viewer or the editor using the <code>source</code> parameter:
-</p>
-<code><font color=black>[<em>QnA instance's URL</em>]/i/</font><font color=purple>?source=</font><font color=red>[<em>QnA text file's URL</em>]</font></code>
-<p>For example:</p>
-<code><font color=black>https://www.qnamarkup.net/i/</font><font color=purple>?source=</font><font color=red>https://colarusso.github.io/QnAMarkup/examples/source/first_q.txt</font></code> (<a href="https://www.qnamarkup.net/i/?source=https://colarusso.github.io/QnAMarkup/examples/source/first_q.txt" target="_blank">view link</a>)
-<p>The file is fetched by the visitor's browser, so it must be served over HTTPS with <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS" target="_blank">CORS</a> headers that allow cross-origin reads. GitHub Pages, raw GitHub URLs, and most static hosts do this. Style options may be appended (e.g., <code>&amp;font_size=16&amp;sharing=2</code>).</p>
-<p>You do not need a remote file to share a QnA, though. The editor's <em>Link</em> output packs the whole QnA into the link itself (compressed), and its <em>HTML</em> outputs give you a page you can host anywhere.</p>
-<center><a href="#top" class="top">↑ Back to top</a></center>
-
-<h2>Embedding a QnA in Your Own Page<a name="embedding" href="#embedding" class="anchor"></a></h2>
-<p>The interpreter is a single JavaScript file served from <code>www.qnamarkup.org</code> (or host it yourself). Put your markup in a <code>&lt;script type="text/qna"&gt;</code> tag and it renders in place:</p>
-<pre><span class="ln">&lt;script src="https://www.qnamarkup.org/dist/2.2.0/qna.min.js"&gt;&lt;/script&gt;</span><span class="ln">&lt;script type="text/qna"&gt;</span><span class="ln">Q: Would you like to embed a QnA?</span><span class="ln">A: Yes.</span><span class="ln">	Q: Then you already have.</span><span class="ln">&lt;/script&gt;</span></pre>
-<p>The markup goes in a <code>script</code> tag with type <code>text/qna</code> because the browser leaves the contents of such a tag exactly as written (tabs, HTML and all). Style options go on the same tag as <code>data-</code> attributes, e.g. <code>data-comp-bg="336699" data-font-size="16" data-footer="false"</code>; the option names match the editor's Settings tab. <code>data-chat-style="llm"</code> shows questions as plain text on the page, like a chat assistant's replies, instead of in speech bubbles, and the text of the built-in buttons and footer links can be changed with <code>data-label-save</code>, <code>data-label-back</code>, <code>data-label-restart</code>, <code>data-label-credits</code>, <code>data-label-edit</code> and <code>data-label-code</code> (e.g. <code>data-label-back="Previous"</code>). The buttons themselves are colored with <code>data-btn-bg</code> (background) and <code>data-btn-txt</code> (text), <code>data-btn-bold="true"</code> sets their text in bold, <code>data-btn-border</code> colors the buttons' outline, and <code>data-btn-divider</code> colors the thin dividing lines above the go back / start over buttons and above the footer. <code>data-save-progress="true"</code> remembers a visitor's answers in their browser so they can leave and come back (off by default). Use <code>data-target="#some-id"</code> to render somewhere other than right after the script tag. The one sequence that cannot appear inside a script tag is a closing <code>&lt;/script&gt;</code>; write it as <code>&lt;\/script&gt;</code> if you ever need it. However, the editor will take care of this for you, escaping the closing script before providing you with code.</p>
-<p>The editor's <em>Embed Code</em> output writes a version-pinned URL together with an <code>integrity</code> hash, so your page keeps loading exactly the library it was written against no matter what is released later. Copy that rather than typing the tag by hand.</p>
+<h2>Bots Building Bots<a name="bots" href="#bots" class="anchor"></a></h2>
+<p>An AI assistant can write QnA Markup for you, or turn something you already have into a QnA, once it has been taught the language. The teaching comes as a <em>skill</em>: a small folder of files, written for assistants, that describes the syntax, the rules the interpreter enforces, the predefined functions, a set of checked examples and a script that checks a QnA the way the editor does. Give the skill to an assistant that supports skills and you can ask for things like:</p>
+<ul>
+	<li>"Help me write a QnA that helps a tenant work out whether they can be evicted."</li>
+	<li>"Encode the process in this document as a QnA." (with the document attached)</li>
+	<li>"Turn this intake form into a QnA that assembles a letter at the end."</li>
+	<li>"Here is my QnA and the error the editor shows; fix it."</li>
+</ul>
+<p>The skill is in the <a href="https://github.com/colarusso/QnAMarkup/tree/master/skills/qna-markup" target="_blank">repository</a> under <code>skills/qna-markup/</code>, and copies are served here:</p>
+<ul>
+	<li><a href="../skills/qna-markup.zip">qna-markup.zip</a> &mdash; the whole skill, ready to upload or unzip.</li>
+	<li><a href="../skills/qna-markup/SKILL.md" target="_blank">SKILL.md</a> &mdash; the instructions themselves (readable; start here if you are curious what the assistant is told).</li>
+	<li><a href="../skills/qna-markup/reference.md" target="_blank">reference.md</a> &mdash; the language reference the skill points to, and <a href="../skills/qna-markup/examples/branching.txt" target="_blank">three</a> <a href="../skills/qna-markup/examples/letter.txt" target="_blank">checked</a> <a href="../skills/qna-markup/examples/quiz.txt" target="_blank">examples</a>.</li>
+</ul>
+<h3>Installing it</h3>
+<p><b>Claude</b> (the app at claude.ai and the desktop app): open <i>Customize</i> &rarr; <i>Skills</i>, find <i>Add</i>, and upload <code>qna-markup.zip</code>. The skill is then available in every conversation, and Claude picks it up on its own whenever a request is about a QnA. Skills are a Claude feature that may not be on for every plan; if you don't see the option, the fallback below works everywhere.</p>
+<p><b>Claude Code</b> and <b>Cowork</b>: unzip the file into <code>~/.claude/skills/</code> (for yourself) or into a project's <code>.claude/skills/</code> folder (for everyone working on that project), so that the file <code>SKILL.md</code> ends up at <code>~/.claude/skills/qna-markup/SKILL.md</code>. Both tools can also run the skill's checker, <code>node scripts/check.js my_qna.txt</code>, which prints the interpreter's own error messages with line numbers, so they will usually check their work before handing it over.</p>
+<p><b>The Claude API</b> accepts the same zip through its Skills feature, for developers building their own tools; see Anthropic's documentation for the current upload call.</p>
+<p><b>Any other assistant</b> (ChatGPT, Gemini, a local model): skills are just text. Paste the contents of <code>SKILL.md</code>, followed by <code>reference.md</code>, into the assistant's custom instructions, a project's instructions, or simply the start of the conversation, and ask away. The examples can be pasted too when you want the output to look like them.</p>
+<h3>Using it</h3>
+<p>Describe the interview you want, or attach the document, checklist or policy you want encoded, and ask for a QnA. The assistant should answer with plain text indented with tabs (or a <code>.txt</code> file), plus a line on how to run it. Paste that text into the <a href="../">editor</a>: the live preview shows the interview, <i><b>Update Outputs</b></i> reports any errors with line numbers, and the <i>Flowchart</i> output lets you see the whole tree at once, which is the quickest way to check that the assistant understood the process. Anything wrong, paste the error (or the flowchart's problem) back and ask for a fix.</p>
+<p>Two things to keep in mind. The skill teaches the language, not your subject: an assistant can write a fluent QnA that gets the law, the policy or the procedure wrong, so read the questions and the endings as carefully as you would a colleague's draft. And the skill is written for the current interpreter; when the language gains a feature, the skill in the repository is updated with it, so re-download it now and then.</p>
 <center><a href="#top" class="top">↑ Back to top</a></center>
 
 <h2><sup>&dagger;</sup>The Hidden Tag<a name="settings" href="#settings" class="anchor"></a>: <code>Settings: <font color=black><em>name=value; name=value; ...</em></font></code></h2>
@@ -475,7 +557,17 @@ If you have a text file containing QnA Markup at a URL, you can pass that URL to
   <span>Updated 2026-09</span>
   <a href="https://github.com/colarusso/QnAMarkup/issues" target="_blank" rel="noopener">report bug/issue</a>
 </footer>
-</body>
-</html>
+<script src="syntax.js"></script>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-56573434-1', 'auto');
+  ga('require', 'linkid', 'linkid.js');
+  ga('require', 'displayfeatures');
+  ga('send', 'pageview');
+</script>
 </body>
 </html>

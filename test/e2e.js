@@ -84,11 +84,15 @@ server.listen(0, async () => {
     await page.click('#update'); await page.waitForTimeout(600);
     const bg = await (await pv()).$eval('.question_text', e => getComputedStyle(e).backgroundColor + '|' + getComputedStyle(e).fontSize);
     check('editor: style applied to preview', bg === 'rgb(51, 102, 153)|18px', bg);
+    check('editor: both "embed the library" boxes are checked by default', await page.isChecked('#inline_lib_embed') && await page.isChecked('#inline_lib') && !/<script src=/.test(await page.inputValue('#embed_text')) && !/<script src=/.test(await page.inputValue('#html_text')));
+    await page.selectOption('#output', 'embed'); await page.uncheck('#inline_lib_embed'); await page.waitForTimeout(100);
     const snippet = await page.inputValue('#embed_text');
     check('editor: embed code has data attrs + markup', /data-comp-bg="336699"/.test(snippet) && /data-font-size="18"/.test(snippet) && /Q\(hello\): Hello/.test(snippet) && snippet.indexOf('<script src="' + base + 'dist/qna.min.js" integrity="sha384-') > 0 && /crossorigin="anonymous"/.test(snippet), snippet);
     const html = await page.inputValue('#html_text');
     check('editor: full page has title/og', /<title>Styled<\/title>/.test(html) && /og:description" content="A test."/.test(html), html.slice(0, 400));
     await page.selectOption('#output', 'html');
+    await page.uncheck('#inline_lib'); await page.waitForTimeout(100);
+    check('editor: unchecked, the full page loads the library by URL', (await page.inputValue('#html_text')).indexOf('<script src="' + base + 'dist/qna.min.js" integrity="sha384-') > 0);
     await page.check('#inline_lib'); await page.waitForTimeout(100);
     const htmlInline = await page.inputValue('#html_text');
     check('editor: inline library option', htmlInline.length > 20000 && /QnA Markup — client-side interpreter/.test(htmlInline) && !/<script src=/.test(htmlInline), htmlInline.length);
@@ -349,6 +353,16 @@ server.listen(0, async () => {
     await page.fill('#markup', 'Q: a\nA: b\n\tQ: c'); await page.waitForTimeout(100);
     const fn2 = await page.evaluate(() => window.markupFilename());
     check('save: default filename + timestamp', /^QnA_markup_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}\.txt$/.test(fn2), fn2);
+    const fn3 = await page.evaluate(() => [window.htmlFilename(), window.flowFilename('png'), window.flowFilename('svg')]);
+    check('save: HTML and flowchart default filenames', /^QnA_page_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}\.html$/.test(fn3[0]) && /^QnA_flowchart_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}\.png$/.test(fn3[1]) && /^QnA_flowchart_.*\.svg$/.test(fn3[2]), fn3);
+    await page.fill('#markup', 'Title: My Great QnA! (v2)\nQ: a\nA: b\n\tQ: c'); await page.waitForTimeout(400);
+    const fn4 = await page.evaluate(() => [window.htmlFilename(), window.flowFilename('png')]);
+    check('save: HTML and flowchart filenames from title + timestamp', /^My_Great_QnA_v2_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}\.html$/.test(fn4[0]) && /^My_Great_QnA_v2_flowchart_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}\.png$/.test(fn4[1]), fn4);
+    await page.selectOption('#output', 'html'); await page.waitForTimeout(200);
+    const [hdl] = await Promise.all([page.waitForEvent('download'), page.click('#save_html')]);
+    check('save: "Save HTML to File" downloads under that name', /^My_Great_QnA_v2_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}\.html$/.test(hdl.suggestedFilename()), hdl.suggestedFilename());
+    await page.fill('#markup', 'Q: a\nA: b\n\tQ: c'); await page.waitForTimeout(100);
+    await page.selectOption('#output', 'interact');
 
     /* ---- flowchart output ---- */
     await page.goto(base); await (await pv()).waitForSelector('.question_text');
@@ -424,10 +438,64 @@ server.listen(0, async () => {
     await page.fill('#compBg', '5489eb');
     await page.selectOption('#output', 'interact');
 
+    /* ---- goto(): runs in the editor's preview; the flowchart does not show it ---- */
+    {
+      const eight = fs.readFileSync(path.join(__dirname, 'fixtures_runtime', 'goto_8ball.txt'), 'utf8');
+      await page.goto(base); await (await pv()).waitForSelector('.question_text');
+      await page.fill('#markup', eight); await page.waitForTimeout(800);
+      check('goto(): the example is well formed in the editor', await page.$eval('#status', e => e.className) === 'ok');
+      let f = await pv();
+      await f.fill('input.xinput', 'Will it work?'); await f.press('input.xinput', 'Enter'); await page.waitForTimeout(900);
+      f = await pv();
+      const gb = await f.$$eval('.question_text, .ans_text', els => els.map(e => e.textContent.trim()));
+      check('goto(): preview jumps to a reply, then on to "more"', gb.length === 4 && gb[1] === 'Will it work?' && gb[3] === 'Another question? Ask away.' && !/missing/.test(gb.join('|')), gb);
+      await f.click('.qna-back'); await page.waitForTimeout(400);
+      f = await pv();
+      check('goto(): GO BACK ONE in the preview', (await f.$$('.question_text')).length === 1 && await f.inputValue('input.xinput') === 'Will it work?');
+      await page.selectOption('#output', 'flow'); await page.waitForTimeout(500);
+      const withGoto = await page.$eval('#flow_canvas', e => e.querySelectorAll('.qf-edge').length + '/' + e.querySelectorAll('.qf-node, g[class*=node]').length);
+      await page.fill('#markup', eight.replace(/X\[javascript:[^\n]*\]:/g, 'X:')); await page.waitForTimeout(800);
+      const without = await page.$eval('#flow_canvas', e => e.querySelectorAll('.qf-edge').length + '/' + e.querySelectorAll('.qf-node, g[class*=node]').length);
+      check('goto(): flowchart is the same with and without the goto() calls', withGoto === without && /^[1-9]/.test(withGoto), [withGoto, without]);
+      await page.selectOption('#output', 'interact');
+    }
+
+    /* ---- syntax page: folded Advanced Usage, the skill files ---- */
+    {
+      const sp = await ctx.newPage();
+      await sp.goto(base + 'syntax/'); await sp.waitForTimeout(300);
+      const folded = await sp.$$eval('details.advanced', ds => ds.map(d => [d.open, d.querySelector('summary').textContent.trim()]));
+      check('syntax: three Advanced Usage boxes, all folded', folded.length === 3 && folded.every(f => f[0] === false && f[1] === 'Advanced Usage'), folded);
+      check('syntax: what is inside is hidden', !(await sp.$eval('a[name=links]', a => a.checkVisibility())));
+      await sp.goto(base + 'syntax/#links'); await sp.waitForTimeout(300);
+      check('syntax: a link into a box opens that box only', JSON.stringify(await sp.$$eval('details.advanced', ds => ds.map(d => d.open))) === '[true,false,false]' && await sp.$eval('a[name=links]', a => a.checkVisibility()));
+      await sp.evaluate(() => { location.hash = '#xjs'; }); await sp.waitForTimeout(300);
+      check('syntax: … and so does a hash change', JSON.stringify(await sp.$$eval('details.advanced', ds => ds.map(d => d.open))) === '[true,true,false]');
+      const skillLinks = await sp.$$eval('a[href^="../skills/"]', as => as.map(a => a.getAttribute('href')));
+      check('syntax: Bots Building Bots links to the skill files', skillLinks.indexOf('../skills/qna-markup.zip') >= 0 && skillLinks.indexOf('../skills/qna-markup/SKILL.md') >= 0 && (await sp.$$eval('#toc a, main ul li a[href="#bots"]', as => as.length)) >= 1, skillLinks);
+      for (const f of ['skills/qna-markup.zip', 'skills/qna-markup/SKILL.md', 'skills/qna-markup/reference.md', 'skills/qna-markup/examples/letter.txt', 'skills/qna-markup/scripts/check.js']) {
+        const r = await sp.request.get(base + f);
+        check('syntax: ' + f + ' is served', r.ok() && (await r.body()).length > 200, r.status());
+      }
+      const sk = await (await sp.request.get(base + 'skills/qna-markup/SKILL.md')).text();
+      check('skill: SKILL.md has the frontmatter a skill needs', /^---\nname: qna-markup\ndescription: .{50,}\n---\n/.test(sk), sk.slice(0, 120));
+      await sp.close();
+    }
+
     /* ---- embed code: inline library option ---- */
     await page.goto(base); await (await pv()).waitForSelector('.question_text');
     await page.selectOption('#output', 'embed'); await page.waitForTimeout(100);
-    check('embed: library by URL by default', (await page.inputValue('#embed_text')).indexOf('<script src="' + base + 'dist/qna.min.js" integrity="sha384-') > 0 && !(await page.isChecked('#inline_lib_embed')));
+    check('embed: an unchecked box is remembered; then the library goes by URL', (await page.inputValue('#embed_text')).indexOf('<script src="' + base + 'dist/qna.min.js" integrity="sha384-') > 0 && !(await page.isChecked('#inline_lib_embed')));
+    {
+      // a browser that last used 2.2.0 (its state has the old keys, both false) still gets the new default
+      const fctx = await browser.newContext(); const fp = await fctx.newPage();
+      await fp.goto(base); await fp.waitForTimeout(500);
+      const key = await fp.evaluate(() => Object.keys(localStorage).find(k => { try { return JSON.parse(localStorage.getItem(k)).markup !== undefined; } catch (e) { return false; } }));
+      await fp.evaluate(k => { const st = JSON.parse(localStorage.getItem(k)); delete st.embedLib; delete st.embedLibEmbed; st.inlineLib = false; st.inlineLibEmbed = false; localStorage.setItem(k, JSON.stringify(st)); }, key);
+      await fp.goto(base + '?x=1'); await fp.waitForTimeout(500);
+      check('embed: state saved by 2.2.0 gets the new checked default', !!key && await fp.isChecked('#inline_lib_embed') && await fp.isChecked('#inline_lib'), key);
+      await fctx.close();
+    }
     await page.check('#inline_lib_embed'); await page.waitForTimeout(100);
     const emb = await page.inputValue('#embed_text');
     check('embed: inline option embeds the library', !/<script src=/.test(emb) && /QnA Markup — client-side interpreter/.test(emb) && /<script type="text\/qna"/.test(emb), emb.length);
@@ -488,7 +556,7 @@ server.listen(0, async () => {
     await page.goto(base + 'syntax/');
     check('syntax page: loads', /Syntax & Usage/.test(await page.title()) || (await page.$('h1')) !== null);
     check('syntax page: embedding section', await page.$('a[name=embedding]') !== null);
-    check('syntax page: no hidden-div references', !/qna-markup/.test(await page.content()));
+    check('syntax page: no hidden-div references', !/(class|id)="qna-markup"/.test(await page.content()));
     await page.screenshot({ path: path.join(shots, 'syntax.png') });
 
     // mobile layout of editor
@@ -506,7 +574,9 @@ server.listen(0, async () => {
       await page.fill('#markup', 'Title: Split\nQ: Cross-origin?\nA: Yes\n\tQ: Good.'); await page.click('#update'); await page.waitForTimeout(400);
       const splitLink = await page.inputValue('#link_text');
       check('split: share link points at the viewer origin', splitLink.startsWith(NET + 'i/#z='), splitLink.slice(0, 40));
+      await page.selectOption('#output', 'embed'); await page.uncheck('#inline_lib_embed'); await page.waitForTimeout(100);
       const splitEmbed = await page.inputValue('#embed_text');
+      await page.selectOption('#output', 'interact');
       check('split: embed code loads the library from the editor origin with SRI', splitEmbed.indexOf('<script src="' + ORG + 'dist/qna.min.js" integrity="sha384-') > 0, splitEmbed.slice(0, 200));
       check('split: preview frame has an opaque origin and no storage', await (await pv()).evaluate(() => { let st = 'no-storage'; try { localStorage.getItem('x'); st = 'has-storage'; } catch (e) {} return self.origin === 'null' && st === 'no-storage'; }));
       check('split: preview still runs the QnA (buttons work)', await (await pv()).$('a.qabutton') !== null);
@@ -634,7 +704,7 @@ server.listen(0, async () => {
     check('settings: a pasted tag is inert in the live preview', await (await pv()).$eval('.question_text', e => e.textContent.trim() + '|' + getComputedStyle(e).fontSize) === 'Pasted|17px' && !/Settings/.test(await (await pv()).$eval('#qna', e => e.innerText)));
     await page.click('#update'); await page.waitForTimeout(500);
     check('settings: Update Outputs takes a pasted tag in (other settings kept)', !/Settings:/.test(await page.inputValue('#markup')) && await page.inputValue('#fontSize') === '21' && await page.inputValue('#radius') === '4' && await page.inputValue('#compBg') === '224466');
-    await page.selectOption('#output', 'embed').catch(() => {}); await page.waitForTimeout(200);
+    await page.selectOption('#output', 'embed').catch(() => {}); await page.uncheck('#inline_lib_embed'); await page.waitForTimeout(200);
     check('settings: embed code carries settings as attributes, not as a tag', !/Settings:/.test(await page.inputValue('#embed_text')) && /data-font-size="21"/.test(await page.inputValue('#embed_text')));
     await page.selectOption('#output', 'interact');
     await page.evaluate(() => { localStorage.clear(); });
@@ -671,7 +741,7 @@ server.listen(0, async () => {
     // Save to File / Load File
     const [dlc] = await Promise.all([page.waitForEvent('download'), page.click('#save_markup')]);
     const savedChat = fs.readFileSync(await dlc.path(), 'utf8');
-    check('chat + labels: saved in the Settings tag', /\nSettings: [^\n]*compBg=224466; [^\n]*chatStyle=llm; labelSave=Save above text as answer\.; labelBack=Previous; labelRestart=Again%3B please; labelCredits=credits; labelEdit=edit; labelCode=make "one"; footer=true; [^\n]*\n$/.test(savedChat), savedChat);
+    check('chat + labels: saved in the Settings tag', /\nSettings: [^\n]*compBg=224466; [^\n]*chatStyle=llm; qShare=true; labelSave=Save above text as answer\.; labelEmpty=Your answer appears to be empty\.; labelBack=Previous; labelRestart=Again%3B please; labelCredits=credits; labelEdit=edit; labelEditWarn=You are about to edit a copy of this QnA\. Any edits will not change this instance\.; labelCode=make "one"; labelEarlier=Earlier you entered:; labelConfirm=It looks like you may have answered this before%3B click OK to use <x>answer<\/x> as your answer\.; footer=true; [^\n]*\n$/.test(savedChat), savedChat);
     await page.click('#restore'); await page.waitForTimeout(400);
     check('chat + labels: Restore Defaults returns to SMS and the standard text', await page.inputValue('#chatStyle') === 'sms' && !(await page.$eval('#compBg', e => e.disabled)) && await page.inputValue('#labelBack') === 'GO BACK ONE' && await page.inputValue('#compBg') === '5489eb');
     await page.setInputFiles('#upload', { name: 'chat.txt', mimeType: 'text/plain', buffer: Buffer.from(savedChat) }); await page.waitForTimeout(600);
@@ -685,11 +755,88 @@ server.listen(0, async () => {
     check('chat + labels: remembered across an editor reload', await page.inputValue('#chatStyle') === 'llm' && await page.$eval('#compBg', e => e.disabled) && await page.inputValue('#labelBack') === 'Previous');
     await page.evaluate(() => { localStorage.clear(); });
 
+    /* ---- loadQnA(): Settings cards, outputs, flowchart, preview ---- */
+    {
+      await page.goto(base); await (await pv()).waitForSelector('.question_text');
+      await page.click('.tab[data-tab=styleblock]').catch(() => {});
+      const legends = await page.$$eval('#styleblock fieldset legend', ls => ls.map(l => l.textContent));
+      check('loadQnA settings: Q Sharing comes before Prior Answers, which sits next to Button Text', legends.indexOf('Q Sharing') === legends.indexOf('Prior Answers') - 1 && legends.indexOf('Prior Answers') === legends.indexOf('Button Text') - 1, legends);
+      check('loadQnA settings: defaults', await page.inputValue('#qShare') === 'true' && await page.inputValue('#labelEarlier') === 'Earlier you entered:' && await page.inputValue('#labelConfirm') === 'It looks like you may have answered this before; click OK to use <x>answer</x> as your answer.' && !(await page.$eval('#labelEarlier', e => e.disabled)));
+      await page.selectOption('#qShare', 'false'); await page.waitForTimeout(100);
+      check('loadQnA settings: Q Sharing = No disables the Prior Answers card', await page.$eval('#labelEarlier', e => e.disabled) && await page.$eval('#labelConfirm', e => e.disabled) && await page.$eval('#prior_answers', e => e.classList.contains('off')));
+      await page.selectOption('#qShare', 'true'); await page.waitForTimeout(100);
+      check('loadQnA settings: … and Yes enables it again', !(await page.$eval('#labelEarlier', e => e.disabled)) && !(await page.$eval('#prior_answers', e => e.classList.contains('off'))));
+      await setField('labelEarlier', 'You said:'); await setField('labelConfirm', 'Use <x>answer</x>; ok?'); await page.selectOption('#qShare', 'false'); await page.click('#update'); await page.waitForTimeout(500);
+      const embedL = await page.inputValue('#embed_text');
+      check('loadQnA settings: carried by embed code as data- attributes', /data-q-share="false"/.test(embedL) && /data-label-earlier="You said:"/.test(embedL) && /data-label-confirm="Use &lt;x&gt;answer&lt;\/x&gt;; ok\?"/.test(embedL), embedL.slice(0, 600));
+      await page.selectOption('#output', 'link'); await page.check('input[name=link_mode][value=plain]'); await page.waitForTimeout(400);
+      const plainL = await page.inputValue('#link_text');
+      check('loadQnA settings: carried by the plain link', /&q_share=0/.test(plainL) && /&label_earlier=You%20said%3A/.test(plainL) && /&label_confirm=Use%20%3Cx%3Eanswer/.test(plainL), plainL);
+      const vl = await ctx.newPage(); await vl.goto(plainL); await vl.waitForSelector('#qna .question_text');
+      check('loadQnA settings: the viewer takes them from the link', await vl.evaluate(() => QnA.current.options.qShare === false && QnA.current.options.labelEarlier === 'You said:' && QnA.current.options.labelConfirm === 'Use <x>answer</x>; ok?'), await vl.evaluate(() => [QnA.current.options.qShare, QnA.current.options.labelEarlier, QnA.current.options.labelConfirm]));
+      await vl.close();
+      await page.check('input[name=link_mode][value=z]'); await page.selectOption('#output', 'interact');
+      // the two alerts: empty X answer, edit link
+      await page.click('.tab[data-tab=styleblock]').catch(() => {});
+      await setField('labelEmpty', 'Say something!'); await setField('labelEditWarn', 'Copy; not the original.');
+      await page.click('.tab[data-tab=codeblock]').catch(() => {});
+      await page.fill('#markup', 'Title: T\nQ(name): Name?\nX:\n\tQ: Hi'); await page.click('#update'); await page.waitForTimeout(500);
+      check('alerts: in the outputs as data- attributes', /data-label-empty="Say something!"/.test(await page.inputValue('#embed_text')) && /data-label-edit-warn="Copy; not the original\."/.test(await page.inputValue('#html_text')));
+      const va = await ctx.newPage(); const heard = []; va.on('dialog', d => { heard.push(d.type() + ':' + d.message()); d.dismiss(); });
+      await page.selectOption('#output', 'link'); await page.waitForTimeout(400);
+      await va.goto(await page.inputValue('#link_text')); await va.waitForSelector('#qna input.xinput');
+      await va.click('#qna .xbutton'); await va.waitForTimeout(200);
+      await va.click('#qna .qna-edit-link'); await va.waitForTimeout(300);
+      check('alerts: the empty-answer and edit-link alerts use the Settings text', heard.join('|') === 'alert:Say something!|alert:Copy; not the original.', heard);
+      await va.close();
+      await page.selectOption('#output', 'interact');
+      const [dlL] = await Promise.all([page.waitForEvent('download'), page.click('#save_markup')]);
+      const savedL = fs.readFileSync(await dlL.path(), 'utf8');
+      await page.click('.tab[data-tab=styleblock]').catch(() => {});
+      check('loadQnA settings: saved in the Settings tag (; in the text encoded)', /; qShare=false; labelSave=Save above text as answer\.; labelEmpty=Say something!; [^\n]*labelEditWarn=Copy%3B not the original\.; [^\n]*labelEarlier=You said:; labelConfirm=Use <x>answer<\/x>%3B ok\?; footer=true/.test(savedL), savedL.slice(-400));
+      await page.click('#restore'); await page.waitForTimeout(300);
+      check('loadQnA settings: Restore Defaults', await page.inputValue('#qShare') === 'true' && await page.inputValue('#labelEarlier') === 'Earlier you entered:' && await page.inputValue('#labelEmpty') === 'Your answer appears to be empty.' && await page.inputValue('#labelEditWarn') === 'You are about to edit a copy of this QnA. Any edits will not change this instance.');
+      await page.setInputFiles('#upload', { name: 'share.txt', mimeType: 'text/plain', buffer: Buffer.from(savedL) }); await page.waitForTimeout(600);
+      check('loadQnA settings: loading the file restores them', await page.inputValue('#qShare') === 'false' && await page.inputValue('#labelConfirm') === 'Use <x>answer</x>; ok?' && await page.$eval('#labelConfirm', e => e.disabled));
+      await page.click('.tab[data-tab=styleblock]').catch(() => {});
+      await page.click('#restore'); await page.waitForTimeout(300);
+
+      // the flowchart: an External QnA box, JS GOTO edges (dotted) for literal targets
+      await page.click('.tab[data-tab=codeblock]').catch(() => {});
+      await page.fill('#markup', 'Q(a): Start\nA[javascript:loadQnA("https://example.com/qnas/sub.txt?x=1", "done", "end")]: load it\nA[javascript:goto("end")]: jump\n\tQ: never\nA[javascript:loadQnA(pickUrl())]: computed\nQ(end): The end <script>if (0) goto("a")</script>'); await page.click('#update'); await page.waitForTimeout(300);
+      check('flow loadQnA: the markup is well formed', await page.$eval('#status', e => e.className) === 'ok');
+      await page.selectOption('#output', 'flow'); await page.waitForTimeout(400);
+      const fl2 = await page.evaluate(() => {
+        const ext = [...document.querySelectorAll('#flow_canvas .qf-node.qf-external')].map(n => [...n.querySelectorAll('text')].map(t => t.textContent.trim()).filter(Boolean).join(' '));
+        const js = [...document.querySelectorAll('#flow_canvas .qf-edge.qf-jsgoto')].map(e => getComputedStyle(e).strokeDasharray);
+        const labels = [...document.querySelectorAll('#flow_canvas .qf-label')].map(t => t.textContent + '|' + t.getAttribute('class'));
+        const gotoDash = [...document.querySelectorAll('#flow_canvas .qf-edge.qf-goto')].map(e => getComputedStyle(e).strokeDasharray);
+        return { ext, js, labels, gotoDash, keys: [...document.querySelectorAll('#flow_canvas .qf-handle')].map(h => h.getAttribute('data-edge')) };
+      });
+      check('flow loadQnA: an External QnA box per loading answer, captioned with the file name when known', fl2.ext.length === 2 && fl2.ext[0] === 'External QnA sub.txt' && fl2.ext[1] === 'External QnA', fl2.ext);
+      check('flow loadQnA: JS GOTO edges are dotted (not the GOTO dash), one from the box back to "end", one for goto("end"), one for the Q script', fl2.js.length === 3 && fl2.js.every(d => d === '1.5px, 4px') && fl2.labels.filter(l => l === 'JS GOTO|qf-label qf-jsgoto').length === 3 && fl2.keys.indexOf('r:1.1:2') >= 0 && fl2.keys.indexOf('j:1:2') >= 0 && fl2.keys.indexOf('j:2:1') >= 0, fl2);
+      await page.selectOption('#output', 'interact');
+      // the parser's error in the editor
+      await page.fill('#markup', 'Q: Start\nA[javascript:loadQnA("x.txt")]: load\n\tQ: under it\nQ: b\nA: k'); await page.waitForTimeout(600);
+      check('loadQnA: a Q under a loading answer is reported', await page.$eval('#status', e => e.className) === 'err' && /Line 3:[\s\S]*cannot have a Q beneath it/.test(await (await pv()).$eval('#qna', e => e.innerText)), await (await pv()).$eval('#qna', e => e.innerText.slice(0, 200)));
+      // the preview (a sandboxed frame) loads a QnA from this server
+      await page.fill('#markup', 'Q(name): Name?\nX:\n\tQ: Load?\n\tA[javascript:loadQnA("' + base + 'test/fixtures_runtime/load_sub2.txt")]: go'); await page.click('#update'); await page.waitForTimeout(500);
+      let lf = await pv(); await lf.fill('input.xinput', 'Ida'); await lf.press('input.xinput', 'Enter'); await page.waitForTimeout(700);
+      lf = await pv(); await lf.click('a.qabutton'); await page.waitForTimeout(1200);
+      lf = await pv();
+      const lb = await lf.$$eval('.question_text, .ans_text', els => els.map(e => e.textContent.trim()));
+      check('loadQnA: works in the editor\'s preview', lb.join('|') === 'Name?|Ida|Load?|go|(Sub2) One.' && await lf.$eval('a.qabutton', e => e.textContent.trim()) === 'two', lb);
+      await lf.click('a.qabutton'); await page.waitForTimeout(700); lf = await pv();
+      check('loadQnA: goto(2) inside the loaded QnA, and its own <x>1</x>', (await lf.$$eval('.question_text, .ans_text', els => els.map(e => e.textContent.trim()))).slice(-2).join('|') === 'two|(Sub2) Two. two');
+      await page.fill('#markup', 'Q: a\nA: b\n\tQ: c'); await page.click('#update'); await page.waitForTimeout(300);
+    }
+
+
     /* ---- Button Body and Borders on the Settings screen ---- */
     await page.goto(base); await (await pv()).waitForSelector('.question_text');
     await page.fill('#markup', 'Title: Buttons\nQ: Hello?\nA: Hi\n\tQ: Bye'); await page.click('#update'); await page.waitForTimeout(300);
     await page.click('.tab[data-tab=styleblock]').catch(() => {});
-    check('buttons: Button Body and Borders cards sit before Button Text with the default values', await page.evaluate(() => { const f = document.getElementById('button_body'), b = document.getElementById('borders'); return f.querySelector('legend').textContent === 'Button Body' && f.nextElementSibling === b && b.querySelector('legend').textContent === 'Borders' && b.nextElementSibling.querySelector('legend').textContent === 'Button Text' && !f.querySelector('#btnDivider') && b.querySelector('#btnBorder') && b.querySelector('#btnDivider') && f.querySelector('#btnBold') && document.getElementById('btnBorder').value === '888888' && document.getElementById('btnBg').value === 'eeeeee' && document.getElementById('btnTxt').value === '000000' && document.getElementById('btnDivider').value === 'dddddd' && !document.getElementById('btnBold').checked && document.querySelector('input[type=color][data-for=btnDivider]').value === '#dddddd'; }));
+    check('buttons: Button Body and Borders cards sit before Button Text with the default values', await page.evaluate(() => { const f = document.getElementById('button_body'), b = document.getElementById('borders'); const legends = [...document.querySelectorAll('#styleblock fieldset legend')].map(l => l.textContent); return f.querySelector('legend').textContent === 'Button Body' && f.nextElementSibling === b && b.querySelector('legend').textContent === 'Borders' && legends.indexOf('Borders') < legends.indexOf('Button Text') && !f.querySelector('#btnDivider') && b.querySelector('#btnBorder') && b.querySelector('#btnDivider') && f.querySelector('#btnBold') && document.getElementById('btnBorder').value === '888888' && document.getElementById('btnBg').value === 'eeeeee' && document.getElementById('btnTxt').value === '000000' && document.getElementById('btnDivider').value === 'dddddd' && !document.getElementById('btnBold').checked && document.querySelector('input[type=color][data-for=btnDivider]').value === '#dddddd'; }));
     const embedPlain = await (async () => { await page.selectOption('#output', 'embed'); return page.inputValue('#embed_text'); })();
     check('buttons: defaults write nothing into the outputs', !/data-btn/.test(embedPlain), embedPlain.slice(0, 300));
     await page.selectOption('#output', 'interact');
@@ -768,7 +915,9 @@ server.listen(0, async () => {
     const c1 = await cval();
     check('config: a first visit starts from the defaults in config.js (snake_case too; invalid values fall back)', c1.fs === '16' && c1.chat === 'llm' && c1.back === 'Previous' && c1.bg === '5489eb' && c1.off, c1);
     await cpage.click('#update'); await cpage.waitForTimeout(500);
+    await cpage.selectOption('#output', 'embed'); await cpage.uncheck('#inline_lib_embed'); await cpage.waitForTimeout(100);   // (the library's own source would match the patterns below)
     const cEmbed = await cpage.inputValue('#embed_text');
+    await cpage.selectOption('#output', 'interact');
     check('config: outputs carry them, since the library has its own defaults', /data-font-size="16"/.test(cEmbed) && /data-chat-style="llm"/.test(cEmbed) && /data-label-back="Previous"/.test(cEmbed) && !/evil/.test(cEmbed) && !/data-comp-bg/.test(cEmbed), cEmbed.slice(0, 400));
     await cpage.click('.tab[data-tab=styleblock]').catch(() => {});
     await cpage.fill('#fontSize', '22'); await cpage.selectOption('#chatStyle', 'sms'); await cpage.fill('#labelBack', ''); await cpage.dispatchEvent('#labelBack', 'change');

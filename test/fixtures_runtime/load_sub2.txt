@@ -1,0 +1,4 @@
+Q(1): (Sub2) One.
+A[javascript:goto(2)]: two
+Q(2): (Sub2) Two. <x>1</x>
+A: end

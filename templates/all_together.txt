@@ -1,0 +1,14 @@
+Title: All Together Now
+Description: A sample QnA showing how you can use loadQnA to load a QnA and run it as part of another "host" QnA. The first argument is the location of the QnA, the second is the name of a variable (Q tag) in the target QnA that we want to replace with the third argument, a variable (Q tag) in this interview. This will make it so a user navigating to the variable in the target will instead end up back here at the varaible in the host.
+
+Q(start): Which interview would you like to run?
+A[javascript:loadQnA('https://www.qnamarkup.org/templates/cats.txt','end','next')]: Cat videos
+A[javascript:loadQnA('https://www.qnamarkup.org/templates/game.txt','end','next')]: Shall we play a game?
+A[javascript:loadQnA('https://www.qnamarkup.org/templates/zork_mini.txt','thanks','next')]: Zork mini preview
+
+Q(next): That was fun. How about another interview?
+A[javascript:loadQnA('https://www.qnamarkup.org/templates/cats.txt','end','next')]: Cat videos
+A[javascript:loadQnA('https://www.qnamarkup.org/templates/game.txt','end','next')]: Shall we play a game?
+A[javascript:loadQnA('https://www.qnamarkup.org/templates/zork_mini.txt','thanks','next')]: Zork mini preview
+
+Settings: fontFamily=-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif; fontSize=16; lineHeight=22; colWidth=500; framePad=15; radius=15; compBg=5489eb; compTxt=ffffff; compLink=e3fbfc; usrBg=eeeeee; usrTxt=000000; usrLink=0000ff; bodyBg=ffffff; bodyTxt=000000; bodyLink=0000ff; btnBg=eeeeee; btnTxt=000000; btnBold=false; btnBorder=888888; btnDivider=dddddd; chatStyle=sms; qShare=true; labelSave=Save above text as answer.; labelEmpty=Your answer appears to be empty.; labelBack=GO BACK ONE; labelRestart=START OVER; labelCredits=credits; labelEdit=edit; labelEditWarn=You are about to edit a copy of this QnA. Any edits will not change this instance.; labelCode=code your own; labelEarlier=Earlier you entered:; labelConfirm=It looks like you may have answered this before%3B click OK to use <x>answer</x> as your answer.; footer=true; saveProgress=false; start=1

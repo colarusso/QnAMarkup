@@ -1,0 +1,31 @@
+Title: The All-Knowing Oracle
+Description: This interview will provide a yes or no answer to any question. With apologies to <a href="https://en.wikipedia.org/wiki/Magic_8-Ball" target="_blank">the magic 8 ball</a>. 
+
+Q(1): Ask me a yes or no question.
+X[javascript:goto(Math.floor(Math.random() * 21) + 2)]:
+Q(2): Signs point to yes. GOTO:more 
+Q(3): Signs point to no. GOTO:more 
+Q(4): It is decidedly so. GOTO:more 
+Q(5): Without a doubt. GOTO:more 
+Q(6): Yes definitely. GOTO:more 
+Q(7): You may rely on it. GOTO:more 
+Q(8): As I see it, yes. GOTO:more 
+Q(9): Most likely. GOTO:more 
+Q(10): Outlook good. GOTO:more 
+Q(11): Yes. GOTO:more 
+Q(12): Signs point to yes. GOTO:more 
+Q(13): Reply hazy try again. GOTO:more 
+Q(14): Ask again later. GOTO:more 
+Q(15): Better not tell you now. GOTO:more 
+Q(16): Cannot predict now. GOTO:more 
+Q(17): Concentrate and ask again. GOTO:more 
+Q(18): Don't count on it. GOTO:more 
+Q(19): My reply is no. GOTO:more 
+Q(20): My sources say no. GOTO:more 
+Q(21): Outlook not so good. GOTO:more 
+Q(22): Very doubtful. GOTO:more 
+
+Q(more): Another question? Ask away.
+X[javascript:goto(Math.floor(Math.random() * 21) + 2)]:
+
+Settings: fontFamily=-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif; fontSize=16; lineHeight=22; colWidth=500; framePad=15; radius=15; compBg=5489eb; compTxt=ffffff; compLink=e3fbfc; usrBg=eeeeee; usrTxt=000000; usrLink=0000ff; bodyBg=ffffff; bodyTxt=000000; bodyLink=0000ff; btnBg=eeeeee; btnTxt=000000; btnBold=false; btnBorder=888888; btnDivider=dddddd; chatStyle=sms; qShare=true; labelSave=Save above text as answer.; labelEmpty=Your answer appears to be empty.; labelBack=GO BACK ONE; labelRestart=START OVER; labelCredits=credits; labelEdit=edit; labelEditWarn=You are about to edit a copy of this QnA. Any edits will not change this instance.; labelCode=code your own; labelEarlier=Earlier you entered:; labelConfirm=It looks like you may have answered this before%3B click OK to use <x>answer</x> as your answer.; footer=true; saveProgress=false; start=1

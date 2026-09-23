@@ -1,0 +1,12 @@
+Title: Host
+Q(name): Welcome. What is your name?
+X:
+	Q(pet): Do you have a cat or a dog, <x>name</x>?
+	A(cat): A cat!
+		Q(go): Ready to load another QnA?
+		A[javascript:loadQnA('sub/sub.txt', 'done', 'end')]: Yes, load it.
+		A: No thanks.
+			Q: Fine.
+	A(dog): A dog!
+		Q: GOTO:go
+Q(end): Back home. Bye.

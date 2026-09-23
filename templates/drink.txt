@@ -1,0 +1,19 @@
+Title: Would you like a drink?
+Description: A sample QnA demonstrating how you can use QnA and JavaScript to make decisions about how a user moves through the interview.
+
+Q(temp): Hot or cold? 
+A: hot
+	Q(1.1):GOTO:sweet
+A: cold
+	Q(1.2):GOTO:sweet
+
+Q(sweet): Sweet or bitter?
+A[javascript:if (getvar('temp')=='hot') {goto('coco')} else {goto('milk')}]: sweet
+A[javascript:if (getvar('temp')=='cold') {goto('iced')} else {goto('coffee')}]: bitter 
+
+Q(coffee): Coffee!!!
+Q(coco): Hot Coco!!!
+Q(iced): Iced Coffee!!!
+Q(milk): Chocolate milk!!!
+
+Settings: fontFamily=-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif; fontSize=16; lineHeight=22; colWidth=500; framePad=15; radius=15; compBg=5489eb; compTxt=ffffff; compLink=e3fbfc; usrBg=eeeeee; usrTxt=000000; usrLink=0000ff; bodyBg=ffffff; bodyTxt=000000; bodyLink=0000ff; btnBg=eeeeee; btnTxt=000000; btnBold=false; btnBorder=888888; btnDivider=dddddd; chatStyle=sms; qShare=true; labelSave=Save above text as answer.; labelEmpty=Your answer appears to be empty.; labelBack=GO BACK ONE; labelRestart=START OVER; labelCredits=credits; labelEdit=edit; labelEditWarn=You are about to edit a copy of this QnA. Any edits will not change this instance.; labelCode=code your own; labelEarlier=Earlier you entered:; labelConfirm=It looks like you may have answered this before%3B click OK to use <x>answer</x> as your answer.; footer=true; saveProgress=false; start=1

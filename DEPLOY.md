@@ -65,8 +65,8 @@ DRY=1 ./deploy.sh        # preview what would change
 The build writes the library to `dist/qna.min.js` (latest) *and* to
 `dist/<version>/qna.min.js`, the copy embed code points at. The versioned
 folders are part of the repository, so the same URL shape works locally, on
-`localhost:8000/dist/2.2.0/qna.min.js`, and in production; the editor header
-shows the version it is serving (`v2.2.0`). On the server the `dist/<version>/`
+`localhost:8000/dist/2.4.0/qna.min.js`, and in production; the editor header
+shows the version it is serving (`v2.4.0`). On the server the `dist/<version>/`
 folders are also protected from rsync's `--delete`, so a version removed from
 the repo later still stays online for pages that pin it. A version is never
 republished: if the library changes, bump `"version"` in `package.json` first,
@@ -97,6 +97,12 @@ Both hosts serve plain static files. Three things matter.
 CORS-enabled response, so without the header below the script is refused.
 The versioned copies never change, so they can be cached for a year.
  
+**CORS on QnA files that other QnAs load.** `loadQnA()` fetches a QnA file
+from the visitor's browser, and the editor's preview does so from a sandboxed
+frame with an opaque origin, so every file meant to be loaded this way needs
+`Access-Control-Allow-Origin: *`, even on the editor's own server. The
+`examples/` and `templates/` folders below get it; add any folder of your own.
+
 **A Content-Security-Policy on the editor origin.** All of the editor's
 JavaScript is in external files (`editor.js`, `flowchart.js`, `config.js`,
 `site.js`, `dist/`), so `.org` can forbid inline script entirely. The one
@@ -133,6 +139,10 @@ server {
     location ~ ^/dist/[0-9]+\.[0-9]+\.[0-9]+/ {
         add_header Access-Control-Allow-Origin * always;
         add_header Cache-Control "public, max-age=31536000, immutable" always;
+        add_header X-Content-Type-Options nosniff always;
+    }
+    location ~ ^/(examples|templates)/ {
+        add_header Access-Control-Allow-Origin * always;
         add_header X-Content-Type-Options nosniff always;
     }
     location /dist/ {
@@ -189,6 +199,9 @@ Header always set Content-Security-Policy "default-src 'self'; script-src 'self'
     Header always set Access-Control-Allow-Origin "*"
     Header always unset Content-Security-Policy
     Header always set Cache-Control "public, max-age=3600"
+</LocationMatch>
+<LocationMatch "^/(examples|templates)/">
+    Header always set Access-Control-Allow-Origin "*"
 </LocationMatch>
 <LocationMatch "^/dist/[0-9]+\.[0-9]+\.[0-9]+/">
     Header always set Cache-Control "public, max-age=31536000, immutable"

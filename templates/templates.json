@@ -1,10 +1,15 @@
 {
   "_comment": "Templates shown in the editor's Template menu, in this order. 'file' is a .txt in this folder; 'name' is the menu label. Any .txt not listed here is appended alphabetically under its file name. Run `node build.js` (or `npm run templates`) after editing.",
   "templates": [
-    { "file": "new.txt",       "name": "New (blank)" },
-    { "file": "primer.txt",    "name": "QnA Primer" },
-    { "file": "lawreview.txt", "name": "Law Journals" },
-    { "file": "game.txt",      "name": "Shall we play a game?" },
-    { "file": "zork_mini.txt",      "name": "Zork mini preview" }
+    { "file": "new.txt",          "name": "New (blank)" },
+    { "file": "primer.txt",       "name": "QnA Primer" },
+    { "file": "lawreview.txt",    "name": "Law Journals" },
+    { "file": "game.txt",         "name": "Shall we play a game?" },
+    { "file": "zork_mini.txt",    "name": "Zork mini" },
+    { "file": "oracle.txt",       "name": "All-knowing oracle" },
+    { "file": "drink.txt",        "name": "Would you like a drink?" },
+    { "file": "dont_panic.txt",   "name": "Don't panic!" },
+    { "file": "cats.txt",         "name": "Cat videos" },
+    { "file": "all_together.txt", "name": "All together now" }
   ]
 }

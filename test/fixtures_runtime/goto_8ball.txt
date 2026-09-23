@@ -1,0 +1,25 @@
+Q(1): Ask me a yes or no question.
+X[javascript:goto(Math.floor(Math.random() * 20) + 2)]:
+Q(2): Signs point to yes. GOTO:more 
+Q(3): Signs point to no. GOTO:more 
+Q(4): It is decidedly so. GOTO:more 
+Q(5): Without a doubt. GOTO:more 
+Q(6): Yes definitely. GOTO:more 
+Q(7): You may rely on it. GOTO:more 
+Q(8): As I see it, yes. GOTO:more 
+Q(9): Most likely. GOTO:more 
+Q(10): Outlook good. GOTO:more 
+Q(11): Yes. GOTO:more 
+Q(12): Signs point to yes. GOTO:more 
+Q(13): Reply hazy try again. GOTO:more 
+Q(14): Ask again later. GOTO:more 
+Q(15): Better not tell you now. GOTO:more 
+Q(16): Cannot predict now. GOTO:more 
+Q(17): Concentrate and ask again. GOTO:more 
+Q(18): Don't count on it. GOTO:more 
+Q(19): My reply is no. GOTO:more 
+Q(20): My sources say no. GOTO:more 
+Q(21): Outlook not so good. GOTO:more 
+Q(22): Very doubtful. GOTO:more 
+Q(more): Another question? Ask away.
+X[javascript:goto(Math.floor(Math.random() * 20) + 2)]:

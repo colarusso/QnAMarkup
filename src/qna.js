@@ -25,7 +25,7 @@
 })(typeof window !== 'undefined' ? window : this, function (root) {
   'use strict';
  
-  var QnA = { version: '2.2.0' };
+  var QnA = { version: '2.4.0' };
  
   /* ------------------------------------------------------------------ */
   /*  Defaults                                                           */
@@ -61,6 +61,12 @@
     labelCredits: 'credits',
     labelEdit: 'edit',
     labelCode: 'code your own',
+    labelEmpty: 'Your answer appears to be empty.',   // the alert when an X tag's field is submitted blank
+    labelEditWarn: 'You are about to edit a copy of this QnA. Any edits will not change this instance.',   // the alert behind the footer's edit link
+    // QnAs loaded into this one with loadQnA() (see Instance.prototype.loadQnA)
+    qShare: true,           // an author-named variable means the same thing in every loaded QnA: a question whose answer is already known is not asked again
+    labelEarlier: 'Earlier you entered:',   // put before the known answer when such a question is filled in
+    labelConfirm: 'It looks like you may have answered this before; click OK to use <x>answer</x> as your answer.',   // asked when the known answer only roughly matches a button
     start: '1',
     footer: true,           // show credits / edit / code-your-own footer
     saveProgress: false,    // remember the user's answers in localStorage and resume on return
@@ -80,9 +86,11 @@
     save_progress: 'saveProgress', editor_url: 'editorUrl', chat_style: 'chatStyle',
     btn_bg: 'btnBg', btn_txt: 'btnTxt', btn_bold: 'btnBold', btn_border: 'btnBorder', btn_divider: 'btnDivider',
     label_save: 'labelSave', label_back: 'labelBack', label_restart: 'labelRestart',
-    label_credits: 'labelCredits', label_edit: 'labelEdit', label_code: 'labelCode'
+    label_credits: 'labelCredits', label_edit: 'labelEdit', label_code: 'labelCode',
+    q_share: 'qShare', label_earlier: 'labelEarlier', label_confirm: 'labelConfirm',
+    label_empty: 'labelEmpty', label_edit_warn: 'labelEditWarn'
   };
-  var LABEL_KEYS = ['labelSave', 'labelBack', 'labelRestart', 'labelCredits', 'labelEdit', 'labelCode'];
+  var LABEL_KEYS = ['labelSave', 'labelEmpty', 'labelBack', 'labelRestart', 'labelCredits', 'labelEdit', 'labelEditWarn', 'labelCode', 'labelEarlier', 'labelConfirm'];
  
   function normalizeOptions(opts) {
     var o = {}, k;
@@ -113,7 +121,7 @@
       o[n] = v === '' ? QnA.defaults[n] : v;
     });
     if (!o.start) o.start = '1';
-    ['btnBold', 'footer', 'saveProgress', 'animate', 'scroll', 'injectCss'].forEach(function (n) {
+    ['btnBold', 'qShare', 'footer', 'saveProgress', 'animate', 'scroll', 'injectCss'].forEach(function (n) {
       if (typeof o[n] === 'string') o[n] = !/^(false|0|no|off)$/i.test(o[n]);
       else o[n] = !!o[n];
     });
@@ -132,6 +140,7 @@
   function rtrim(s) { return String(s).replace(/\s+$/, ''); }
   function trim(s) { return String(s).replace(/^\s+|\s+$/g, ''); }
   function isNumericLabel(s) { return /^\d+(\.\d+)*$/.test(s); }
+  var JS_TYPE = /^(module|(text|application)\/(x-)?(java|ecma|j)script(1\.\d)?)?$/i;   // script types the runtime runs
   function parentLabel(label) { return label.replace(/\.\d+$/, ''); }
   QnA.escapeHtml = escapeHtml;
  
@@ -199,6 +208,48 @@
     return lines.join('\n');
   }
  
+  /* --- what a script does, as far as it can be read from the code ---
+   * The flowchart is drawn from the tags, but two of the predefined functions change where a
+   * conversation goes: loadQnA() hands over to another QnA and goto() jumps. When their arguments are
+   * written as plain string (or number) literals they can be shown; computed ones cannot.
+   *   loads    the URL given to loadQnA(), or true when it is not a literal; null when there is no call
+   *   returns  the `replace` targets of that call (names, resolved to labels by the parser)
+   *   jumps    the literal targets of goto() calls (likewise resolved)
+   */
+  var LOAD_RE = /\bloadQnA\s*\(/;
+  // a quoted string: group N the quote, N+1 the text
+  function STR(n) { return "(['\"])((?:(?!\\" + n + ")[^\\\\]|\\\\.)*)\\" + n; }
+  var LOAD_ARGS_RE = new RegExp('\\bloadQnA\\s*\\(\\s*(?:' + STR(1) + "|([^,()'\"]+?))" + '\\s*(?:,\\s*(?:' + STR(4) + '\\s*,\\s*' + STR(6) + '|(\\{[^}]*\\})))?\\s*[,)]');
+  function scriptInfo(code) {
+    var info = { loads: null, returns: [], jumps: [] };
+    code = String(code || '');
+    if (!code) return info;
+    if (LOAD_RE.test(code)) {
+      info.loads = true;
+      var lm = LOAD_ARGS_RE.exec(code);
+      if (lm) {
+        if (lm[2] !== undefined) info.loads = lm[2];
+        if (lm[7] !== undefined) info.returns.push(lm[7]);
+        else if (lm[8]) {
+          var pr = /(['"]?)([A-Za-z0-9._\-]+)\1\s*:\s*(['"])([A-Za-z0-9._\-]*)\3/g, pm;
+          while ((pm = pr.exec(lm[8])) !== null) info.returns.push(pm[4]);
+        }
+      }
+    }
+    var gr = /\bgoto\s*\(\s*(?:(['"])([A-Za-z0-9._\-]*)\1|(\d+(?:\.\d+)*))\s*\)/g, gm;
+    while ((gm = gr.exec(code)) !== null) info.jumps.push(gm[2] !== undefined ? gm[2] : gm[3]);
+    return info;
+  }
+  // the JavaScript inside <script> tags of a question's text (the ones the runtime runs when it is shown)
+  function inlineScripts(html) {
+    var out = [], re = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi, m;
+    while ((m = re.exec(String(html || ''))) !== null) {
+      var type = (/\btype\s*=\s*["']?([^"'\s>]*)/i.exec(m[1]) || [])[1] || '';
+      if (JS_TYPE.test(trim(type)) && !/\bsrc\s*=/i.test(m[1])) out.push(m[2]);
+    }
+    return out.join('\n');
+  }
+
   function nearText(value, text) {
     var n = trim(value) + String(text || '').substr(0, 50) + '...';
     return n;
@@ -214,7 +265,7 @@
    * Pairs are separated by semicolons, so in a label's text ";" is written %3B (and "%" %25).
    */
   var SETTINGS_KEYS = ['fontFamily', 'fontSize', 'lineHeight', 'colWidth', 'framePad', 'radius', 'compBg', 'compTxt', 'compLink',
-    'usrBg', 'usrTxt', 'usrLink', 'bodyBg', 'bodyTxt', 'bodyLink', 'btnBg', 'btnTxt', 'btnBold', 'btnBorder', 'btnDivider', 'chatStyle'].concat(LABEL_KEYS, ['footer', 'saveProgress', 'start']);
+    'usrBg', 'usrTxt', 'usrLink', 'bodyBg', 'bodyTxt', 'bodyLink', 'btnBg', 'btnTxt', 'btnBold', 'btnBorder', 'btnDivider', 'chatStyle', 'qShare'].concat(LABEL_KEYS, ['footer', 'saveProgress', 'start']);
   var SETTINGS_RE = /(^|\n)[ \t]*Settings:([^\n]*)\s*$/i;
 
   /** Split markup into { markup (without the tag), settings (object, or null when there is no tag) }. */
@@ -254,8 +305,9 @@
    *   errors    {Array}     [{message (html), near (text)}]
    *   code      {string}    markup with computed ids (Q(1.1):) filled in
    *   header    {object}    {title, author, description, before, after}
-   *   questions {Array}     [{label, name, text, doc, goto, display}]
-   *   answers   {Array}     [{label, parent, text, href, target, value, isVar, script (X tags only)}]
+   *   questions {Array}     [{label, name, text, doc, goto, display, jumps}]
+   *   answers   {Array}     [{label, parent, text, href, target, value, isVar, script (X tags only), loads, returns, jumps}]
+   *                         (loads / returns / jumps: what the answer's script does, see scriptInfo)
    *   names     {Array}     [[label, name], ...]  (QVnames in the original)
    *   settings  {object}    values from a trailing hidden Settings: tag, or null (the tag is not in code/markup)
    */
@@ -349,6 +401,7 @@
     var pendingDocLabel = null;
     var renumber = {};               // stale numeric label -> new label
     var xCount = {};                 // parent label -> number of X tags
+    var loadsAt = {};                // nesting level -> the last A/X there calls loadQnA()
     var customNames = {};            // name -> count (for uniqueness)
     var code = text[0];
  
@@ -402,6 +455,9 @@
         if (lastWasQ && lastnest !== -1) {
           errors.add('Mismatched Q and Q.', nearText(value, body));
         }
+        if (nested > 0 && loadsAt[nested - 1]) {
+          errors.add('An answer that calls <code>loadQnA()</code> cannot have a Q beneath it: the loaded QnA takes its place. To bring the visitor back to a question in this QnA, use the <code>find</code> and <code>replace</code> arguments of <code>loadQnA()</code>. See <a href="https://www.qnamarkup.org/syntax/#loadQnA()" target="_blank">Documentation</a>.', nearText(value, body));
+        }
         // GOTO problems are reported on the line the GOTO is on (a question may run over several lines)
         var gi = body.search(/GOTO:/i), gotoRow = gi >= 0 ? (body.slice(0, gi).match(/\n/g) || []).length : 0;
         var gotoNear = gotoRow > 0 ? trim(body.split('\n')[gotoRow]).substr(0, 60) : nearText(value, body);
@@ -428,7 +484,8 @@
           text: body,
           display: trim(gotoM ? body.replace(GOTO_END_RE, '') : body),
           goto: gotoM ? gotoM[1] : null,   // name (resolved to a label below)
-          doc: null
+          doc: null,
+          jumps: scriptInfo(inlineScripts(body)).jumps   // literal goto() targets in the question's own scripts (resolved below)
         };
         if (pendingDoc !== null) { q.doc = pendingDoc; pendingDoc = null; }
         questions.push(q);
@@ -453,6 +510,9 @@
         }
         a.href = unescapeHref(a.href);
         if (am && am[1] !== undefined) a.value = am[1]; else a.value = trim(body);
+        var ai = scriptInfo(/^javascript:/i.test(a.href) ? a.href.replace(/^javascript:/i, '') : '');
+        a.loads = ai.loads; a.returns = ai.returns; a.jumps = ai.jumps;
+        loadsAt[nested] = ai.loads !== null;
         answers.push(a);
         lastnest = nested; lastvalue = value; lastWasQ = false;
  
@@ -491,7 +551,9 @@
             xscript = xcode.replace(/^javascript:/i, '');
           }
         }
-        answers.push({ label: xlabel, parent: xparent, text: '<variable>', href: "javascript:void('');", target: '', value: '', isVar: true, script: xscript });
+        var xi = scriptInfo(xscript);
+        loadsAt[nested] = xi.loads !== null;
+        answers.push({ label: xlabel, parent: xparent, text: '<variable>', href: "javascript:void('');", value: '', target: '', isVar: true, script: xscript, loads: xi.loads, returns: xi.returns, jumps: xi.jumps });
         lastnest = nested; lastvalue = value; lastWasQ = false;
  
       } else if (kind === 'DOC') {
@@ -538,10 +600,17 @@
     /* --- Resolve GOTO names to labels ---------------------------------- */
     var byName = {};
     names.forEach(function (p) { if (!byName.hasOwnProperty(p[1])) byName[p[1]] = p[0]; });
+    var labelSet = {};
+    names.forEach(function (p) { labelSet[p[0]] = true; });
+    // a goto() / replace target written as a literal: a name, or an id; unknown ones are dropped
+    var toLabel = function (t) { return byName.hasOwnProperty(t) ? byName[t] : (labelSet[t] ? t : null); };
+    var toLabels = function (list) { return list.map(toLabel).filter(function (l) { return l !== null; }); };
     questions.forEach(function (q) {
       q.gotoName = q.goto;
       q.goto = q.goto === null ? null : (byName.hasOwnProperty(q.goto) ? byName[q.goto] : null);
+      q.jumps = toLabels(q.jumps);
     });
+    answers.forEach(function (a) { a.jumps = toLabels(a.jumps); a.returns = toLabels(a.returns); });
  
     return {
       ok: errors.items.length === 0,
@@ -758,7 +827,6 @@
    * (src) holds back the ones after it until it has loaded, as it would in a page. Script tags
    * that are not JavaScript (a JSON or template block, or another QnA) are left as they are.
    */
-  var JS_TYPE = /^(module|(text|application)\/(x-)?(java|ecma|j)script(1\.\d)?)?$/i;
   var scriptQueue = [], scriptBusy = false;
   function pumpScripts() {
     var d = root.document;
@@ -807,17 +875,13 @@
     QnA.current = this;
     this.result = result;
     this.options = options;
-    this.byLabel = {};
-    this.byName = {};
-    this.answersByQ = {};
-    this.answerByLabel = {};
-    var self = this;
-    result.questions.forEach(function (q) { self.byLabel[q.label] = q; if (!self.byName[q.name]) self.byName[q.name] = q; });
-    result.answers.forEach(function (a) {
-      self.answerByLabel[a.label] = a;
-      (self.answersByQ[a.parent] = self.answersByQ[a.parent] || []).push(a);
-    });
-    this.history = [];      // [{label, value}] answers chosen so far
+    this.rebuildTables();
+    this.history = [];      // [{label, value, jumps?, skip?}] answers chosen so far (jumps / skip: see goto())
+    this.pre = { jumps: [] };   // goto() calls made before the first answer
+    this.jumpQueue = [];
+    this.presenting = false;
+    this.scriptStep = null;
+    this.checkpoint = null;
     this.timer = null;
     this.pendingToken = 0;
     this.typingEl = null;
@@ -882,9 +946,104 @@
       edit.href = self.options.editorUrl + '#' + hash;
     }).catch(function () {});
     edit.addEventListener('click', function () {
-      alert('You are about to edit a copy of this QnA. Any edits will not change this instance.');
+      alert(self.options.labelEditWarn);
     });
   };
+ 
+  /* --- units: the QnA itself and the QnAs loaded into it with loadQnA() ---
+   * Every question and answer belongs to a unit. The host QnA is unit '' and keeps its labels; a loaded QnA
+   * is unit 'L1', 'L2', … (numbered in the order loaded) and its labels are prefixed, 1.1 -> L1.1.1, so
+   * nothing collides however many QnAs load each other. Machine-made names are prefixed the same way;
+   * author-given names are kept when qShare is on (they mean the same thing in every unit) and prefixed
+   * when it is off. A unit's own GOTO targets are already labels when it arrives, so they stay inside it.
+   */
+  function unitOf(label) { var m = /^(L\d+)\./.exec(String(label)); return m ? m[1] : ''; }
+  var hasOwn = function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); };
+ 
+  Instance.prototype.rebuildTables = function () {
+    this.byLabel = {}; this.byName = {}; this.answersByQ = {}; this.answerByLabel = {}; this.allQuestions = [];
+    this.units = {}; this.loadCount = 0;
+    this.addUnit({ id: '', prefix: '', url: null, result: this.result, redirect: null });
+  };
+ 
+  Instance.prototype.addUnit = function (unit) {
+    var self = this, p = unit.prefix ? unit.prefix + '.' : '', share = this.options.qShare;
+    unit.byName = {};
+    this.units[unit.id] = unit;
+    unit.result.questions.forEach(function (q0) {
+      var q = {
+        label: p + q0.label,
+        name: (p && (isNumericLabel(q0.name) || !share)) ? p + q0.name : q0.name,
+        text: q0.text, display: q0.display, doc: q0.doc, jumps: q0.jumps,
+        goto: q0.goto === null ? null : p + q0.goto, gotoName: q0.gotoName,
+        unit: unit.id,
+        redirect: null   // label of a host question that takes this one's place (loadQnA's find / replace)
+      };
+      self.byLabel[q.label] = q;
+      if (!hasOwn(self.byName, q.name)) self.byName[q.name] = q;
+      unit.byName[q0.name] = q;
+      self.allQuestions.push(q);
+    });
+    unit.result.answers.forEach(function (a0) {
+      var a = {};
+      for (var k in a0) if (hasOwn(a0, k)) a[k] = a0[k];
+      a.label = p + a0.label; a.parent = p + a0.parent; a.unit = unit.id;
+      self.answerByLabel[a.label] = a;
+      (self.answersByQ[a.parent] = self.answersByQ[a.parent] || []).push(a);
+    });
+    if (unit.redirect) {
+      for (var find in unit.redirect) {
+        if (!hasOwn(unit.redirect, find)) continue;
+        var q = unit.byName[find] || self.byLabel[p + find];
+        if (q) q.redirect = unit.redirect[find];
+        else if (root.console) console.error('QnA: loadQnA(): the loaded QnA has no question "' + find + '" to replace.');
+      }
+    }
+    return unit;
+  };
+ 
+  /** Parse `text` and add it as the next loaded unit. Throws when it does not parse. */
+  Instance.prototype.installUnit = function (text, url, redirect) {
+    var result = QnA.parse(text);
+    if (!result.ok) throw new Error('the QnA has errors (' + String(result.errors[0].message).replace(/<[^>]*>/g, '') + ')');
+    if (!result.questions.length) throw new Error('no questions found');
+    var id = 'L' + (++this.loadCount);
+    return this.addUnit({ id: id, prefix: id, url: url, result: result, redirect: redirect || null });
+  };
+ 
+  /** The unit whose script is running, if one is: an answer's (scriptStep) or a question's (presenting). */
+  Instance.prototype.currentUnit = function () {
+    if (this.scriptStep) return unitOf(this.scriptStep.label);
+    if (this.presenting) return this.presentingUnit || '';
+    return '';
+  };
+ 
+  /** A goto() / replace target as written (a name or an id) -> a label, looked up in `unit` first, then everywhere. */
+  Instance.prototype.resolveLabel = function (target, unit) {
+    var t = trim(target === undefined || target === null ? '' : target);
+    if (unit && this.units[unit]) {
+      if (hasOwn(this.units[unit].byName, t)) return this.units[unit].byName[t].label;
+      if (hasOwn(this.byLabel, unit + '.' + t)) return unit + '.' + t;
+    }
+    if (hasOwn(this.byName, t)) return this.byName[t].label;
+    return t;
+  };
+ 
+  /* --- prior answers ---
+   * With qShare on, a question is not asked when its variable already holds a value set by a DIFFERENT
+   * unit (a unit re-asking its own question, GOTO:number, still asks). An X takes the value as typed; an A
+   * question takes the button whose value is the same, else the one whose value is the same once both are
+   * reduced to letters, digits and emoji, after asking (confirm); no match, or two buttons alike, asks.
+   */
+  var NORM_RE = null;
+  function normalizeValue(v) {
+    var s = String(v === undefined || v === null ? '' : v).replace(/<[^>]*>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').toLowerCase();
+    if (NORM_RE === null) {
+      try { NORM_RE = new RegExp('[^\\p{L}\\p{N}\\p{Extended_Pictographic}\\p{Emoji_Modifier}\\u200d\\ufe0f]', 'gu'); } catch (e) { NORM_RE = /[^a-z0-9]/g; }
+    }
+    return s.replace(NORM_RE, '');
+  }
+  QnA.normalizeValue = normalizeValue;
  
   /* --- state helpers --- */
  
@@ -900,12 +1059,17 @@
     this.convo = [];
     this.docs = [];
     this.vars = {};
+    this.varUnit = {};      // variable name -> the unit that set it
+    this.autoDone = {};     // question label -> filled in from a prior answer (so it is asked if reached again)
+    this.loading = false;
     this.current = null;
     this.qnum = 0;
+    if (this.loadCount) this.rebuildTables();   // loaded units go; a replay puts back the ones in the history
   };
  
-  Instance.prototype.setVar = function (name, value) {
+  Instance.prototype.setVar = function (name, value, unit) {
     this.vars[name] = value;
+    this.varUnit[name] = unit || '';
     var list = this.varsEl.querySelectorAll('textarea');
     for (var i = 0; i < list.length; i++) if (list[i].name === name) { list[i].parentNode.removeChild(list[i]); }
     var ta = root.document.createElement('textarea');
@@ -914,10 +1078,14 @@
     this.varsEl.appendChild(ta);
   };
  
-  Instance.prototype.swapvar = function (input) {
-    var out = String(input);
-    for (var name in this.vars) {
-      if (!Object.prototype.hasOwnProperty.call(this.vars, name)) continue;
+  /** <x>name</x> -> the variable's value. Text from a loaded QnA (`unit`) sees that QnA's own variables first. */
+  Instance.prototype.swapvar = function (input, unit) {
+    var out = String(input), name, p = unit ? unit + '.' : '';
+    if (p) for (name in this.vars) {
+      if (hasOwn(this.vars, name) && name.indexOf(p) === 0) out = out.replace(new RegExp('<x>' + escapeRe(name.slice(p.length)) + '<\\/x>', 'gi'), this.vars[name]);
+    }
+    for (name in this.vars) {
+      if (!hasOwn(this.vars, name)) continue;
       out = out.replace(new RegExp('<x>' + escapeRe(name) + '<\\/x>', 'gi'), this.vars[name]);
     }
     return out;
@@ -938,12 +1106,12 @@
   // true when a bubble would show nothing: only whitespace, &nbsp; and <br>s
   function isBlank(html) { return /^(\s|&nbsp;|<br\s*\/?>)*$/i.test(String(html)); }
  
-  Instance.prototype.questionBubbles = function (text) {
+  Instance.prototype.questionBubbles = function (text, unit) {
     // <br><br> splits a bubble in two; "<br> <br>" does not. Empty bubbles are skipped.
     var parts = text.split(/<br\s*\/?><br\s*\/?>/i);
     var html = '';
     for (var i = 0; i < parts.length; i++) {
-      var p = this.swapvar(parts[i]);
+      var p = this.swapvar(parts[i], unit);
       if (isBlank(p)) continue;
       html += "<div class='frame'><div class='full'><div class='question_text'>" + p + "</div></div><div class='question_arrow'></div></div>";
       this.convo.push('BOT: ' + dropCode(p) + '\n');
@@ -968,20 +1136,63 @@
         this.appendHtml("<div class='frame'><div class='full'><div class='question_text'>[QnA: missing question " + escapeHtml(label) + "]</div></div><div class='question_arrow'></div></div>");
         return null;
       }
-      if (q.doc !== null) this.docs.push(q.doc);
+      if (q.redirect !== null) { label = q.redirect; continue; }   // loadQnA(url, find, replace): the host's question takes over here
+      if (q.doc !== null) this.docs.push({ text: q.doc, unit: q.unit });
+      this.presentingUnit = q.unit;
       if (q.goto !== null) {
-        if (!isBlank(q.display)) this.questionBubbles(q.display);
+        if (!isBlank(q.display)) this.questionBubbles(q.display, q.unit);
         label = q.goto;
         continue;
       }
       if (q.goto === null && q.gotoName !== null) {   // unresolved GOTO (shouldn't happen when well formed)
-        if (!isBlank(q.display)) this.questionBubbles(q.display);
+        if (!isBlank(q.display)) this.questionBubbles(q.display, q.unit);
         return null;
       }
-      if (!isBlank(q.display)) this.questionBubbles(q.display);
+      if (!isBlank(q.display)) this.questionBubbles(q.display, q.unit);
+      var prior = this.priorAnswer(q);
+      if (prior) { label = prior.next; continue; }
       return label;
     }
     return null;
+  };
+
+  /**
+   * Fill in question `q` from a prior answer when there is one (see "prior answers" above). The answer is
+   * recorded in the history as an ordinary exchange flagged `auto`, drawn with the Prior Answers text, and
+   * its own [javascript:…] runs as it would after a click. Returns {next: label to continue with} or null.
+   */
+  Instance.prototype.priorAnswer = function (q) {
+    if (this.replaying || !this.options.qShare || this.autoDone[q.label]) return null;
+    if (!hasOwn(this.vars, q.name) || this.varUnit[q.name] === q.unit) return null;
+    var known = this.vars[q.name], list = this.answersByQ[q.label] || [], pick = null, i;
+    var knownRaw = String(known).replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+    for (i = 0; i < list.length && !pick; i++) if (!list[i].isVar && (list[i].value === known || list[i].value === knownRaw)) pick = list[i];
+    for (i = 0; i < list.length && !pick; i++) if (list[i].isVar) pick = list[i];
+    if (!pick) {
+      var key = normalizeValue(known), alike = [];
+      for (i = 0; i < list.length; i++) if (!list[i].isVar && normalizeValue(list[i].value) === key) alike.push(list[i]);
+      if (key !== '' && alike.length === 1) {
+        var shown = trim(String(alike[0].text).replace(/<[^>]*>/g, ''));
+        if (root.confirm(this.options.labelConfirm.replace(/<x>answer<\/x>/gi, shown))) pick = alike[0];
+      }
+    }
+    if (!pick) return null;
+    var entry = { label: pick.label, value: pick.isVar ? known : null, auto: true };
+    this.history.push(entry);
+    this.applyAnswer(entry);
+    var next = pick.label;
+    var script = pick.isVar ? pick.script : (/^javascript:/i.test(pick.href) && pick.href !== "javascript:void('');" ? pick.href.replace(/^javascript:/i, '') : '');
+    if (script) {
+      // a goto() (or loadQnA()) in the script takes the place of the answer's own next question, as after a click
+      var was = this.jumpQueue.length;
+      this.scriptStep = entry;
+      try { (0, eval)(script); } catch (err) { if (root.console) console.error('QnA: error in answer script:', err); }
+      this.scriptStep = null;
+      if (this.jumpQueue.length > was) { entry.skip = true; next = this.jumpQueue.splice(was, 1)[0]; }
+      else if (entry.skip) next = null;
+    }
+    this.saveProgress();
+    return { next: next };
   };
  
   Instance.prototype.renderChoices = function () {
@@ -1021,7 +1232,11 @@
         var choose = function () {
           if (!self.answer(el.getAttribute('data-answer'))) return;
           var s = el.getAttribute('data-script');
-          if (s) { try { (0, eval)(s); } catch (err) { if (root.console) console.error('QnA: error in answer script:', err); } }
+          if (!s) return;
+          // while the script runs, a goto() in it takes the place of the answer's own next question
+          self.scriptStep = self.history[self.history.length - 1];
+          try { (0, eval)(s); } catch (err) { if (root.console) console.error('QnA: error in answer script:', err); }
+          self.scriptStep = null;
         };
         if (el.tagName === 'INPUT') {
           el.addEventListener('keydown', function (e) {
@@ -1043,13 +1258,31 @@
     this.prefill = null;
   };
  
+  /**
+   * `label` is the question to show, or (on replay) a list: the question followed by the goto() jumps
+   * recorded after it. A goto() called while the question is being drawn (a script in the Q itself) is
+   * queued and followed here, once the question and any GOTO: chain of its own are on screen.
+   */
   Instance.prototype.presentQuestion = function (label, animate) {
     var anchor = null;
     if (this.qnum > 0) {
       var nodes = this.appendHtml('<div class="qna-jump">&nbsp;</div>');
       anchor = nodes[0];
     }
-    this.current = this.showQuestion(label);
+    var list = [].concat(label), cur = null, guard = 0;
+    this.presenting = true;
+    this.jumpQueue = [];
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && typeof list[i] === 'object') {   // a recorded loadQnA(): put the unit back and show its first question
+        var u = this.installUnit(list[i].text, list[i].url, list[i].redirect);
+        cur = this.showQuestion(u.prefix + '.1');
+      } else cur = this.showQuestion(String(list[i]));
+    }
+    while (this.jumpQueue.length && guard++ < 500) cur = this.showQuestion(this.jumpQueue.shift());
+    this.jumpQueue = [];
+    this.presenting = false;
+    if (this.pendingLoad) { var pl = this.pendingLoad; this.pendingLoad = null; setTimeout(pl, 0); }
+    this.current = cur;
     this.renderChoices();
     this.qnum++;
     this.lastAnchor = anchor;
@@ -1119,7 +1352,11 @@
     var name = parent ? parent.name : a.parent;
     var shown = a.isVar ? entry.value : trim(a.text);
     var value = a.isVar ? entry.value : a.value;
-    this.setVar(name, value);
+    if (entry.auto) {
+      // filled in from a prior answer: the variable keeps the value (and the unit) it already has
+      shown = escapeHtml(this.options.labelEarlier) + ' ' + shown;
+      this.autoDone[a.parent] = true;
+    } else this.setVar(name, value, a.unit);
     this.answerBubble(shown);
     this.convo.push('USER: ' + dropCode(shown) + '\n');
   };
@@ -1232,7 +1469,7 @@
   Instance.prototype.saveProgress = function () {
     if (!this.options.saveProgress) return;
     try {
-      if (this.history.length) root.localStorage.setItem(this.progressKey(), JSON.stringify({ history: this.history, ts: Date.now() }));
+      if (this.history.length) root.localStorage.setItem(this.progressKey(), JSON.stringify({ history: this.history, pre: this.pre.jumps, ts: Date.now() }));
       else root.localStorage.removeItem(this.progressKey());
     } catch (e) {}
   };
@@ -1241,7 +1478,7 @@
     try {
       var raw = root.localStorage.getItem(this.progressKey());
       var data = raw ? JSON.parse(raw) : null;
-      if (data && data.history && data.history.length) return data.history;
+      if (data && data.history && data.history.length) return data;
     } catch (e) {}
     return null;
   };
@@ -1255,13 +1492,25 @@
   Instance.prototype.start = function (label, resume) {
     QnA.current = this;
     this.history = [];
+    this.pre = { jumps: [] };
+    this.checkpoint = null;
     this.reset();
     if (this.spacer) this.spacer.style.height = '0px';
     var saved = resume === false ? null : this.loadProgress();
     if (saved) {
       var self = this;
-      var valid = saved.every(function (e) { return e && self.answerByLabel[e.label]; });
-      if (valid) { this.history = saved; this.replay(this.options.animate); return; }
+      var isJump = function (t) { return typeof t === 'string' || (t && typeof t === 'object' && typeof t.url === 'string' && typeof t.text === 'string'); };
+      var isJumps = function (j) { return j === undefined || (Array.isArray(j) && j.every(isJump)); };
+      // answers in loaded QnAs (labels L1.…) are checked as the replay puts their units back
+      var valid = saved.history.every(function (e) { return e && typeof e.label === 'string' && (unitOf(e.label) || self.answerByLabel[e.label]) && isJumps(e.jumps); }) && isJumps(saved.pre);
+      if (valid) {
+        this.history = saved.history; this.pre = { jumps: saved.pre || [] };
+        try { this.replay(this.options.animate); return; }
+        catch (e) {
+          if (root.console) console.error('QnA: saved progress could not be restored:', e);
+          this.history = []; this.pre = { jumps: [] }; this.replaying = false; this.reset();
+        }
+      }
       this.clearProgress();
     }
     if (this.options.animate) this.presentSoon(String(label || '1'), 0);
@@ -1278,7 +1527,7 @@
       var input = root.document.getElementById('Xi-' + label);
       var v = input ? trim(input.value) : '';
       if (v === '') {
-        alert('Your answer appears to be empty.');
+        alert(this.options.labelEmpty);
         if (input) input.focus();
         return false;
       }
@@ -1288,9 +1537,180 @@
     this.applyAnswer(entry);
     this.saveProgress();
     this.choices.innerHTML = '';
+    // where the conversation stood before the answer's own next question was drawn: a goto() in the
+    // answer's script rolls back to here and shows its target instead
+    this.checkpoint = { entry: entry, convo: this.convo.length, docs: this.docs.length, qnum: this.qnum, last: this.qanda.lastChild };
     if (this.options.animate) this.presentSoon(label, 300);
     else this.presentQuestion(label, false);
     return true;
+  };
+
+  /** What a history entry puts on screen: the answer's own next question (unless a goto() replaced it), then its jumps. */
+  function stepLabels(entry) {
+    return (entry.skip ? [] : [entry.label]).concat(entry.jumps || []);
+  }
+
+  /** Finish, at once, a question still waiting behind the typing indicator. */
+  Instance.prototype.flushPending = function () {
+    if (this.timer) { clearTimeout(this.timer); this.timer = null; }
+    this.pendingToken++;
+    this.hideTyping();
+    this.pendingWrap = null;
+    var wraps = this.qanda.querySelectorAll('.qna-pending');
+    for (var i = 0; i < wraps.length; i++) {
+      var w = wraps[i], b = w.querySelector('.qna-pending-body');
+      while (b && b.firstChild) w.parentNode.insertBefore(b.firstChild, w);
+      w.parentNode.removeChild(w);
+    }
+    this.choices.style.display = '';
+  };
+
+  /**
+   * Jump to question `target` (a Q's name or id), as a GOTO: at the end of a Q tag does. This is the
+   * predefined goto() function, for driving a QnA from JavaScript.
+   *  - Called from an answer's script (A[javascript:…] or X[javascript:…]), the target takes the place of
+   *    the question that would otherwise follow that answer.
+   *  - Called from a script inside a Q, the jump is made once that question is on screen, as if its text
+   *    ended in GOTO:target.
+   *  - Called at any other time (a timer, a fetch that has returned, the page around the QnA), the target
+   *    is added after the question now showing.
+   * Each jump is recorded with the answer it followed, so GO BACK ONE and saved progress redraw the
+   * conversation with the jumps that were actually made, without running any script again. While the
+   * conversation is being redrawn (this.replaying) goto() does nothing, for the same reason.
+   * Returns true when the jump was made (or queued).
+   */
+  Instance.prototype.goto = function (target) {
+    QnA.current = this;
+    if (this.replaying) return false;
+    var label = this.resolveLabel(target, this.currentUnit());
+    if (!this.byLabel[label] && root.console) console.error('QnA: goto(' + JSON.stringify(String(target)) + '): there is no such question.');
+    var step = this.history.length ? this.history[this.history.length - 1] : this.pre;
+    if (this.presenting) {
+      (step.jumps = step.jumps || []).push(label);
+      this.jumpQueue.push(label);
+      this.saveProgress();
+      return true;
+    }
+    this.claimSlot(step);
+    (step.jumps = step.jumps || []).push(label);
+    this.saveProgress();
+    if (this.options.animate) this.presentSoon(label, 300);
+    else this.presentQuestion(label, false);
+    return true;
+  };
+
+  /**
+   * Make room for a jump or a load. From an answer's script (the answer is `step`): the answer's own next
+   * question, drawn when the answer was taken, is undone and `step` marked skip. At any other time a
+   * question still behind the typing indicator is shown at once, and the target will follow it.
+   */
+  Instance.prototype.claimSlot = function (step) {
+    var cp = this.checkpoint;
+    if (this.scriptStep && this.scriptStep === step && cp && cp.entry === step) {
+      // undo the answer's own next question (drawn, perhaps still hidden, when the answer was taken)
+      if (this.timer) { clearTimeout(this.timer); this.timer = null; }
+      this.pendingToken++;
+      this.typingEl = null;
+      this.pendingWrap = null;
+      while (this.qanda.lastChild && this.qanda.lastChild !== cp.last) this.qanda.removeChild(this.qanda.lastChild);
+      this.convo.length = cp.convo;
+      this.docs.length = cp.docs;
+      this.qnum = cp.qnum;
+      this.choices.innerHTML = '';
+      this.choices.style.display = '';
+      step.skip = true;
+      step.jumps = [];
+    } else {
+      this.flushPending();
+    }
+  };
+
+  /** The value saved for variable `name` (a Q's name or id), or undefined if that question has not been answered. */
+  Instance.prototype.getvar = function (name) {
+    name = trim(name === undefined || name === null ? '' : name);
+    var unit = this.currentUnit();
+    if (unit && hasOwn(this.vars, unit + '.' + name)) return this.vars[unit + '.' + name];
+    return hasOwn(this.vars, name) ? this.vars[name] : undefined;
+  };
+
+  /* --- loadQnA() ---
+   * Bring another QnA into this conversation. `url` is a raw markup file, an HTML page holding a
+   * <script type="text/qna">, or an editor / viewer link (#z=…, ?markup=…, ?source=…). Called from an
+   * answer's script, the loaded QnA's first question takes the place of the question that would have
+   * followed the answer (the parser refuses a Q nested under such an answer). The loaded QnA's header
+   * (Title, Before, After, …) and Settings are ignored. `find` / `replace`: the loaded question named
+   * `find` is replaced by this QnA's question `replace` (any arrival there continues here); `find` may
+   * also be an object of several such pairs. Recorded, with the text fetched, on the answer's history
+   * entry, so GO BACK ONE and saved progress restore the same conversation without fetching again.
+   * Returns a promise of the new unit's prefix, or null when the call could not be made.
+   */
+  Instance.prototype.loadQnA = function (url, find, replace) {
+    QnA.current = this;
+    if (this.replaying || this.loading) return null;
+    var self = this, unit = this.currentUnit();
+    var base = (this.units[unit] && this.units[unit].url) || root.document.baseURI || root.location.href;
+    var abs; try { abs = new root.URL(String(url), base).href; } catch (e) { abs = String(url); }
+    var redirect = {}, k;
+    if (find && typeof find === 'object') { for (k in find) if (hasOwn(find, k)) redirect[k] = this.resolveLabel(find[k], unit); }
+    else if (find !== undefined && find !== null && String(find) !== '') redirect[String(find)] = this.resolveLabel(replace, unit);
+    for (k in redirect) if (!this.byLabel[redirect[k]] && root.console) console.error('QnA: loadQnA(): there is no question "' + k + '" to go to.');
+    if (this.presenting) {
+      // from a script inside a question, or an answer filled in for the visitor: once that is on screen
+      if (this.scriptStep) this.scriptStep.skip = true;
+      var args = [url, find, replace];
+      this.pendingLoad = function () { self.loadQnA.apply(self, args); };
+      return null;
+    }
+    var step = this.history.length ? this.history[this.history.length - 1] : this.pre;
+    this.claimSlot(step);
+    this.loading = true;
+    var d = root.document, typing = d.createElement('div');
+    typing.className = 'frame qna-typing';
+    typing.innerHTML = "<div class='full'><div class='question_text'><span class='qna-dots'><i></i><i></i><i></i></span></div></div><div class='question_arrow'></div>";
+    this.qanda.appendChild(typing);
+    this.typingEl = typing;
+    this.choices.innerHTML = '';
+    var token = ++this.pendingToken;
+    return QnA.fetchMarkup(abs).then(function (text) {
+      if (token !== self.pendingToken) return null;
+      self.loading = false;
+      self.hideTyping();
+      var u = self.installUnit(text, abs, redirect);
+      (step.jumps = step.jumps || []).push({ url: abs, text: text, redirect: redirect });
+      self.saveProgress();
+      if (self.options.animate) self.presentSoon(u.prefix + '.1', 300);
+      else self.presentQuestion(u.prefix + '.1', false);
+      return u.prefix;
+    }).catch(function (e) {
+      if (token !== self.pendingToken) return null;
+      self.loading = false;
+      self.hideTyping();
+      if (root.console) console.error('QnA: loadQnA(' + JSON.stringify(abs) + ') failed:', e);
+      self.appendHtml("<div class='frame'><div class='full'><div class='question_text'>[QnA: could not load " + escapeHtml(abs) + ': ' + escapeHtml(e && e.message ? e.message : e) + "]</div></div><div class='question_arrow'></div></div>");
+      self.current = null;
+      self.renderChoices();
+      self.revealScroll(true);
+      return null;
+    });
+  };
+
+  /**
+   * The markup behind `url`: a raw markup file; an HTML page with a <script type="text/qna"> (the first);
+   * a viewer / editor link, ?source= followed, #z= / #j= / ?markup= decoded here without a request.
+   */
+  QnA.fetchMarkup = function (url) {
+    var u;
+    try { u = new root.URL(String(url), root.location.href); } catch (e) { return Promise.reject(new Error('not a valid URL')); }
+    var hash = u.hash.replace(/^#/, ''), q = u.searchParams;
+    if (q.has('source')) return QnA.fetchMarkup(new root.URL(q.get('source'), u.href).href);
+    if (/^(z|j|markup)=/.test(hash)) return QnA.decodeHash(hash).then(function (p) { return p.markup; });
+    if (q.has('markup') || q.has('m') || q.has('q')) return QnA.decodeHash(u.search).then(function (p) { return p.markup; });
+    return root.fetch(u.href).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); }).then(function (text) {
+      var m = /<script\b[^>]*\btype\s*=\s*["']?text\/qna["']?[^>]*>([\s\S]*?)<\/script\s*>/i.exec(text);
+      if (m) return m[1].replace(/<\\\/script/gi, '<' + '/script');
+      if (/^\s*(<!doctype\s+html|<html)/i.test(text)) throw new Error('the page has no <script type="text/qna">');
+      return text;
+    });
   };
  
   /**
@@ -1313,10 +1733,15 @@
       this.qanda.appendChild(wrap);
       this.pendingWrap = body;
     }
-    this.presentQuestion(String(this.options.start), false);
+    // text to put back in an X field (GO BACK ONE) belongs to the last question drawn, not the first
+    var prefill = this.prefill;
+    this.prefill = hist.length ? null : prefill;
+    this.presentQuestion([String(this.options.start)].concat(this.pre.jumps), false);
     for (var i = 0; i < hist.length; i++) {
+      if (!this.answerByLabel[hist[i].label]) throw new Error('no answer ' + hist[i].label);
       this.applyAnswer(hist[i]);
-      this.presentQuestion(hist[i].label, false);
+      if (i === hist.length - 1) this.prefill = prefill;
+      this.presentQuestion(stepLabels(hist[i]), false);
     }
     this.replaying = false;
     if (!waitForMedia) { if (noScroll) this.focusInput(); else this.revealScroll(false); return; }
@@ -1359,6 +1784,7 @@
     // Remove the last exchange in place with no scrolling of our own. The
     // spacer drops to 15px so the remaining conversation fills the view
     // rather than leaving an empty screen where the removed exchange was.
+    this.checkpoint = null;
     this.replay(false, true);
     if (this.spacer) this.spacer.style.height = '15px';
     this.saveProgress();
@@ -1370,12 +1796,13 @@
   };
  
   Instance.prototype.doc = function () {
-    return this.swapvar(this.docs.join(''));
+    var self = this;
+    return this.docs.map(function (d) { return self.swapvar(d.text, d.unit); }).join('');
   };
  
   Instance.prototype.json = function () {
     var obj = {}, self = this;
-    this.result.questions.forEach(function (q) {
+    this.allQuestions.forEach(function (q) {
       if (q.gotoName !== null) return;
       obj[q.name] = self.vars.hasOwnProperty(q.name) ? self.vars[q.name] : '';
     });
@@ -1488,6 +1915,9 @@
   QnA.startAT = function (label) { return cur().start(label); };
   QnA.answerQ = function (label) { return cur().answer(label); };
   QnA.goback = function () { return cur().goBack(); };
+  QnA.goto = function (target) { return cur().goto(target); };
+  QnA.getvar = function (name) { return cur().getvar(name); };
+  QnA.loadQnA = function (url, find, replace) { return cur().loadQnA(url, find, replace); };
   QnA.shoh = function (id) {
     var el = root.document.getElementById(id);
     if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
@@ -1497,7 +1927,7 @@
   // original implementation keep working.
   QnA.exposeGlobals = function (target) {
     target = target || root;
-    ['transcript', 'doc', 'json_str', 'mail2', 'save2', 'submit2', 'showdoc', 'startAT', 'answerQ', 'goback', 'shoh'].forEach(function (n) {
+    ['transcript', 'doc', 'json_str', 'mail2', 'save2', 'submit2', 'showdoc', 'startAT', 'answerQ', 'goback', 'goto', 'getvar', 'loadQnA', 'shoh'].forEach(function (n) {
       QnA[n]._qna = true;
       // Don't clobber a page's own function of the same name; do replace one
       // installed by an earlier QnA (e.g. after document.write).

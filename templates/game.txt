@@ -1,11 +1,11 @@
 Title: Shall we play a game?
-Description: A sample QnA demonstrating the use of embedded media along with the "GOTO" command. Links to said media can be found in this project's QnA markup, accessible by hitting the "edit" link. Also, if loaded from the QnA editor, this interview shows off some custom design settings, like the LLM chat style (no text bubbles for the computer) and the Courier New font. 
+Description: A sample QnA showing the use of embedded media along with the "GOTO" command. Links to said media can be found in this project's QnA markup, accessible by hitting the "edit" link. Also, if loaded from the QnA editor, this interview shows off some custom design settings, like the LLM chat style (no text bubbles for the computer) and the Courier New font. 
 
 Q(1): Shall we play a game?
 A: Sure.
 	Q(1.1): <img src="https://jasoneppink.com/wp-content/gallery/the-reaction-gif-moving-image-as-gesture/kermit.gif"><br><br>How about a game of chess?
 	A: Sounds good. I love chess.
-		Q(1.1.1): Your move. <br><br><iframe src="https://www.qnamarkup.org/templates/chess/" scrolling="no" seamless="seamless" style="overflow:hidden;width:325px;height:325px;border: solid 0px #eee;"></iframe>
+		Q(1.1.1): <br><br><iframe src="https://www.qnamarkup.org/templates/chess/" scrolling="no" seamless="seamless" style="overflow:hidden;width:325px;height:325px;border: solid 0px #eee;"></iframe> GOTO:end
 	A: How about thermonuclear war?
 		Q(1.1.2): <img src="https://i.imgur.com/WwpALFZ.gif"><br><br>The only way to win is not to play! Have you actually seen <a href="https://en.wikipedia.org/wiki/WarGames" target=_blank>War Games</a>?
 		A: Yes.
@@ -15,4 +15,6 @@ A: Sure.
 A: Not right now. 
 	Q(1.2): <img src="https://jasoneppink.com/wp-content/gallery/the-reaction-gif-moving-image-as-gesture/david-tennant-in-the-rain.gif"> <br><br> Please... :( GOTO:1
 
-Settings: fontFamily='Courier New', Courier, monospace; fontSize=16; lineHeight=18; colWidth=500; framePad=15; radius=15; compBg=5489eb; compTxt=ffffff; compLink=e3fbfc; usrBg=eeeeee; usrTxt=000000; usrLink=0000ff; bodyBg=ffffff; bodyTxt=000000; bodyLink=0000ff; btnBg=eeeeee; btnTxt=000000; btnBold=false; btnBorder=888888; btnDivider=dddddd; chatStyle=llm; labelSave=Save above text as answer.; labelBack=GO BACK ONE; labelRestart=START OVER; labelCredits=credits; labelEdit=edit; labelCode=code your own; footer=true; saveProgress=false; start=1
+Q(end): Your move.
+
+Settings: fontFamily='Courier New', Courier, monospace; fontSize=16; lineHeight=18; colWidth=500; framePad=15; radius=15; compBg=5489eb; compTxt=ffffff; compLink=e3fbfc; usrBg=eeeeee; usrTxt=000000; usrLink=0000ff; bodyBg=ffffff; bodyTxt=000000; bodyLink=0000ff; btnBg=eeeeee; btnTxt=000000; btnBold=false; btnBorder=888888; btnDivider=dddddd; chatStyle=llm; qShare=true; labelSave=Save above text as answer.; labelEmpty=Your answer appears to be empty.; labelBack=GO BACK ONE; labelRestart=START OVER; labelCredits=credits; labelEdit=edit; labelEditWarn=You are about to edit a copy of this QnA. Any edits will not change this instance.; labelCode=code your own; labelEarlier=Earlier you entered:; labelConfirm=It looks like you may have answered this before%3B click OK to use <x>answer</x> as your answer.; footer=true; saveProgress=false; start=1
