@@ -6,6 +6,104 @@ plus `js/interactive.js` at github.com/colarusso/QnAMarkup). Everything below
 is measured against that version; the markup language itself is unchanged,
 and QnAs written for the old editor run as they did before.
 
+## 2.5.0 — form fields in questions, X:number, system font by default, a fully draggable flowchart, warnings above the outputs
+
+Changes since 2.4.0. The library is published at `dist/2.5.0/`; earlier
+versions are untouched. The only change to how a QnA renders is its default
+type (below); a QnA that sets its own font, size and line height is drawn
+exactly as before, and progress saved by 2.4.0 still loads.
+
+### Language
+
+* **Form fields written in questions are variables.** A QnA is a form as
+  much as a conversation, and `X` only ever offered one text field. Now any
+  `<input>`, `<select>` or `<textarea>` with a `name` placed in a question's
+  HTML is a variable of that name (dates, checkboxes, radios, drop-downs,
+  colours, ranges, hidden values, longer notes): `<x>name</x>`, `getvar()`,
+  `DOC:`, `json_str()` and `submit2()` all see it. The question's `A` (or
+  `X`) button is the form's submit.
+  * Values are recorded when the bubble is drawn (a `value="…"`, a `checked`
+    box) and on every change, so with *Save visitor progress* on a
+    half-filled form survives closing the browser: the unanswered values are
+    kept as `pending` in the saved progress and put back on return.
+  * The browser's own validation runs before an answer is taken: a field that
+    fails `required`, `min`/`max`, `pattern`, `type="email"`, … is pointed
+    out with the browser's message and the answer refused.
+  * Once answered, the values are fixed on the history entry (`fields`) and
+    every control in that exchange is disabled; GO BACK ONE reopens the
+    exchange with its values. Restores rebuild the same state.
+  * A checkbox group or `<select multiple>` is an array: JSON in
+    `json_str()`, comma-joined in `<x>`, documents, the hidden variable
+    textareas and the transcript. Text is escaped like X answers.
+  * The transcript adds the fields after the answer: `USER: Continue
+    (dob=1990-01-02; pets=cat, dog)`. Prior-answer matching across loaded
+    QnAs does not consider them.
+  * `submit2()` sends every variable once: the hidden `.qna-vars` textareas
+    carry them (fields of the unanswered last question are read first, and
+    its live controls held out of the post so no name is doubled).
+  * Parser: `q.fields` lists the names (`QnA.fieldsIn(html)` is exported);
+    warnings for a control with no `name` and for a name that is also a
+    question's name or id. Buttons and file inputs are ignored. The flowchart
+    marks such questions with a small text-box glyph (hover for the names).
+* **`X:number`** asks for a number: the field is rendered as an HTML number
+  input (`step="any"`, so decimals are accepted, `inputmode="decimal"` for the
+  keypad on phones); the value is stored as typed. The parser records it as
+  `inputType: 'number'` on the answer, and the flowchart labels the edge
+  `Number: <variable>`.
+* **Other text after `X:` is a warning, not an error.** The 2016 "the space
+  after an X tag must be left blank" error is gone: the text is ignored (and,
+  as before, its whitespace dropped from the code) and the parser returns a
+  warning in the new `result.warnings` array (`{message, near, line}`, like
+  errors), which the editor shows in the yellow box above the outputs. It
+  clears when the text is removed or turns out to be `number`. QnAs from the
+  old gallery written `X:name` therefore run now.
+
+### Library
+
+* **Default Body Text is now the system font stack, 16px / 22px** (`-apple-system,
+  BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif`), the values
+  the editor's Settings screen has opened with since `config.js` was
+  introduced. Up to 2.4.0 the library's own defaults were still Verdana
+  14px / 20px, so the editor wrote `data-font-family`, `data-font-size` and
+  `data-line-height` into every embed, page, link and saved file, and a QnA
+  opened from a link without them rendered in Verdana. The two sets of
+  defaults now agree: an untouched Settings screen produces outputs with no
+  type attributes, and a page that pins `dist/2.4.0/` or earlier keeps
+  rendering as it did. Every other default is unchanged.
+
+### Editor
+
+* **Flowchart: every node can be dragged.** The START pill, the terminal
+  dots at the end of unanswered branches and the dashed External QnA boxes
+  (`loadQnA()`) now move like question boxes, and keep their places across
+  live-preview re-renders until *Reset layout*. (The outlined boxes had no
+  fill, so only their thin border registered a grab; the dots were not nodes
+  at all.) The dots have a wider invisible target around them, which the
+  SVG/PNG exports leave out.
+* **Warning when "Save visitor progress in browser" is on.** The yellow
+  notice above the outputs (where the `http://` media warning appears) now
+  also tells the author that saved answers stay in the visitor's browser
+  storage after the browser is closed, until START OVER or the site's data is
+  cleared, so anyone who later uses the same browser can see them. Several
+  warnings stack in the same box. This notice and the http:// media one are
+  only shown with the outputs that share the interactive QnA (Interactive,
+  Link, Embed Code, HTML full page), not with the Flowchart, which neither
+  loads media nor saves anything; the parser's warnings show with every
+  output.
+* **Replacing the markup asks only when there is something to lose.** The
+  "Replace the current markup…?" confirmation before a template, *New*, or a
+  QnA arriving by link used to appear whenever the text area was not empty.
+  It now appears only when the markup or the Settings screen differs from
+  what was last loaded (a template, a file, a link, New) or saved with *Save
+  to File*; a template that was loaded and never edited is swapped without a
+  question. Settings count because they travel in the saved file (its
+  `Settings:` line) even though they are not in the text area, so changing a
+  colour and then picking a template asks. The markup comparison is made on
+  the id-filled code, so Update Outputs numbering the questions does not
+  count as an edit; the "clean" state is recorded once a load's own
+  `Settings:` tag has been applied, and is kept with the editor state so it
+  survives a reload.
+
 ## 2.4.0 — loadQnA(), Q Sharing and prior answers
 
 Changes since 2.3.0. The library is published at `dist/2.4.0/`; earlier

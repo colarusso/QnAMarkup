@@ -53,7 +53,8 @@ A: Something else
 | `Q:` or `Q(name):` | a question; text follows, may span lines, may contain HTML |
 | `A:` or `A(value):` | a button; `value` is what the variable stores (default: the button text) |
 | `A[href]:` / `A:[href]` | a button that is a link (same window / new window); `javascript:` runs code |
-| `X:` | a text field instead of buttons; nothing may follow the colon; one per question |
+| `X:` | a text field instead of buttons; `X:number` for a number field; nothing else may follow the colon; one per question |
+| HTML form controls in a `Q` | `<input name="dob" type="date">`, checkboxes, `<select>`, `<textarea>` written in the question text become variables named by their `name`; the `A` button submits them (see reference §Form fields) |
 | `DOC:` | text collected for a document when the `Q` right under it is shown |
 | `GOTO:name` | the last thing in a `Q`'s text: continue at that question |
 
@@ -114,7 +115,8 @@ A: Something else
 
 * [ ] Tabs, consistent; answers level with their question; next question one level deeper.
 * [ ] Every `GOTO` names a question that exists exactly once, and is the last thing in its `Q`.
-* [ ] No `GOTO` in an `A`; nothing after `X:` on its line; one `X` per question.
+* [ ] No `GOTO` in an `A`; nothing after `X:` on its line (except `number`); one `X` per question.
+* [ ] Every form control written in a `Q` has a `name`, and no name repeats a question's name or id.
 * [ ] Names unique, made of letters/digits/`.`/`_`/`-`; the ones referenced are words.
 * [ ] Every branch ends in a readable closing question (not in a dangling answer) unless it loops.
 * [ ] `<x>name</x>` only for names that will have a value by then.

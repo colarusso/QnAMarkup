@@ -278,16 +278,33 @@
   $('live').addEventListener('change', saveState);
 
   /* ---------- templates / files / new ---------- */
+  // Replacing the markup asks first only when there is something to lose: markup or Settings that differ from
+  // what was last loaded (a template, a file, a link, New) or saved to a file. `clean` holds that state: the
+  // text, compared as parsed, id-filled code (Update Outputs rewrites the text area with question ids), and the
+  // Settings screen as the Settings: tag a saved file carries (settings are part of the file, though not of the
+  // text area). Loading applies a template's or file's own Settings: tag during the Update that follows, so those
+  // callers mark the state clean once that Update has run (markCleanAfterUpdate).
+  var clean = null, cleanPending = false;
+  function markClean() { clean = { markup: ta.value, settings: QnA.settingsTag(getOptions()) }; cleanPending = false; saveState(); }
+  function markCleanAfterUpdate() { cleanPending = true; }
+  function canon(text) { try { var r = QnA.parse(text); if (r.ok) return r.code.replace(/\s+$/, ''); } catch (e) {} return String(text).replace(/\s+$/, ''); }
+  function unsaved() {
+    if (clean === null) return !!ta.value.trim();
+    return (!!ta.value.trim() && canon(ta.value) !== canon(clean.markup)) || QnA.settingsTag(getOptions()) !== clean.settings;
+  }
+  function okToReplace(question) { return !unsaved() || confirm(question); }
+  window.unsavedMarkup = unsaved;
   $('template').addEventListener('change', function () {
     var k = $('template').value; if (!k) return;
-    if (ta.value.trim() && !confirm('Replace the current markup with the "' + window.QNA_TEMPLATES[k].name + '" template?')) { $('template').value = ''; return; }
-    ta.value = window.QNA_TEMPLATES[k].text;
+    if (!okToReplace('Replace the current markup with the "' + window.QNA_TEMPLATES[k].name + '" template?')) { $('template').value = ''; return; }
+    ta.value = window.QNA_TEMPLATES[k].text; markCleanAfterUpdate();
     $('template').value = '';
     showTab('codeblock'); update();
   });
   $('new').addEventListener('click', function () {
-    if (ta.value.trim() && !confirm('Start a new QnA? The current markup will be replaced.')) return;
+    if (!okToReplace('Start a new QnA? The current markup will be replaced.')) return;
     ta.value = (window.QNA_TEMPLATES && window.QNA_TEMPLATES['new']) ? window.QNA_TEMPLATES['new'].text : 'Title:\nAuthor:\nDescription:\n\nQ:\nA:\n\tQ:\nA:\n\tQ:';
+    markCleanAfterUpdate();
     showTab('codeblock'); update(); ta.focus();
   });
   $('load_file').addEventListener('click', function () { $('upload').click(); });
@@ -298,7 +315,7 @@
       // A file saved from here ends with a hidden Settings: tag. It never reaches the text area:
       // its values go to the Settings screen (anything it does not mention returns to the default).
       var loaded = QnA.splitSettings(String(r.result));
-      ta.value = loaded.markup;
+      ta.value = loaded.markup; markCleanAfterUpdate();
       if (loaded.settings) setOptions(loaded.settings);
       showTab('codeblock'); update();
     };
@@ -330,7 +347,7 @@
     return QnA.splitSettings(ta.value).markup.replace(/\s+$/, '') + '\n\n' + QnA.settingsTag(getOptions()) + '\n';
   }
   window.markupForFile = markupForFile;
-  $('save_markup').addEventListener('click', function () { QnA.save2(markupFilename(), markupForFile()); });
+  $('save_markup').addEventListener('click', function () { QnA.save2(markupFilename(), markupForFile()); markClean(); });
 
   /* ---------- outputs ---------- */
   var outSel = $('output');
@@ -349,6 +366,7 @@
     var divs = document.querySelectorAll('.out > div');
     for (var i = 0; i < divs.length; i++) divs[i].classList.toggle('active', divs[i].id === 'out_' + id);
     outSel.value = id;
+    syncWarnings();
     if (id === 'flow') renderFlow();
     applyPaneBg();
     saveState();
@@ -447,9 +465,10 @@
       ta.value = QnA.splitSettings(ta.value).markup;   // even when errors keep the rest of the text as typed
     }
     var o = getOptions();
+    if (cleanPending && rewrite) markClean();   // a load: the text and its Settings, as they now stand, are the saved state
     var opts = nonDefaultOptions();
     lastResult = result;
-    showWarnings(result);
+    showWarnings(result, o);
     flowDirty = true; renderFlow();
 
     // Preview (rendered in the sandboxed iframe, see preview.html)
@@ -489,20 +508,44 @@
     updateLink(markup, opts);
   }
   // Non-blocking warnings about things that will bite once the QnA is published.
-  function showWarnings(result) {
-    var warn = $('warn'), items = [];
+  // Each is a block in #warn above the outputs; the div is hidden when there is nothing to say. Blocks about
+  // the QnA a visitor will use are share-only (see syncWarnings); the parser's own warnings show everywhere.
+  function showWarnings(result, o) {
+    var warn = $('warn'), blocks = [], items = [];
+    (result.warnings || []).forEach(function (w) {
+      blocks.push('<div class="warn-item parser">' + (w.line ? '<b>Line ' + w.line + ':</b> ' : '') + w.message + (w.near ? '<br><code>' + esc(w.near) + '</code>' : '') + '</div>');
+    });
     var re = /<(img|iframe|video|audio|source|script|embed)\b[^>]*\ssrc\s*=\s*["']?(http:\/\/[^"'\s>]+)/gi, m, seen = {};
     while ((m = re.exec(result.markup)) !== null) {
       var key = m[1].toLowerCase() + ' ' + m[2];
       if (!seen[key]) { seen[key] = true; items.push({ tag: m[1].toLowerCase(), url: m[2] }); }
     }
-    if (!items.length) { warn.className = ''; warn.innerHTML = ''; return; }
-    var html = '<b>Insecure (http://) media.</b> Published QnAs are almost always served over https, where browsers block or silently upgrade <code>http://</code> content: images may fail to appear' +
-      (items.some(function (i) { return i.tag !== 'img'; }) ? ', and iframes/scripts/media are blocked outright' : '') +
-      '. Use <code>https://</code> URLs where the host offers them.<ul>' +
-      items.slice(0, 8).map(function (i) { return '<li><code>&lt;' + i.tag + '&gt;</code> <code>' + esc(i.url) + '</code></li>'; }).join('') +
-      (items.length > 8 ? '<li>…and ' + (items.length - 8) + ' more</li>' : '') + '</ul>';
-    warn.innerHTML = html; warn.className = 'show';
+    if (items.length) {
+      blocks.push('<div class="warn-item share-only"><b>Insecure (http://) media.</b> Published QnAs are almost always served over https, where browsers block or silently upgrade <code>http://</code> content: images may fail to appear' +
+        (items.some(function (i) { return i.tag !== 'img'; }) ? ', and iframes/scripts/media are blocked outright' : '') +
+        '. Use <code>https://</code> URLs where the host offers them.<ul>' +
+        items.slice(0, 8).map(function (i) { return '<li><code>&lt;' + i.tag + '&gt;</code> <code>' + esc(i.url) + '</code></li>'; }).join('') +
+        (items.length > 8 ? '<li>…and ' + (items.length - 8) + ' more</li>' : '') + '</ul></div>');
+    }
+    // Saved progress lives in the visitor's browser storage, in the clear, for as long as the browser keeps it.
+    if (o && o.saveProgress === true) {
+      blocks.push('<div class="warn-item share-only"><b>Save visitor progress is on.</b> A visitor’s answers are kept in their browser (localStorage) so they can pick up where they left off — and they stay there after the browser is closed, ' +
+        'until the visitor chooses <i>' + esc(o.labelRestart || 'START OVER') + '</i> or clears the site’s data. Anyone who later uses the same browser, on a shared or public computer for instance, can open the QnA and see those answers. ' +
+        'Leave this off for interviews that ask for anything sensitive, or say so in the QnA so visitors know to start over when they are done.</div>');
+    }
+    warn.innerHTML = blocks.join('');
+    syncWarnings();
+  }
+  // Blocks marked share-only concern the interactive QnA a visitor will use (media it loads, what it saves), so
+  // they are not shown with the Flowchart output, which is not that QnA. The box hides when nothing is left.
+  function syncWarnings() {
+    var warn = $('warn'), shown = 0, flow = outSel.value === 'flow';
+    Array.prototype.forEach.call(warn.querySelectorAll('.warn-item'), function (b) {
+      var hide = flow && b.classList.contains('share-only');
+      b.style.display = hide ? 'none' : '';
+      if (!hide) shown++;
+    });
+    warn.className = shown ? 'show' : '';
   }
   function linkMode() { return document.querySelector('input[name=link_mode]:checked').value; }
   // A link carries the whole QnA, so it can outgrow what will open. The plain form puts it in the query
@@ -649,7 +692,7 @@
   function saveState() {
     try {
       localStorage.setItem(LS_KEY, JSON.stringify({
-        markup: ta.value, options: getOptions(), wrap: $('wrap').checked, live: $('live').checked, output: outSel.value,
+        markup: ta.value, clean: clean, options: getOptions(), wrap: $('wrap').checked, live: $('live').checked, output: outSel.value,
         linkMode: linkMode(), embedLib: $('inline_lib').checked, embedLibEmbed: $('inline_lib_embed').checked,
         rightW: window.paneSizes ? window.paneSizes().rightW : undefined, rightH: window.paneSizes ? window.paneSizes().rightH : undefined
       }));
@@ -749,8 +792,8 @@
     if (location.hash.length < 2) return;
     QnA.decodeHash(location.hash).then(function (payload) {
       if (!payload || payload.markup === undefined) return;
-      if (ta.value.trim() && ta.value !== payload.markup && !confirm('Load the QnA from this link? The current markup will be replaced.')) return;
-      ta.value = payload.markup; setOptions(payload);
+      if (ta.value !== payload.markup && !okToReplace('Load the QnA from this link? The current markup will be replaced.')) return;
+      ta.value = payload.markup; markCleanAfterUpdate(); setOptions(payload);
       history.replaceState(null, '', location.pathname);
       showTab('codeblock'); showOutput('interact'); update();
     }).catch(function () {});
@@ -759,14 +802,14 @@
   loadFromUrl().then(function (fromUrl) {
     var st = loadState();
     if (fromUrl && fromUrl.markup !== undefined) {
-      ta.value = fromUrl.markup;
+      ta.value = fromUrl.markup; markCleanAfterUpdate();   // just loaded: nothing to lose yet
       setOptions(fromUrl);
       if (location.hash || location.search) history.replaceState(null, '', location.pathname);
     } else if (st && st.markup !== undefined) {
-      ta.value = st.markup;
+      ta.value = st.markup; clean = st.clean && typeof st.clean === 'object' ? st.clean : null;   // (null: state saved by an older version — ask, to be safe)
       setOptions(st.options);
     } else {
-      ta.value = window.QNA_TEMPLATES.primer ? window.QNA_TEMPLATES.primer.text : '';
+      ta.value = window.QNA_TEMPLATES.primer ? window.QNA_TEMPLATES.primer.text : ''; markCleanAfterUpdate();
       setOptions(editorDefaults());
     }
     if (st) {

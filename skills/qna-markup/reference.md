@@ -1,4 +1,4 @@
-# QnA Markup — language reference (for the interpreter at www.qnamarkup.org, library 2.4.0)
+# QnA Markup — language reference (for the interpreter at www.qnamarkup.org, library 2.5.0)
 
 Read `SKILL.md` first; this file has the details.
 
@@ -46,11 +46,34 @@ Read `SKILL.md` first; this file has the details.
   literal `]` inside it as `\]`. `//` comments on their own line are removed.
 * `GOTO` is not allowed in an `A`.
 
+### Form fields inside a question
+
+* For a date, checkbox, radio group, drop-down, longer note, colour, range, … write the ordinary HTML
+  control in the `Q` text. A control with a `name` is a variable of that name: usable as `<x>name</x>`,
+  with `getvar('name')`, in `DOC:` output, `json_str()` and `submit2()`. The question still needs an
+  `A` (or `X`) to move on — that button is the form's "submit".
+* Values are saved as they change (so saved progress keeps a half-filled form), the browser's own
+  validation (`required`, `min`/`max`, `pattern`, `type="email"`) runs before the answer is taken, and
+  the fields are disabled once answered (GO BACK ONE reopens them). A checkbox group or
+  `<select multiple>` is a JSON array in `json_str()`, comma-joined elsewhere.
+* Give every control a `name` (the editor warns when one is missing) that is not also a question's
+  name or id (it warns about that too). Names are shared across the interview. No file inputs.
+
+```
+Q(details): A few details.<br>
+Date of birth: <input type="date" name="dob" required><br>
+<input type="checkbox" name="pets" value="cat"> cat <input type="checkbox" name="pets" value="dog"> dog
+A: Continue
+	Q: Born <x>dob</x>; pets: <x>pets</x>.
+```
+
 ### `X:` — a text field
 
 * Used instead of (or beside) `A` tags: the visitor types an answer, which is stored, as typed, in
-  the question's variable. One `X` per question. Nothing may follow `X:` on its line (an old
-  syntax put a name there; that is now an error).
+  the question's variable. One `X` per question. Nothing needs to follow `X:` on its line, except
+  the word `number`: `X:number` makes the field a number input (decimals allowed; the value is
+  stored as typed). Any other text there is ignored with a warning in the editor (an old syntax put
+  a name there).
 * `X[javascript:…]:` or `X:[javascript:…]` (no space before the bracket) runs code after the typed
   text has been saved, so `getvar('name')` in it sees the new value. The bracket must start with
   `javascript:`.
@@ -98,7 +121,7 @@ Read `SKILL.md` first; this file has the details.
 | Poorly-formed GOTO call | `GOTO:` not at the end of the `Q` text, or written `GOTO: x y` |
 | GOTO calls not allowed in A tags | |
 | Limit one variable per answer set. | two `X` under one `Q` |
-| Starting in September 2016, the space after an X (variable) tag must be left blank. | text after `X:` |
+| (warning, not an error) The text after this X: tag has no effect and will be ignored. | text other than `number` after `X:` |
 | An answer that calls loadQnA() cannot have a Q beneath it | see §5, `loadQnA` |
 | You must have at least one Q: tag. / …one A: tag. | (an `X` counts as an answer) |
 

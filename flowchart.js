@@ -10,14 +10,17 @@
  * italics. A question whose text ends in GOTO gets a dashed edge to the
  * target; a question that is *only* a GOTO is not drawn at all — the answer
  * leading to it goes straight to the target. Answers with nothing under them
- * end in a small terminal dot. Questions with a DOC tag carry a page marker.
+ * end in a small terminal dot. Questions with a DOC tag carry a page marker;
+ * questions whose HTML holds named form fields carry a text-box marker
+ * (hover it for the field names).
  * Two things a script can do are drawn when their arguments are literals:
  * an answer that calls loadQnA() leads to an "External QnA" box (its
  * find/replace targets get dotted "JS GOTO" edges back from the box), and
  * a goto('name') in an answer's or question's script is a dotted "JS GOTO"
  * edge to that question.
  *
- * Drag nodes to rearrange; drag the background to pan; wheel to zoom.
+ * Drag nodes to rearrange (the START pill, the terminal dots and the External
+ * QnA boxes included); drag the background to pan; wheel to zoom.
  * Lines can be rearranged too: the label in the middle of a line (a small
  * grip dot when the line has no label) is a handle. Drag it and the line is
  * re-routed through wherever it is dropped, to untangle lines that overlap;
@@ -36,9 +39,9 @@
   // Colours and type come from the QnA's own settings (System Text / Body Text)
   function theme(opts) {
     var o = (root.QnA && root.QnA.normalizeOptions) ? root.QnA.normalizeOptions(opts || {}) : (opts || {});
-    var fs = Math.max(10, Math.min(20, parseInt(o.fontSize, 10) || 14));
+    var fs = Math.max(10, Math.min(20, parseInt(o.fontSize, 10) || 16));
     return {
-      font: o.fontFamily || 'Verdana, Geneva, sans-serif',
+      font: o.fontFamily || "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif",
       fs: fs, lh: Math.round(fs * 1.35), labelFs: Math.max(9, fs - 2),
       bg: '#' + (o.compBg || '5489eb'), txt: '#' + (o.compTxt || 'ffffff'),
       nodeW: Math.max(190, Math.round(fs * 14))
@@ -49,16 +52,21 @@
       '.qf-node rect{fill:' + t.bg + ';stroke:' + t.bg + ';stroke-width:1;rx:10;ry:10;}',
       '.qf-node text{fill:' + t.txt + ';font-family:' + t.font + ';font-size:' + t.fs + 'px;pointer-events:none;}',
       '.qf-node .qf-id{fill:' + t.txt + ';fill-opacity:.7;font-size:' + Math.max(8, t.fs - 3) + 'px;}',
-      '.qf-node.qf-startnode rect{fill:none;stroke:' + t.bg + ';stroke-width:2;}',
+      // outlined boxes (START, External QnA) have no fill, so the whole box must be declared a hit area or only the outline could be grabbed
+      '.qf-node.qf-startnode rect{fill:none;stroke:' + t.bg + ';stroke-width:2;pointer-events:all;}',
       '.qf-node.qf-startnode text{fill:' + t.bg + ';font-weight:bold;letter-spacing:.08em;}',
       '.qf-node.qf-dragging rect{stroke:#ffb300;stroke-width:2;}',
+      '.qf-node.qf-dragging .qf-end{stroke:#ffb300;stroke-width:2;}',
       '.qf-node{cursor:grab;}',
       '.qf-doc{fill:' + t.txt + ';stroke:' + t.bg + ';stroke-width:1;}',
       '.qf-doc-line{stroke:' + t.bg + ';stroke-width:1;}',
+      '.qf-field{fill:' + t.txt + ';stroke:' + t.bg + ';stroke-width:1;}',
+      '.qf-field-line{stroke:' + t.bg + ';stroke-width:1.5;}',
+      '.qf-node.qf-external .qf-field{fill:none;}',
       '.qf-edge{fill:none;stroke:#6b7280;stroke-width:1.5;}',
       '.qf-edge.qf-goto{stroke-dasharray:6 4;}',
       '.qf-edge.qf-jsgoto{stroke-dasharray:1.5 4;stroke-linecap:round;}',
-      '.qf-node.qf-external rect{fill:none;stroke:' + t.bg + ';stroke-width:1.5;stroke-dasharray:5 3;}',
+      '.qf-node.qf-external rect{fill:none;stroke:' + t.bg + ';stroke-width:1.5;stroke-dasharray:5 3;pointer-events:all;}',
       '.qf-node.qf-external text{fill:' + t.bg + ';}',
       '.qf-node.qf-external .qf-id{fill:' + t.bg + ';}',
       '.qf-label{font-family:' + t.font + ';font-size:' + t.labelFs + 'px;fill:#1d2330;}',
@@ -72,6 +80,7 @@
       '.qf-grip-hit{fill:transparent;stroke:none;}',
       '.qf-edge.qf-dragging{stroke:#ffb300;}',
       '.qf-end{fill:#9aa1ab;stroke:#6b7280;stroke-width:1;}',
+      '.qf-end-hit{fill:transparent;stroke:none;}',   // a finger-sized target around the small end dot
       '.qf-arrow{fill:#6b7280;}'
     ].join('\n');
   }
@@ -124,14 +133,14 @@
       if (q.goto !== null && /^(\s|&nbsp;|<br\s*\/?>)*$/i.test(q.display)) return;   // pure jump, not drawn
       var text = stripHtml(q.display) || '(blank)';
       var lines = wrap(text, t.nodeW - 2 * PAD_X, t.fs, MAX_LINES);
-      var node = { id: q.label, name: q.name, lines: lines, doc: q.doc !== null, w: t.nodeW, h: PAD_Y * 2 + t.fs + lines.length * t.lh, children: [], x: 0, y: 0 };
+      var node = { id: q.label, name: q.name, lines: lines, doc: q.doc !== null, fields: (q.fields || []).slice(), w: t.nodeW, h: PAD_Y * 2 + t.fs + lines.length * t.lh, children: [], x: 0, y: 0 };
       nodes.push(node); drawn[q.label] = node;
     });
     var externals = [];
     result.answers.forEach(function (a) {
       var from = drawn[a.parent];
       if (!from) return;
-      var label = a.isVar ? ('Input: ' + from.name) : truncate(stripHtml(a.text) || (a.value ? stripHtml(a.value) : '(blank)'), 34);
+      var label = a.isVar ? ((a.inputType === 'number' ? 'Number: ' : 'Input: ') + from.name) : truncate(stripHtml(a.text) || (a.value ? stripHtml(a.value) : '(blank)'), 34);
       if (a.loads) {
         // loadQnA(): the loaded QnA takes over here. Its file name captions the box when the URL is a literal.
         var file = typeof a.loads === 'string' ? a.loads.replace(/[?#][\s\S]*$/, '').replace(/\/+$/, '').split('/').pop() || a.loads : '';
@@ -232,7 +241,7 @@
     var g = buildGraph(result, t);
     layout(g);
     var mem = memory[memKey(result)] || (memory[memKey(result)] = { nodes: {}, edges: {} });
-    g.nodes.concat(g.start ? [g.start] : []).forEach(function (n) { if (mem.nodes[n.id]) { n.x = mem.nodes[n.id].x; n.y = mem.nodes[n.id].y; } });
+    g.nodes.concat(g.ends).concat(g.start ? [g.start] : []).forEach(function (n) { if (mem.nodes[n.id]) { n.x = mem.nodes[n.id].x; n.y = mem.nodes[n.id].y; } });
     g.edges.forEach(function (e) { var o = mem.edges[e.key]; e.off = o ? { dx: o.dx, dy: o.dy } : null; });
 
     var svg = el('svg', { xmlns: SVG_NS, 'class': 'qf-svg', width: '100%', height: '100%' }, container);
@@ -335,10 +344,19 @@
         el('path', { 'class': 'qf-doc', d: 'M' + dx + ',' + dy + ' h9 l4,4 v10 h-13 z' }, grp);
         el('path', { 'class': 'qf-doc-line', d: 'M' + (dx + 3) + ',' + (dy + 8) + ' h7 M' + (dx + 3) + ',' + (dy + 11) + ' h7' }, grp);
       }
+      if (n.fields && n.fields.length) {
+        // a form-field marker (a small text box with a cursor) beside the page marker; the tooltip names the fields
+        var fx = n.w - (n.doc ? 40 : 22), fy = 8;
+        var fg = el('g', { 'class': 'qf-fields' }, grp);
+        var ft = el('title', {}, fg); ft.textContent = 'Form field' + (n.fields.length > 1 ? 's' : '') + ': ' + n.fields.join(', ');
+        el('rect', { 'class': 'qf-field', x: fx, y: fy, width: 16, height: 10, rx: 1.5, ry: 1.5 }, fg);
+        el('path', { 'class': 'qf-field-line', d: 'M' + (fx + 3) + ',' + (fy + 2.5) + ' v5' }, fg);
+      }
       nodeEls.push({ n: n, grp: grp });
     });
     g.ends.forEach(function (n) {
-      var grp = el('g', { 'class': 'qf-endnode' }, nodeLayer);
+      var grp = el('g', { 'class': 'qf-node qf-endnode', 'data-id': n.id }, nodeLayer);
+      el('circle', { 'class': 'qf-end-hit', cx: END_R, cy: END_R, r: END_R + 6 }, grp);
       el('circle', { 'class': 'qf-end', cx: END_R, cy: END_R, r: END_R }, grp);
       nodeEls.push({ n: n, grp: grp });
     });
@@ -454,7 +472,7 @@
       clone.querySelector('.qf-world').removeAttribute('transform');
       Array.prototype.forEach.call(clone.querySelectorAll('.qf-dragging'), function (n) { n.classList.remove('qf-dragging'); });
       // editing affordances stay out of the picture: grip dots, tooltips, the outline on moved labels
-      Array.prototype.forEach.call(clone.querySelectorAll('.qf-grip, .qf-grip-hit, .qf-handle title'), function (n) { n.parentNode.removeChild(n); });
+      Array.prototype.forEach.call(clone.querySelectorAll('.qf-grip, .qf-grip-hit, .qf-end-hit, .qf-handle title, .qf-fields title'), function (n) { n.parentNode.removeChild(n); });
       Array.prototype.forEach.call(clone.querySelectorAll('.qf-moved'), function (n) { n.classList.remove('qf-moved'); });
       return { xml: '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(clone), w: w, h: h };
     }

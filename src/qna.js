@@ -25,16 +25,17 @@
 })(typeof window !== 'undefined' ? window : this, function (root) {
   'use strict';
  
-  var QnA = { version: '2.4.0' };
+  var QnA = { version: '2.5.0' };
  
   /* ------------------------------------------------------------------ */
   /*  Defaults                                                           */
   /* ------------------------------------------------------------------ */
  
   QnA.defaults = {
-    fontFamily: 'Verdana, Geneva, sans-serif',
-    fontSize: 14,
-    lineHeight: 20,
+    // (since 2.5.0 these three match the editor's Settings defaults in config.js; up to 2.4.0 they were Verdana 14/20)
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif",
+    fontSize: 16,
+    lineHeight: 22,
     colWidth: 500,
     framePad: 15,
     radius: 15,
@@ -180,10 +181,14 @@
   var HEADER_RE = /^(Title|Author|Description|Before|After):/gim;
   var GOTO_END_RE = /GOTO:\s?([a-zA-Z0-9._\-]*)\s*$/i;
  
-  function ErrorList() { this.items = []; this.line = null; }
+  function ErrorList() { this.items = []; this.warnings = []; this.line = null; }
   // `line` is the 1-based line of the tag being examined; callers set it before add()
   ErrorList.prototype.add = function (message, near) {
     this.items.push({ message: message, near: near, line: this.line });
+  };
+  // a warning does not make the markup ill-formed; the editor shows it above the outputs
+  ErrorList.prototype.warn = function (message, near) {
+    this.warnings.push({ message: message, near: near, line: this.line });
   };
  
   /**
@@ -302,15 +307,35 @@
    * @param {string} markup
    * @returns {object} result
    *   ok        {boolean}   true if well formed
-   *   errors    {Array}     [{message (html), near (text)}]
+   *   errors    {Array}     [{message (html), near (text), line}]
+   *   warnings  {Array}     same shape; things worth telling the author that do not stop the QnA from running
    *   code      {string}    markup with computed ids (Q(1.1):) filled in
    *   header    {object}    {title, author, description, before, after}
    *   questions {Array}     [{label, name, text, doc, goto, display, jumps}]
-   *   answers   {Array}     [{label, parent, text, href, target, value, isVar, script (X tags only), loads, returns, jumps}]
+   *   answers   {Array}     [{label, parent, text, href, target, value, isVar, script, inputType (X tags only), loads, returns, jumps}]
    *                         (loads / returns / jumps: what the answer's script does, see scriptInfo)
    *   names     {Array}     [[label, name], ...]  (QVnames in the original)
    *   settings  {object}    values from a trailing hidden Settings: tag, or null (the tag is not in code/markup)
    */
+  // The form controls in a piece of HTML: [{tag, name, type, html}]. Buttons and file pickers are left out (a
+  // button holds no answer; a file cannot be kept as text). Attribute parsing is deliberately simple: this is
+  // for names, not for validating HTML.
+  var FIELD_RE = /<(input|select|textarea)\b([^>]*)>/gi;
+  function fieldsIn(html) {
+    var out = [], m;
+    FIELD_RE.lastIndex = 0;
+    html = String(html).replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '');
+    while ((m = FIELD_RE.exec(html)) !== null) {
+      var attrs = m[2], tag = m[1].toLowerCase();
+      var attr = function (n) { var r = new RegExp('(?:^|\\s)' + n + '\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\'|([^\\s"\'>]+))', 'i').exec(attrs); return r ? (r[1] !== undefined ? r[1] : r[2] !== undefined ? r[2] : r[3]) : ''; };
+      var type = tag === 'input' ? (attr('type') || 'text').toLowerCase() : tag;
+      if (/^(button|submit|reset|image|file)$/.test(type)) continue;
+      out.push({ tag: tag, name: trim(attr('name')), type: type, html: m[0] });
+    }
+    return out;
+  }
+  QnA.fieldsIn = fieldsIn;
+
   QnA.parse = function (markup) {
     var split = QnA.splitSettings(markup);
     var content = split.markup;
@@ -485,7 +510,9 @@
           display: trim(gotoM ? body.replace(GOTO_END_RE, '') : body),
           goto: gotoM ? gotoM[1] : null,   // name (resolved to a label below)
           doc: null,
-          jumps: scriptInfo(inlineScripts(body)).jumps   // literal goto() targets in the question's own scripts (resolved below)
+          jumps: scriptInfo(inlineScripts(body)).jumps,   // literal goto() targets in the question's own scripts (resolved below)
+          fields: [],                                      // names of the form fields written in the question's HTML (see fieldsIn, below)
+          line: lineOf[i]
         };
         if (pendingDoc !== null) { q.doc = pendingDoc; pendingDoc = null; }
         questions.push(q);
@@ -524,11 +551,16 @@
           errors.add('Misaligned X.', nearText(value, body));
         }
         body = body.replace(/\s+$/, '');       // trailing whitespace is dropped from the code
+        // The field is named by the parent Q's id, so nothing needs to follow the colon. One word is understood
+        // there: `number` (X:number) makes the field a number input. Anything else is ignored, with a warning.
+        var inputType = 'text';
         if (/^[ \t]+\[\s*javascript:/i.test(body)) {
           errors.add('To run JavaScript from an X tag, put the bracket right against the colon, with no space between them: <code>X:[javascript:…]</code> or <code>X[javascript:…]:</code>.', nearText(value, body));
+        } else if (/^\s*number\s*$/i.test(body)) {
+          inputType = 'number'; body = 'number';
         } else if (!/^\s*$/.test(body)) {
           body = body.replace(/\s/g, '');
-          errors.add('Starting in September 2016, the space after an X (variable) tag must be left blank. Variable names are now pulled from the parent question\'s target_id. That is, the number or letters in parentheses between the "Q" and ":". For example: <p><code>Q(<em style="color:red">target_id</em>):</code></p><p>See <a href="https://www.qnamarkup.org/syntax/#x" target="_blank">Documentation</a>.', nearText(value, body));
+          errors.warn('The text after this <code>X:</code> tag has no effect and will be ignored. The field is named by its question\'s id, the part in parentheses in <code>Q(<em>name</em>):</code>, so nothing needs to follow the colon. The one word that means something there is <code>number</code>: <code>X:number</code> makes the field accept only a number. See <a href="https://www.qnamarkup.org/syntax/#x" target="_blank">Documentation</a>.', nearText(value, body));
         }
         xCount[xparent] = (xCount[xparent] || 0) + 1;
         if (xCount[xparent] > 1) {
@@ -553,7 +585,7 @@
         }
         var xi = scriptInfo(xscript);
         loadsAt[nested] = xi.loads !== null;
-        answers.push({ label: xlabel, parent: xparent, text: '<variable>', href: "javascript:void('');", value: '', target: '', isVar: true, script: xscript, loads: xi.loads, returns: xi.returns, jumps: xi.jumps });
+        answers.push({ label: xlabel, parent: xparent, text: '<variable>', href: "javascript:void('');", value: '', target: '', isVar: true, script: xscript, inputType: inputType, loads: xi.loads, returns: xi.returns, jumps: xi.jumps });
         lastnest = nested; lastvalue = value; lastWasQ = false;
  
       } else if (kind === 'DOC') {
@@ -602,6 +634,26 @@
     names.forEach(function (p) { if (!byName.hasOwnProperty(p[1])) byName[p[1]] = p[0]; });
     var labelSet = {};
     names.forEach(function (p) { labelSet[p[0]] = true; });
+
+    /* --- Form fields written in questions ------------------------------ */
+    // A question's HTML may hold ordinary form controls (<input>, <select>, <textarea>). At run time a control
+    // with a name becomes a variable of that name (see Instance.prototype.captureFields), so the parser lists
+    // the names and warns about a control that has none (nothing it holds is kept) or one whose name is also a
+    // question's id or name (the two would write the same variable).
+    questions.forEach(function (q) {
+      errors.line = q.line;
+      fieldsIn(q.text).forEach(function (f) {
+        if (!f.name) {
+          errors.warn('A form field in this question has no <code>name</code> attribute, so nothing entered in it is saved: give it one (<code>&lt;' + f.tag + ' name="…"</code>) to make it a variable.', nearText('', f.html));
+          return;
+        }
+        if (q.fields.indexOf(f.name) < 0) q.fields.push(f.name);
+        if (byName.hasOwnProperty(f.name) || labelSet[f.name]) {
+          errors.warn('The form field <code>' + escapeHtml(f.name) + '</code> has the same name as a question, so the two would share one variable and overwrite each other. Give the field another name.', nearText('', f.html));
+        }
+      });
+    });
+    errors.line = null;
     // a goto() / replace target written as a literal: a name, or an id; unknown ones are dropped
     var toLabel = function (t) { return byName.hasOwnProperty(t) ? byName[t] : (labelSet[t] ? t : null); };
     var toLabels = function (list) { return list.map(toLabel).filter(function (l) { return l !== null; }); };
@@ -615,6 +667,7 @@
     return {
       ok: errors.items.length === 0,
       errors: errors.items,
+      warnings: errors.warnings,
       code: code,
       header: header,
       questions: questions,
@@ -909,6 +962,9 @@
     this.varsEl = c.querySelector('.qna-vars');
     this.footer = c.querySelector('.qna-footer');
     this.spacer = c.querySelector('.qna-spacer');
+    var self = this, onField = function (ev) { self.onFieldChange(ev); };
+    this.qanda.addEventListener('input', onField);
+    this.qanda.addEventListener('change', onField);
     if (o.footer) this.buildFooter();
     else this.footer.style.display = 'none';
     // Before: and After: scripts run now: the QnA's frame is in the page, the first question is not yet.
@@ -974,7 +1030,7 @@
       var q = {
         label: p + q0.label,
         name: (p && (isNumericLabel(q0.name) || !share)) ? p + q0.name : q0.name,
-        text: q0.text, display: q0.display, doc: q0.doc, jumps: q0.jumps,
+        text: q0.text, display: q0.display, doc: q0.doc, jumps: q0.jumps, fields: q0.fields || [],
         goto: q0.goto === null ? null : p + q0.goto, gotoName: q0.gotoName,
         unit: unit.id,
         redirect: null   // label of a host question that takes this one's place (loadQnA's find / replace)
@@ -1061,6 +1117,9 @@
     this.vars = {};
     this.varUnit = {};      // variable name -> the unit that set it
     this.autoDone = {};     // question label -> filled in from a prior answer (so it is asked if reached again)
+    this.pending = {};      // values of the form fields in the current (unanswered) exchange, kept with saved progress
+    this.fieldSeen = {};    // every form-field variable name met so far (for json() and submit2())
+    // (this.pendingFill, field values to put back once the current exchange is drawn, is set by GO BACK ONE / a restore right before replay)
     this.loading = false;
     this.current = null;
     this.qnum = 0;
@@ -1074,19 +1133,21 @@
     for (var i = 0; i < list.length; i++) if (list[i].name === name) { list[i].parentNode.removeChild(list[i]); }
     var ta = root.document.createElement('textarea');
     ta.id = name; ta.name = name; ta.setAttribute('data-var', name);
-    ta.textContent = value;
+    ta.textContent = varText(value);
     this.varsEl.appendChild(ta);
   };
+  // a variable's value as text: form fields with several values (a group of checkboxes, a multiple select) hold arrays
+  function varText(v) { return Array.isArray(v) ? v.join(', ') : String(v); }
  
   /** <x>name</x> -> the variable's value. Text from a loaded QnA (`unit`) sees that QnA's own variables first. */
   Instance.prototype.swapvar = function (input, unit) {
     var out = String(input), name, p = unit ? unit + '.' : '';
     if (p) for (name in this.vars) {
-      if (hasOwn(this.vars, name) && name.indexOf(p) === 0) out = out.replace(new RegExp('<x>' + escapeRe(name.slice(p.length)) + '<\\/x>', 'gi'), this.vars[name]);
+      if (hasOwn(this.vars, name) && name.indexOf(p) === 0) out = out.replace(new RegExp('<x>' + escapeRe(name.slice(p.length)) + '<\\/x>', 'gi'), varText(this.vars[name]));
     }
     for (name in this.vars) {
       if (!hasOwn(this.vars, name)) continue;
-      out = out.replace(new RegExp('<x>' + escapeRe(name) + '<\\/x>', 'gi'), this.vars[name]);
+      out = out.replace(new RegExp('<x>' + escapeRe(name) + '<\\/x>', 'gi'), varText(this.vars[name]));
     }
     return out;
   };
@@ -1113,7 +1174,7 @@
     for (var i = 0; i < parts.length; i++) {
       var p = this.swapvar(parts[i], unit);
       if (isBlank(p)) continue;
-      html += "<div class='frame'><div class='full'><div class='question_text'>" + p + "</div></div><div class='question_arrow'></div></div>";
+      html += "<div class='frame' data-exchange='" + this.qnum + "'><div class='full'><div class='question_text'>" + p + "</div></div><div class='question_arrow'></div></div>";
       this.convo.push('BOT: ' + dropCode(p) + '\n');
     }
     this.appendHtml(html);
@@ -1124,6 +1185,80 @@
     this.appendHtml("<div class='frame'><div class='full'><div class='ans_text'>" + html + "</div></div><div class='ans_arrow'></div></div>");
   };
  
+  /* --- form fields written in questions ---------------------------------
+   * A question's HTML may hold ordinary controls (<input>, <select>, <textarea>). One with a name is a variable
+   * of that name: its value is read when the bubble is drawn and whenever it changes (so it is in saved progress
+   * before the question is answered), then fixed on the answer's history entry and the controls disabled.
+   * GO BACK ONE re-enables them with their values; a restore puts the unanswered values back too. A control
+   * that fails its own validation (required, min, pattern, …) stops the answer with the browser's message.
+   */
+  function isField(el) {
+    if (!el || !el.name) return false;
+    if (el.tagName === 'INPUT') return !/^(button|submit|reset|image|file)$/i.test(el.type);
+    return el.tagName === 'SELECT' || el.tagName === 'TEXTAREA';
+  }
+  /** The named controls in the bubbles of exchange `n` (the nth question shown; the current one is this.qnum - 1). */
+  Instance.prototype.exchangeControls = function (n) {
+    var sel = ['input', 'select', 'textarea'].map(function (t) { return ".frame[data-exchange='" + n + "'] " + t + '[name]'; }).join(',');
+    return Array.prototype.filter.call(this.qanda.querySelectorAll(sel), isField);
+  };
+  // {name: value}: text for one control, an array for a group of checkboxes or a multiple select; < > escaped as for X answers
+  function fieldValues(controls) {
+    var groups = {}, order = [], out = {};
+    var clean = function (v) { return String(v).replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+    controls.forEach(function (c) { if (!groups[c.name]) { groups[c.name] = []; order.push(c.name); } groups[c.name].push(c); });
+    order.forEach(function (name) {
+      var g = groups[name], c = g[0];
+      if (c.tagName === 'INPUT' && c.type === 'checkbox') {
+        var on = g.filter(function (x) { return x.checked; }).map(function (x) { return clean(x.value); });
+        out[name] = g.length > 1 ? on : (on.length ? on[0] : '');
+      } else if (c.tagName === 'INPUT' && c.type === 'radio') {
+        var r = g.filter(function (x) { return x.checked; });
+        out[name] = r.length ? clean(r[0].value) : '';
+      } else if (c.tagName === 'SELECT' && c.multiple) {
+        out[name] = Array.prototype.filter.call(c.options, function (o) { return o.selected; }).map(function (o) { return clean(o.value); });
+      } else out[name] = clean(g[g.length - 1].value);
+    });
+    return out;
+  }
+  // the reverse: put saved values back into the controls
+  function fillFields(controls, values) {
+    var raw = function (v) { return String(v).replace(/&lt;/g, '<').replace(/&gt;/g, '>'); };
+    controls.forEach(function (c) {
+      if (!hasOwn(values, c.name)) return;
+      var v = values[c.name], list = Array.isArray(v) ? v.map(raw) : [raw(v)];
+      if (c.tagName === 'INPUT' && (c.type === 'checkbox' || c.type === 'radio')) c.checked = list.indexOf(c.value) >= 0;
+      else if (c.tagName === 'SELECT' && c.multiple) Array.prototype.forEach.call(c.options, function (o) { o.selected = list.indexOf(o.value) >= 0; });
+      else c.value = list.length ? list[list.length - 1] : '';
+    });
+  }
+  function fieldsNote(values) {
+    return Object.keys(values).map(function (k) { return k + '=' + varText(values[k]); }).join('; ');
+  }
+  /** Read exchange `n`'s fields into this.pending and the variables. */
+  Instance.prototype.captureFields = function (n) {
+    var controls = this.exchangeControls(n);
+    if (!controls.length) { this.pending = {}; return null; }
+    var vals = fieldValues(controls), q = this.current !== null ? this.byLabel[this.current] : null, self = this;
+    Object.keys(vals).forEach(function (name) { self.setVar(name, vals[name], q ? q.unit : ''); self.fieldSeen[name] = true; });
+    this.pending = vals;
+    return vals;
+  };
+  /** Disable every control in exchange `n` (named or not): an answered question is not edited in place; GO BACK ONE reopens it. */
+  Instance.prototype.freezeFields = function (n) {
+    var sel = ".frame[data-exchange='" + n + "'] input,.frame[data-exchange='" + n + "'] select,.frame[data-exchange='" + n + "'] textarea";
+    Array.prototype.forEach.call(this.qanda.querySelectorAll(sel), function (c) { c.disabled = true; c.setAttribute('data-qna-frozen', '1'); });
+  };
+  /** A change in the current exchange's fields: keep the variables and saved progress up to date. */
+  Instance.prototype.onFieldChange = function (ev) {
+    var t = ev.target;
+    if (!isField(t) || t.disabled) return;
+    var f = t.closest ? t.closest('.frame[data-exchange]') : null;
+    if (!f || f.getAttribute('data-exchange') !== String(this.qnum - 1)) return;
+    this.captureFields(this.qnum - 1);
+    this.saveProgress();
+  };
+
   /**
    * Display question `label`, following any GOTO chain. Returns the label of
    * the question that ends up current (or null if none exists).
@@ -1203,7 +1338,8 @@
         xId = 'Xi-' + a.label;
         // an X tag's [javascript:…] goes on both the field (Enter) and the button
         var xs = a.script ? ' data-script="' + escapeHtml(a.script) + '"' : '';
-        html += '<div class="xdiv"><input type="text" id="' + xId + '" name="' + xId + '" class="xinput" data-answer="' + a.label + '"' + xs + ' autocomplete="off"/>' +
+        var xt = a.inputType === 'number' ? 'number" step="any" inputmode="decimal' : 'text';
+        html += '<div class="xdiv"><input type="' + xt + '" id="' + xId + '" name="' + xId + '" class="xinput" data-answer="' + a.label + '"' + xs + ' autocomplete="off"/>' +
           '<a href="javascript:void(\'\');" class="xbutton" data-answer="' + a.label + '"' + xs + '><span class="qpad">' + escapeHtml(self.options.labelSave) + '</span></a></div>';
       } else {
         var txt = a.text.replace(/(<br\s*\/?>){2}/gi, '<br> <br>');
@@ -1284,6 +1420,7 @@
     if (this.pendingLoad) { var pl = this.pendingLoad; this.pendingLoad = null; setTimeout(pl, 0); }
     this.current = cur;
     this.renderChoices();
+    this.captureFields(this.qnum);   // the fields' starting values (a checked box, a value="…") count until changed
     this.qnum++;
     this.lastAnchor = anchor;
     if (!this.pendingWrap && !this.replaying) this.revealScroll(animate);
@@ -1357,8 +1494,18 @@
       shown = escapeHtml(this.options.labelEarlier) + ' ' + shown;
       this.autoDone[a.parent] = true;
     } else this.setVar(name, value, a.unit);
+    // the form fields of the exchange being answered: their values go with the entry, and the controls are frozen
+    // (an auto answer is applied while its exchange is still being drawn, so that exchange is this.qnum)
+    var ex = entry.auto ? this.qnum : this.qnum - 1, self = this, note = '';
+    if (entry.fields) {
+      fillFields(this.exchangeControls(ex), entry.fields);
+      Object.keys(entry.fields).forEach(function (k) { self.setVar(k, entry.fields[k], a.unit); self.fieldSeen[k] = true; });
+      note = ' (' + fieldsNote(entry.fields) + ')';
+    }
+    this.freezeFields(ex);
+    this.pending = {};
     this.answerBubble(shown);
-    this.convo.push('USER: ' + dropCode(shown) + '\n');
+    this.convo.push('USER: ' + dropCode(shown) + note + '\n');
   };
  
   /* --- typing indicator & media preloading --- */
@@ -1469,7 +1616,8 @@
   Instance.prototype.saveProgress = function () {
     if (!this.options.saveProgress) return;
     try {
-      if (this.history.length) root.localStorage.setItem(this.progressKey(), JSON.stringify({ history: this.history, pre: this.pre.jumps, ts: Date.now() }));
+      var pend = Object.keys(this.pending || {}).length ? this.pending : null;   // fields typed into a question not yet answered
+      if (this.history.length || pend) root.localStorage.setItem(this.progressKey(), JSON.stringify({ history: this.history, pre: this.pre.jumps, pending: pend || undefined, ts: Date.now() }));
       else root.localStorage.removeItem(this.progressKey());
     } catch (e) {}
   };
@@ -1478,7 +1626,7 @@
     try {
       var raw = root.localStorage.getItem(this.progressKey());
       var data = raw ? JSON.parse(raw) : null;
-      if (data && data.history && data.history.length) return data;
+      if (data && Array.isArray(data.history) && (data.history.length || (data.pending && Object.keys(data.pending).length))) return data;
     } catch (e) {}
     return null;
   };
@@ -1505,10 +1653,11 @@
       var valid = saved.history.every(function (e) { return e && typeof e.label === 'string' && (unitOf(e.label) || self.answerByLabel[e.label]) && isJumps(e.jumps); }) && isJumps(saved.pre);
       if (valid) {
         this.history = saved.history; this.pre = { jumps: saved.pre || [] };
+        this.pendingFill = saved.pending && typeof saved.pending === 'object' ? saved.pending : null;
         try { this.replay(this.options.animate); return; }
         catch (e) {
           if (root.console) console.error('QnA: saved progress could not be restored:', e);
-          this.history = []; this.pre = { jumps: [] }; this.replaying = false; this.reset();
+          this.history = []; this.pre = { jumps: [] }; this.replaying = false; this.pendingFill = null; this.reset();
         }
       }
       this.clearProgress();
@@ -1532,6 +1681,19 @@
         return false;
       }
       entry.value = v.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    // the exchange's form fields: the browser's own checks first (required, min/max, pattern, type), then the values
+    var controls = this.exchangeControls(this.qnum - 1);
+    for (var ci = 0; ci < controls.length; ci++) {
+      var c = controls[ci];
+      if (!c.disabled && c.checkValidity && !c.checkValidity()) {
+        if (c.reportValidity) c.reportValidity(); else alert(c.validationMessage || this.options.labelEmpty);
+        return false;
+      }
+    }
+    if (controls.length) {
+      var fields = this.captureFields(this.qnum - 1);
+      if (fields && Object.keys(fields).length) entry.fields = fields;
     }
     this.history.push(entry);
     this.applyAnswer(entry);
@@ -1743,6 +1905,11 @@
       if (i === hist.length - 1) this.prefill = prefill;
       this.presentQuestion(stepLabels(hist[i]), false);
     }
+    if (this.pendingFill) {   // what was in the current exchange's fields (GO BACK ONE: the popped answer's; a restore: the unanswered ones)
+      fillFields(this.exchangeControls(this.qnum - 1), this.pendingFill);
+      this.pendingFill = null;
+      this.captureFields(this.qnum - 1);
+    }
     this.replaying = false;
     if (!waitForMedia) { if (noScroll) this.focusInput(); else this.revealScroll(false); return; }
     this.pendingWrap = null;
@@ -1781,6 +1948,7 @@
     var popped = this.history.pop();
     var a = this.answerByLabel[popped.label];
     this.prefill = a && a.isVar ? popped.value.replace(/&lt;/g, '<').replace(/&gt;/g, '>') : null;
+    this.pendingFill = popped.fields || null;   // the exchange's form fields come back editable, as they were
     // Remove the last exchange in place with no scrolling of our own. The
     // spacer drops to 15px so the remaining conversation fills the view
     // rather than leaving an empty screen where the removed exchange was.
@@ -1802,10 +1970,14 @@
  
   Instance.prototype.json = function () {
     var obj = {}, self = this;
+    var put = function (name) { obj[name] = self.vars.hasOwnProperty(name) ? self.vars[name] : ''; };
     this.allQuestions.forEach(function (q) {
       if (q.gotoName !== null) return;
-      obj[q.name] = self.vars.hasOwnProperty(q.name) ? self.vars[q.name] : '';
+      put(q.name);
     });
+    // form fields written in questions: those the parser saw, and any met at run time (a script may add controls)
+    this.allQuestions.forEach(function (q) { (q.fields || []).forEach(function (f) { if (!hasOwn(obj, f)) put(f); }); });
+    Object.keys(this.fieldSeen).forEach(function (f) { if (!hasOwn(obj, f)) put(f); });
     return obj;
   };
   Instance.prototype.json_str = function () { return JSON.stringify(this.json()); };
@@ -1827,7 +1999,13 @@
     }
     if (transcriptAs) add(transcriptAs, this.transcript());
     if (jsonAs) add(jsonAs, this.json_str());
-    form.submit();
+    // Every variable, form fields included, travels in the hidden .qna-vars textareas (arrays joined with ", ";
+    // `jsonAs` carries them as arrays). The fields of an unanswered question are read once more, and their live
+    // controls are held out of the post so each name is sent once.
+    if (this.qnum) this.captureFields(this.qnum - 1);
+    var live = this.exchangeControls(this.qnum - 1).filter(function (c) { return !c.disabled; });
+    live.forEach(function (c) { c.disabled = true; });
+    try { form.submit(); } finally { live.forEach(function (c) { c.disabled = false; }); }
   };
  
   /* --- global helper functions (API compatible with the original) --- */

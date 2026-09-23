@@ -151,7 +151,7 @@ If you're pressed for time, start with the <a href="#body">Body</a> section. Tha
 <h3>Sections</h3>
 <ul>
 	<li><a href="#header">Header</a>  (~1.5 min. to read)</li>
-	<li><a href="#body">Body</a> (~4.5 min. to read) <b>← This is all you really need</b></li>
+	<li><a href="#body">Body</a> (~5.5 min. to read) <b>← This is all you really need</b></li>
 	<li><a href="#scripts">Predefined Javascript Functions</a> (~8 min. to read)</li>
 	<li><a href="#yourscripts">Adding Your Own Scripts</a> (~1 min. to read)</li>
 	<li><a href="#remote">Loading a Remote QnA</a> (~1 min. to read)</li>
@@ -298,7 +298,9 @@ The <em>Body</em> is where you define questions and answers along with the text 
 	<h2><code>X:</code><a name="x" href="#x" class="anchor"></a></h2>
 	
 	<p>
-	Use the <code>X</code> tag in the place of an <code>A</code> tag when you would like users to type their own answer. Instead of a button, it will present as a input/text field. The contents of such a field is saved as the question's variable value, and its names is based on the <code>Q</code> tag's <code><font color=red><em>variable_name</em></font></code>.</p>
+	Use the <code>X</code> tag in the place of an <code>A</code> tag when you would like users to type their own answer. Instead of a button, it will present as a input/text field. The contents of such a field is saved as the question's variable value, and its names is based on the <code>Q</code> tag's <code><font color=red><em>variable_name</em></font></code>. Because the name comes from the <code>Q</code> tag, nothing needs to follow the colon; text placed there is ignored, and the editor shows a warning so you know it is having no effect.</p>
+	<p>
+	To ask for a number, write <code>X:<font color=red>number</font></code>. The field then only accepts a number (with a decimal point if the user needs one) and, on phones, brings up the numeric keypad; what is saved in the variable is the number as typed. This is the one word that means something after the colon.</p>
 	<p>
 		As with <code>A</code> tags, if you enclose a variable name like so <code>&lt;x&gt;<font color=red><em>variable_name</em></font>&lt;/x&gt;</code> it will be replaced by that variable's value.</p>
 		
@@ -326,6 +328,21 @@ The <em>Body</em> is where you define questions and answers along with the text 
 <div class="code"><pre><span class="ln">Q<font color=purple>(<font color=red>name</font>)</font>: <font color=black>What is your name?</font></span><span class="ln">X<font color=purple>[</font><font color=red>javascript:</font></span><span class="ln"><font color=red>	// "name" now holds what was typed</font></span><span class="ln"><font color=red>	var n = document.getElementById("name").value;</font></span><span class="ln"><font color=red>	document.title = "A QnA for " + n;</font></span><span class="ln"><font color=purple>]:</font></span><span class="ln">	Q: <font color=black>Nice to meet you </font>&lt;x&gt;<font color=red>name</font>&lt;/x&gt;<font color=black>.</font></span></pre></div>
 	<p>The code is only run when the user answers. It is not run again when the conversation is redrawn, for example after <em>GO BACK ONE</em> or when saved progress is restored. It has the same reach as a script in an <code>A</code> tag: the predefined functions (<a href="#scripts">described below</a>) and anything defined by a script in your <code>Before:</code> tag can be called from it. In particular, <code>goto()</code> (<a href="#goto()">described below</a>) lets the code choose the next question based on what was typed.</p>
 </details>
+
+	<h2>Form fields in questions<a name="fields" href="#fields" class="anchor"></a></h2>
+	<p>
+	An <code>X</code> tag gives you one text (or number) field per question. For anything else a web form can ask for &mdash; a date, a checkbox, a set of radio buttons, a drop-down, a longer note, a colour, a range &mdash; write the ordinary HTML control in the question's text. A control with a <code>name</code> becomes a variable of that name, just like a question's: its value is stored, it can be placed in later questions and documents with <code>&lt;x&gt;<font color=red><em>name</em></font>&lt;/x&gt;</code>, read with <code>getvar()</code>, and it is included in <code>json_str()</code> and in what <code>submit2()</code> sends. The question still needs an <code>A</code> (or <code>X</code>) tag to move on; think of that button as the form's submit button.</p>
+<div class="code"><pre><span class="ln">Q<font color=purple>(<font color=red>details</font>)</font>: <font color=black>A few details, please.&lt;br&gt;</font></span><span class="ln"><font color=black>Date of birth: &lt;input type="date" name="dob" required&gt;&lt;br&gt;</font></span><span class="ln"><font color=black>&lt;input type="checkbox" name="pets" value="cat"&gt; I have a cat</font></span><span class="ln"><font color=black>&lt;input type="checkbox" name="pets" value="dog"&gt; I have a dog&lt;br&gt;</font></span><span class="ln"><font color=black>State: &lt;select name="state"&gt;&lt;option&gt;MA&lt;/option&gt;&lt;option&gt;NY&lt;/option&gt;&lt;/select&gt;</font></span><span class="ln">A: <font color=black>Continue</font></span><span class="ln">	Q: <font color=black>Born </font>&lt;x&gt;<font color=red>dob</font>&lt;/x&gt;<font color=black>, in </font>&lt;x&gt;<font color=red>state</font>&lt;/x&gt;<font color=black>, with: </font>&lt;x&gt;<font color=red>pets</font>&lt;/x&gt;</span></pre></div>
+	<p>How it behaves:</p>
+	<ul>
+	<li><b>Saved as you go.</b> A field's value is recorded the moment it changes, so with <i>Save visitor progress</i> on, a visitor who closes the browser half-way through a long form finds it filled in on return, even though they had not yet pressed the button.</li>
+	<li><b>Checked by the browser.</b> <code>required</code>, <code>min</code>/<code>max</code>, <code>pattern</code>, <code>type="email"</code> and the rest work as they do in any form: a field that fails is pointed out with the browser's own message, and the answer is not taken until it is fixed.</li>
+	<li><b>Frozen once answered.</b> When the visitor presses the button, the values are fixed with that answer and the fields are greyed out. To change them the visitor uses <i>GO BACK ONE</i>, which reopens the fields with their values, exactly as it does for an <code>X</code> answer.</li>
+	<li><b>Several values.</b> A group of checkboxes sharing a name, or a <code>&lt;select multiple&gt;</code>, holds a list. In <code>json_str()</code> it is a JSON array (<code>"pets":["cat","dog"]</code>); in <code>&lt;x&gt;pets&lt;/x&gt;</code>, in documents and in the transcript the values are joined with commas. A single checkbox gives its <code>value</code> when ticked and nothing when not.</li>
+	<li><b>Starting values count.</b> A <code>value="…"</code>, a <code>checked</code> box or a pre-selected option is recorded as soon as the question appears, so a <code>&lt;input type="hidden" name="…"&gt;</code> is a handy way for a script to hand a computed value to the interview.</li>
+	<li><b>In the transcript</b> the fields appear after the answer that fixed them, as <code>name=value</code> pairs.</li>
+	</ul>
+	<p>Two things the editor warns about: a control with no <code>name</code> (it is shown, but nothing entered in it is kept), and a name that is also a question's name or id (the two would write the same variable). Field names are otherwise shared across the whole interview, including QnAs brought in with <code>loadQnA()</code>, so use a fresh name for each thing you ask. File pickers and buttons are not recorded.</p>
 
 	<h2><code>DOC: <font color=black><em>text/html</em></font></code><a name="doc" href="#doc" class="anchor"></a></h2>
 	
@@ -477,7 +494,7 @@ If you have a text file containing QnA Markup at a URL, you can pass that URL to
 
 <h2>Embedding a QnA in Your Own Page<a name="embedding" href="#embedding" class="anchor"></a></h2>
 <p>The interpreter is a single JavaScript file served from <code>www.qnamarkup.org</code> (or host it yourself). Put your markup in a <code>&lt;script type="text/qna"&gt;</code> tag and it renders in place:</p>
-<pre><span class="ln">&lt;script src="https://www.qnamarkup.org/dist/2.4.0/qna.min.js"&gt;&lt;/script&gt;</span><span class="ln">&lt;script type="text/qna"&gt;</span><span class="ln">Q: Would you like to embed a QnA?</span><span class="ln">A: Yes.</span><span class="ln">	Q: Then you already have.</span><span class="ln">&lt;/script&gt;</span></pre>
+<pre><span class="ln">&lt;script src="https://www.qnamarkup.org/dist/2.5.0/qna.min.js"&gt;&lt;/script&gt;</span><span class="ln">&lt;script type="text/qna"&gt;</span><span class="ln">Q: Would you like to embed a QnA?</span><span class="ln">A: Yes.</span><span class="ln">	Q: Then you already have.</span><span class="ln">&lt;/script&gt;</span></pre>
 <p>The markup goes in a <code>script</code> tag with type <code>text/qna</code> because the browser leaves the contents of such a tag exactly as written (tabs, HTML and all). 
 	</p>
 <details class="advanced"><summary>Advanced Usage</summary>

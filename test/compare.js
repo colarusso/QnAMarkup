@@ -26,7 +26,10 @@ const KNOWN = {
   'LASM-2016__rights_school.txt': 'This gallery QnA is indented with spaces; it now parses as intended (PHP treated its nested tags as text).',
   'err_gotoina.txt': 'GOTO targets are also validated against the ids Qs will receive (GOTO:1 with an unlabeled first Q is fine); the GOTO-in-A error is still raised.',
   'err_gotodup.txt': 'Duplicate-name error reported once per Q (PHP repeated it).',
-  'santa.txt': 'A(): yields an empty value as documented (PHP fell back to the button text).',
+  'santa.txt': 'A(): yields an empty value as documented (PHP fell back to the button text); text after X: is a warning since 2.5.0, not an error.',
+  'law_journal.txt': 'Text after X: (the pre-2016 X:name form) is a warning since 2.5.0, not an error, so the QnA is well formed.',
+  'err_xtext.txt': 'Text after X: is a warning since 2.5.0, not an error (result.warnings); the code is normalised as before.',
+  'xnumber.txt': 'X:number (2.5.0) makes the field a number input; PHP reported it as text after X.',
   'santa_letter.txt': 'A(): yields an empty value as documented (PHP fell back to the button text).',
   'LASM-2016__musical_producer.txt': 'GOTO targets containing uppercase letters are validated; PHP skipped them (GOTO:Not has no target and broke at runtime).',
 };

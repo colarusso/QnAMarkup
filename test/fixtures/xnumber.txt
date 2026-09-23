@@ -1,0 +1,3 @@
+Q(age): How old are you?
+X:number
+	Q: Thanks, <x>age</x>.

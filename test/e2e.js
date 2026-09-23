@@ -281,9 +281,78 @@ server.listen(0, async () => {
     check('editor: tab is called Settings', await page.$eval('.tab[data-tab=styleblock]', e => e.textContent) === 'Settings');
     await page.click('.tab[data-tab=styleblock]'); await page.selectOption('#saveProgress', 'true'); await page.click('#update'); await page.waitForTimeout(500);
     check('editor: save progress in embed code', /data-save-progress="true"/.test(await page.inputValue('#embed_text')));
+    const spWarn = await page.$eval('#warn', e => e.className + '|' + e.textContent);
+    check('editor: save progress shows a warning above the outputs', /^show\|/.test(spWarn) && /Save visitor progress is on/.test(spWarn) && /after the browser is closed/.test(spWarn) && /START OVER/.test(spWarn), spWarn);
     await page.selectOption('#output', 'link'); await page.check('input[name=link_mode][value=plain]'); await page.waitForTimeout(100);
     check('editor: save progress in plain link', /save_progress=1/.test(await page.inputValue('#link_text')));
     await page.check('input[name=link_mode][value=z]'); await page.selectOption('#saveProgress', 'false'); await page.selectOption('#output', 'interact'); await page.click('#update'); await page.waitForTimeout(300);
+    check('editor: the save-progress warning goes when it is turned off', await page.$eval('#warn', e => e.className) === '');
+    // the warning is about the QnA a visitor will use, so it stays off the Flowchart output
+    await page.evaluate(() => { document.getElementById('saveProgress').value = 'true'; }); await page.click('#update'); await page.waitForTimeout(300);
+    const warnState = () => page.$eval('#warn', e => e.className + '|' + getComputedStyle(e).display + '|' + [...e.querySelectorAll('.warn-item')].map(i => getComputedStyle(i).display).join(','));
+    check('editor: save-progress warning with Interactive', await warnState() === 'show|block|block', await warnState());
+    await page.selectOption('#output', 'flow'); await page.waitForTimeout(300);
+    check('editor: … hidden with Flowchart', await warnState() === '|none|none', await warnState());
+    await page.selectOption('#output', 'link'); await page.waitForTimeout(100);
+    check('editor: … back with Link', await warnState() === 'show|block|block', await warnState());
+    await page.selectOption('#output', 'interact'); await page.evaluate(() => { document.getElementById('saveProgress').value = 'false'; }); await page.click('#update'); await page.waitForTimeout(300);
+
+    /* ---- X:number, and text after X: as a warning ---- */
+    await page.click('.tab[data-tab=codeblock]'); await page.fill('#markup', 'Q(age): How old?\nX: age\n\tQ: Thanks'); await page.click('#update'); await page.waitForTimeout(400);
+    const xw = await page.$eval('#warn', e => e.className + '|' + e.textContent);
+    check('x text: text after X: is a warning, not an error', await page.$eval('#status', e => e.className) === 'ok' && /^show\|Line 2:.*has no effect.*X:number/.test(xw) && /X:age/.test(await page.inputValue('#markup')), xw);
+    await page.selectOption('#output', 'flow'); await page.waitForTimeout(300);
+    check('x text: the parser warning shows with the Flowchart as well', await page.$eval('#warn', e => e.className === 'show' && getComputedStyle(e.querySelector('.warn-item.parser')).display !== 'none'));
+    await page.fill('#markup', 'Q(age): How old?\nX: Number\n\tQ: Thanks, <x>age</x>.'); await page.click('#update'); await page.waitForTimeout(400);
+    check('x number: the warning clears and the code says X:number', await page.$eval('#warn', e => e.className) === '' && /\nX:number\n/.test(await page.inputValue('#markup')));
+    check('x number: the flowchart edge is labelled Number: age', await page.$$eval('#flow_canvas .qf-label', t => t.some(x => x.textContent === 'Number: age' && /qf-var/.test(x.getAttribute('class')))));
+    await page.selectOption('#output', 'interact'); await page.waitForTimeout(300);
+    const xin = await (await pv()).$eval('input.xinput', i => [i.type, i.step, i.getAttribute('inputmode')]);
+    check('x number: the field is a number input', xin[0] === 'number' && xin[1] === 'any' && xin[2] === 'decimal', xin);
+    await (await pv()).fill('input.xinput', '41.5'); await (await pv()).click('.xbutton'); await page.waitForTimeout(500);
+    check('x number: the value is stored and shown', /Thanks, 41\.5\./.test(await (await pv()).$eval('#qna', e => e.innerText)));
+    check('x number: embed code carries X:number', /\nX:number\n/.test(await page.evaluate(() => document.getElementById('embed_text').value)));
+
+    /* ---- form fields in questions: warnings and the flowchart marker ---- */
+    await page.fill('#markup', 'Q(dob): Details<br><input type="date" name="dob"> <input type="text"> <select name="state"><option>MA</option></select>\nA: Go\n\tQ: ok'); await page.click('#update'); await page.waitForTimeout(400);
+    const fwarn = await page.$eval('#warn', e => e.className + '|' + [...e.querySelectorAll('.warn-item.parser')].map(i => i.textContent.replace(/\s+/g, ' ')).join(' || '));
+    check('fields: the editor warns about a nameless control and a name shared with a question', /^show\|/.test(fwarn) && /Line 1:.*same name as a question.*<input type="date" name="dob">/.test(fwarn) && /Line 1:.*no name attribute/.test(fwarn) && await page.$eval('#status', e => e.className) === 'ok', fwarn);
+    await page.selectOption('#output', 'flow'); await page.waitForTimeout(300);
+    check('fields: the flowchart marks the question and names the fields', await page.$eval('#flow_canvas .qf-node[data-id="1"] .qf-fields title', t => t.textContent) === 'Form fields: dob, state' && await page.$$eval('#flow_canvas .qf-fields', f => f.length) === 1);
+    await page.selectOption('#output', 'interact');
+    await page.fill('#markup', 'Q(who): Details<br><input type="date" name="dob"> <select name="state"><option>MA</option></select>\nA: Go\n\tQ: ok'); await page.click('#update'); await page.waitForTimeout(400);
+    check('fields: … and is quiet when every control is named and distinct', await page.$eval('#warn', e => e.className) === '');
+
+    /* ---- replacing the markup asks only when there is unsaved work ---- */
+    const asked = []; const countDialogs = d => asked.push(d.message().slice(0, 30)); page.on('dialog', countDialogs);
+    await page.click('.tab[data-tab=codeblock]'); await page.fill('#markup', 'Q: typed, not saved\nA: right\n\tQ: so ask'); await page.click('#update'); await page.waitForTimeout(300);
+    await page.selectOption('#template', 'lawreview'); await page.waitForTimeout(600);
+    check('unsaved: switching template asks when the markup was typed', asked.length === 1 && /Replace the current markup/.test(asked[0]) && /Law/.test(await page.inputValue('#markup')), asked);
+    asked.length = 0; await page.selectOption('#template', 'game'); await page.waitForTimeout(600);
+    check('unsaved: a template just loaded (ids filled in by Update) is replaced without asking', asked.length === 0 && !/Law/.test(await page.inputValue('#markup')), asked);
+    await page.click('#new'); await page.waitForTimeout(400);
+    check('unsaved: New replaces an untouched template without asking', asked.length === 0 && /^Title:/.test(await page.inputValue('#markup')), asked);
+    // a Settings change alone is unsaved work too (settings travel in the saved file)
+    await page.click('.tab[data-tab=styleblock]'); await page.fill('#fontSize', '19'); await page.dispatchEvent('#fontSize', 'change'); await page.waitForTimeout(700);
+    check('unsaved: (the change is seen)', await page.evaluate(() => window.unsavedMarkup()));
+    await page.selectOption('#template', 'game'); await page.waitForTimeout(600);
+    check('unsaved: a changed setting makes a template switch ask', asked.length === 1 && /Replace the current markup/.test(asked[0]), asked);
+    asked.length = 0;
+    check('unsaved: the loaded template (with its own Settings: tag applied) counts as saved', !(await page.evaluate(() => window.unsavedMarkup())) && await page.inputValue('#fontSize') !== '19', await page.inputValue('#fontSize'));
+    await page.click('.tab[data-tab=codeblock]');
+    await page.fill('#markup', (await page.inputValue('#markup')) + '\nQ: typed since\nA: yes\n\tQ: ok'); await page.waitForTimeout(700);
+    await page.selectOption('#template', 'primer'); await page.waitForTimeout(600);
+    check('unsaved: typed markup asks again', asked.length === 1 && /typed since/.test(await page.inputValue('#markup')) === false, asked);   // (the dialog is accepted, so the template loads)
+    asked.length = 0;
+    await page.fill('#markup', 'Title: Mine\nQ: Keep me?\nA: yes\n\tQ: kept'); await page.click('#update'); await page.waitForTimeout(300);
+    const [dlSave] = await Promise.all([page.waitForEvent('download'), page.click('#save_markup')]); await dlSave.path();
+    await page.reload(); await (await pv()).waitForSelector('.question_text');
+    await page.selectOption('#template', 'game'); await page.waitForTimeout(600);
+    check('unsaved: after Save to File (and a reload) a template loads without asking', asked.length === 0 && !/Keep me/.test(await page.inputValue('#markup')), asked);
+    page.off('dialog', countDialogs);
+    // (templates carry Settings: tags; put the Settings screen back so later checks see the defaults)
+    await page.click('.tab[data-tab=styleblock]'); await page.click('#restore'); await page.waitForTimeout(300); await page.click('.tab[data-tab=codeblock]');
+    await page.fill('#markup', 'Q: after\nA: ok\n\tQ: fine'); await page.click('#update'); await page.waitForTimeout(300);
 
     /* ---- http:// media warning ---- */
     await page.goto(base); await (await pv()).waitForSelector('.question_text');
@@ -291,6 +360,12 @@ server.listen(0, async () => {
     await page.click('#update'); await page.waitForTimeout(300);
     const warnText = await page.$eval('#warn', e => e.className + '|' + e.textContent);
     check('editor: warns about http:// media', /^show\|/.test(warnText) && /http:\/\/example\.com\/a\.gif/.test(warnText) && /blocked outright/.test(warnText) && !/ok\.png/.test(warnText), warnText);
+    await page.evaluate(() => { document.getElementById('saveProgress').value = 'true'; }); await page.click('#update'); await page.waitForTimeout(300);
+    check('editor: several warnings stack in the one box', await page.$eval('#warn', e => e.querySelectorAll('.warn-item').length === 2 && /Insecure/.test(e.textContent) && /Save visitor progress/.test(e.textContent)));
+    await page.selectOption('#output', 'flow'); await page.waitForTimeout(300);
+    check('editor: the http:// warning is hidden with the Flowchart too', await page.$eval('#warn', e => e.className === '' && [...e.querySelectorAll('.warn-item')].every(i => getComputedStyle(i).display === 'none')));
+    await page.selectOption('#output', 'interact');
+    await page.evaluate(() => { document.getElementById('saveProgress').value = 'false'; });
     await page.fill('#markup', 'Q: <img src="https://example.com/ok.png">\nA: a\n\tQ: b'); await page.click('#update'); await page.waitForTimeout(300);
     check('editor: warning clears for https', await page.$eval('#warn', e => e.className) === '');
 
@@ -373,10 +448,10 @@ server.listen(0, async () => {
       const labels = Array.from(document.querySelectorAll('#flow_canvas .qf-label')).map(t => t.textContent + '|' + t.getAttribute('class'));
       return { ids, labels, ends: document.querySelectorAll('#flow_canvas .qf-endnode').length, doc: document.querySelectorAll('#flow_canvas .qf-doc').length, start: document.querySelector('#flow_canvas .qf-startnode') ? document.querySelector('#flow_canvas .qf-startnode').textContent : null, nodeFill: getComputedStyle(document.querySelector('#flow_canvas .qf-node[data-id="1"] rect')).fill, nodeFont: getComputedStyle(document.querySelector('#flow_canvas .qf-node[data-id="1"] text')).fontFamily };
     });
-    check('flow: nodes = questions minus pure GOTOs', JSON.stringify(fl.ids) === JSON.stringify(['__start', '1', '1.1', '1.1.2', '2']), fl.ids);
+    check('flow: nodes = questions minus pure GOTOs', JSON.stringify(fl.ids) === JSON.stringify(['__start', '1', '1.1', '1.1.2', '2', 'end-1.1.3']), fl.ids);
     check('flow: all edges share one colour and one arrowhead', await page.evaluate(() => { const es = [...document.querySelectorAll('#out_flow .qf-edge')]; const strokes = new Set(es.map(e => getComputedStyle(e).stroke)); const markers = new Set(es.map(e => e.getAttribute('marker-end'))); return es.length >= 3 && strokes.size === 1 && markers.size === 1 && document.querySelectorAll('#out_flow marker').length === 1; }));
     check('flow: X edge labelled with variable name, GOTO edge dashed, dead end dot', fl.labels.some(l => l === 'Input: name|qf-label qf-var') && fl.labels.some(l => l === 'GOTO|qf-label qf-goto') && fl.labels.some(l => l.startsWith('Coffee|')) && fl.ends === 1 && fl.doc === 1 && fl.start === 'START', fl);
-    check('flow: node colours/font follow settings', fl.nodeFill === 'rgb(84, 137, 235)' && /Verdana/.test(fl.nodeFont), [fl.nodeFill, fl.nodeFont]);
+    check('flow: node colours/font follow settings', fl.nodeFill === 'rgb(84, 137, 235)' && /Segoe UI/.test(fl.nodeFont), [fl.nodeFill, fl.nodeFont]);
     const before = await page.$eval('#flow_canvas .qf-node[data-id="1.1"] rect', r => { const b = r.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
     await page.mouse.move(before.x, before.y); await page.mouse.down(); await page.mouse.move(before.x + 120, before.y + 30, { steps: 6 }); await page.mouse.up();
     const after = await page.$eval('#flow_canvas .qf-node[data-id="1.1"] rect', r => { const b = r.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
@@ -384,6 +459,20 @@ server.listen(0, async () => {
     await page.click('#update'); await page.waitForTimeout(300);
     const kept = await page.$eval('#flow_canvas .qf-node[data-id="1.1"] rect', r => { const b = r.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
     check('flow: dragged position survives re-render', Math.abs(kept.x - after.x) < 3 && Math.abs(kept.y - after.y) < 3, [after, kept]);
+    // the START pill and the terminal dot move too, grabbed by their middles, and are remembered as well
+    // (compared in world coordinates: moving an outer node changes the bounds, so the re-render's fit() changes the view)
+    const mid = sel => page.$eval(sel, r => { const b = r.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
+    const world = sel => page.$eval(sel, g => g.getAttribute('transform'));
+    const dragBy = async (sel, dx, dy) => { const a = await mid(sel); await page.mouse.move(a.x, a.y); await page.mouse.down(); await page.mouse.move(a.x + dx, a.y + dy, { steps: 6 }); await page.mouse.up(); return [a, await mid(sel)]; };
+    const view0 = await world('#flow_canvas .qf-world');
+    const [s0, s1] = await dragBy('#flow_canvas .qf-startnode rect', -80, 20);
+    check('flow: the START pill is draggable by its middle (not a pan)', Math.abs(s1.x - s0.x + 80) < 3 && Math.abs(s1.y - s0.y - 20) < 3 && await world('#flow_canvas .qf-world') === view0, [s0, s1]);
+    const [e0, e1] = await dragBy('#flow_canvas .qf-node[data-id="end-1.1.3"] .qf-end', 60, 40);
+    check('flow: the terminal dot is draggable', Math.abs(e1.x - e0.x - 60) < 3 && Math.abs(e1.y - e0.y - 40) < 3 && await world('#flow_canvas .qf-world') === view0, [e0, e1]);
+    const sw1 = await world('#flow_canvas .qf-startnode'), ew1 = await world('#flow_canvas .qf-node[data-id="end-1.1.3"]');
+    await page.click('#update'); await page.waitForTimeout(300);
+    check('flow: START and dot positions survive re-render', await world('#flow_canvas .qf-startnode') === sw1 && await world('#flow_canvas .qf-node[data-id="end-1.1.3"]') === ew1, [sw1, ew1, await world('#flow_canvas .qf-startnode'), await world('#flow_canvas .qf-node[data-id="end-1.1.3"]')]);
+    check('flow: the line into the dot follows it', await page.$eval('#flow_canvas .qf-node[data-id="end-1.1.3"]', g => { const tr = g.getAttribute('transform').match(/translate\(([^,]+),([^)]+)\)/); const x = +tr[1] + 6, y = +tr[2]; const ps = [...document.querySelectorAll('#flow_canvas .qf-edge')].map(p => { const q = p.getPointAtLength(p.getTotalLength()); return Math.hypot(q.x - x, q.y - y); }); return Math.min(...ps) < 2; }));
     // lines: the label in the middle of a line is a handle that re-routes it
     const hpos = sel => page.$eval(sel, r => { const b = r.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
     const teaKey = await page.evaluate(() => [...document.querySelectorAll('#flow_canvas .qf-handle')].find(h => h.querySelector('.qf-label').textContent === 'Tea').getAttribute('data-edge'));
@@ -430,7 +519,7 @@ server.listen(0, async () => {
     check('flow: PNG background transparent', alpha === 0, alpha);
     const [dls] = await Promise.all([page.waitForEvent('download'), page.click('#flow_svg')]);
     const svgTxt = fs.readFileSync(await dls.path(), 'utf8');
-    check('flow: SVG export leaves out grips and tooltips', !/qf-grip"|<title/.test(svgTxt) && /qf-handle/.test(svgTxt));
+    check('flow: SVG export leaves out grips, dot targets and tooltips', !/qf-grip"|qf-end-hit"|<title/.test(svgTxt) && /qf-handle/.test(svgTxt) && /qf-end"/.test(svgTxt));
     check('flow: SVG download', /\.svg$/.test(dls.suggestedFilename()) && /^<\?xml/.test(svgTxt) && /<svg/.test(svgTxt) && /START/.test(svgTxt) && !/fill="#ffffff"/.test(svgTxt) && /viewBox=/.test(svgTxt), dls.suggestedFilename());
     // settings colour flows into the chart
     await page.click('.tab[data-tab=styleblock]'); await page.fill('#compBg', '336699'); await page.click('#update'); await page.waitForTimeout(400);
@@ -691,7 +780,7 @@ server.listen(0, async () => {
     check('settings: the tag never shows in the text area', !/Settings:/.test(await page.inputValue('#markup')));
     // back to defaults, then load the saved file
     await page.evaluate(() => { localStorage.clear(); }); await page.goto(base); await (await pv()).waitForSelector('.question_text');
-    check('settings: (defaults before loading)', await page.inputValue('#fontSize') === '14' && await page.inputValue('#compBg') === '5489eb');
+    check('settings: (defaults before loading)', await page.inputValue('#fontSize') === '16' && await page.inputValue('#compBg') === '5489eb');
     await page.setInputFiles('#upload', { name: 'saved.txt', mimeType: 'text/plain', buffer: Buffer.from(savedTxt) }); await page.waitForTimeout(600);
     const afterLoad = { markup: await page.inputValue('#markup'), fs: await page.inputValue('#fontSize'), bg: await page.inputValue('#compBg'), footer: await page.inputValue('#footer'), pick: await page.$eval('input[type=color][data-for=compBg]', e => e.value) };
     check('settings: loading strips the tag and sets the Settings screen', !/Settings:/.test(afterLoad.markup) && /^Title: Kept\nQ\(1\): Saved\?/.test(afterLoad.markup) && afterLoad.fs === '17' && afterLoad.bg === '224466' && afterLoad.footer === 'false' && afterLoad.pick === '#224466', afterLoad);
@@ -815,6 +904,10 @@ server.listen(0, async () => {
       });
       check('flow loadQnA: an External QnA box per loading answer, captioned with the file name when known', fl2.ext.length === 2 && fl2.ext[0] === 'External QnA sub.txt' && fl2.ext[1] === 'External QnA', fl2.ext);
       check('flow loadQnA: JS GOTO edges are dotted (not the GOTO dash), one from the box back to "end", one for goto("end"), one for the Q script', fl2.js.length === 3 && fl2.js.every(d => d === '1.5px, 4px') && fl2.labels.filter(l => l === 'JS GOTO|qf-label qf-jsgoto').length === 3 && fl2.keys.indexOf('r:1.1:2') >= 0 && fl2.keys.indexOf('j:1:2') >= 0 && fl2.keys.indexOf('j:2:1') >= 0, fl2);
+      const xm = await page.$eval('#flow_canvas .qf-node[data-id="ext-1.1"] rect', r => { const b = r.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
+      await page.mouse.move(xm.x, xm.y); await page.mouse.down(); await page.mouse.move(xm.x + 70, xm.y + 25, { steps: 6 }); await page.mouse.up();
+      const xm2 = await page.$eval('#flow_canvas .qf-node[data-id="ext-1.1"] rect', r => { const b = r.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
+      check('flow loadQnA: the External QnA box is draggable by its middle', Math.abs(xm2.x - xm.x - 70) < 3 && Math.abs(xm2.y - xm.y - 25) < 3, [xm, xm2]);
       await page.selectOption('#output', 'interact');
       // the parser's error in the editor
       await page.fill('#markup', 'Q: Start\nA[javascript:loadQnA("x.txt")]: load\n\tQ: under it\nQ: b\nA: k'); await page.waitForTimeout(600);
@@ -905,30 +998,30 @@ server.listen(0, async () => {
 
     /* ---- config.js sets the Settings screen's defaults ---- */
     const cfgSrc = fs.readFileSync(path.join(root, 'config.js'), 'utf8');
-    const cfgMod = cfgSrc.replace("fontSize: 14,", "font_size: 16,").replace("chatStyle: 'sms',", "chatStyle: 'llm',").replace("labelBack: 'GO BACK ONE',", "labelBack: 'Previous',").replace("compBg: '5489eb',", "compBg: 'not a colour', editorUrl: 'https://evil.example/',").replace("start: '1',", "start: '1',");
-    check('config: (test fixture applies)', cfgMod !== cfgSrc && /font_size: 16/.test(cfgMod) && /'llm'/.test(cfgMod));
+    const cfgMod = cfgSrc.replace("fontSize: 16,", "font_size: 18,").replace("chatStyle: 'sms',", "chatStyle: 'llm',").replace("labelBack: 'GO BACK ONE',", "labelBack: 'Previous',").replace("compBg: '5489eb',", "compBg: 'not a colour', editorUrl: 'https://evil.example/',").replace("start: '1',", "start: '1',");
+    check('config: (test fixture applies)', cfgMod !== cfgSrc && /font_size: 18/.test(cfgMod) && /'llm'/.test(cfgMod));
     const cpage = await ctx.newPage();
     await cpage.route('**/config.js', r => r.fulfill({ contentType: 'application/javascript', body: cfgMod }));
     await cpage.goto(base); await cpage.waitForTimeout(1200);
     await cpage.evaluate(() => localStorage.clear()); await cpage.reload(); await cpage.waitForTimeout(1200);
     const cval = async () => ({ fs: await cpage.inputValue('#fontSize'), chat: await cpage.inputValue('#chatStyle'), back: await cpage.inputValue('#labelBack'), bg: await cpage.inputValue('#compBg'), off: await cpage.$eval('#compBg', e => e.disabled) });
     const c1 = await cval();
-    check('config: a first visit starts from the defaults in config.js (snake_case too; invalid values fall back)', c1.fs === '16' && c1.chat === 'llm' && c1.back === 'Previous' && c1.bg === '5489eb' && c1.off, c1);
+    check('config: a first visit starts from the defaults in config.js (snake_case too; invalid values fall back)', c1.fs === '18' && c1.chat === 'llm' && c1.back === 'Previous' && c1.bg === '5489eb' && c1.off, c1);
     await cpage.click('#update'); await cpage.waitForTimeout(500);
     await cpage.selectOption('#output', 'embed'); await cpage.uncheck('#inline_lib_embed'); await cpage.waitForTimeout(100);   // (the library's own source would match the patterns below)
     const cEmbed = await cpage.inputValue('#embed_text');
     await cpage.selectOption('#output', 'interact');
-    check('config: outputs carry them, since the library has its own defaults', /data-font-size="16"/.test(cEmbed) && /data-chat-style="llm"/.test(cEmbed) && /data-label-back="Previous"/.test(cEmbed) && !/evil/.test(cEmbed) && !/data-comp-bg/.test(cEmbed), cEmbed.slice(0, 400));
+    check('config: outputs carry them, since the library has its own defaults', /data-font-size="18"/.test(cEmbed) && /data-chat-style="llm"/.test(cEmbed) && /data-label-back="Previous"/.test(cEmbed) && !/evil/.test(cEmbed) && !/data-comp-bg/.test(cEmbed), cEmbed.slice(0, 400));
     await cpage.click('.tab[data-tab=styleblock]').catch(() => {});
     await cpage.fill('#fontSize', '22'); await cpage.selectOption('#chatStyle', 'sms'); await cpage.fill('#labelBack', ''); await cpage.dispatchEvent('#labelBack', 'change');
     check('config: a blanked label returns to the configured default', await cpage.inputValue('#labelBack') === 'Previous');
     await cpage.click('#restore'); await cpage.waitForTimeout(400);
     const c2 = await cval();
-    check('config: Restore Defaults returns to the configured defaults', c2.fs === '16' && c2.chat === 'llm' && c2.off, c2);
+    check('config: Restore Defaults returns to the configured defaults', c2.fs === '18' && c2.chat === 'llm' && c2.off, c2);
     // a QnA opened from a link is shown as it renders: unmentioned settings are the library's defaults
     await cpage.goto('about:blank'); await cpage.goto(base + '#j=' + encodeURIComponent(JSON.stringify({ markup: 'Q: linked\nA: ok\n\tQ: fine', radius: 3 }))); await cpage.waitForTimeout(1200);
     const c3 = await cval();
-    check('config: a QnA opened from a link keeps the library defaults for what it does not set', c3.fs === '14' && c3.chat === 'sms' && c3.back === 'GO BACK ONE' && await cpage.inputValue('#radius') === '3', c3);
+    check('config: a QnA opened from a link keeps the library defaults for what it does not set', c3.fs === '16' && c3.chat === 'sms' && c3.back === 'GO BACK ONE' && await cpage.inputValue('#radius') === '3', c3);
     await cpage.evaluate(() => localStorage.clear()); await cpage.close();
 
     /* ---- X[javascript:...] in the editor ---- */

@@ -6,7 +6,7 @@ interpreter plus a new editor: no server-side code, so a QnA can be hosted on
 any static host or dropped into an existing page with two `<script>` tags.
 
 ```html
-<script src="https://www.qnamarkup.org/dist/2.4.0/qna.min.js"></script>
+<script src="https://www.qnamarkup.org/dist/2.5.0/qna.min.js"></script>
 <script type="text/qna">
 Q: Would you like to embed a QnA?
 A: Yes.
@@ -30,7 +30,7 @@ parses the markup and renders the conversation right where the tag sits.
 | `index.html`, `editor.js` | The editor (Markup / Settings tabs, templates, resizable panes, Interactive / Link / Embed Code / HTML full page / Flowchart outputs). The script is a separate file so the page can be served with a strict Content-Security-Policy. |
 | `preview.html` | The editor's live preview, loaded in an iframe sandboxed without `allow-same-origin`, so the QnA being edited runs in an opaque origin and cannot touch the editor's storage or DOM. If the interview navigates the frame somewhere else (an `A[href]:` button, a link), the editor shows a full-width BACK bar above it that returns to the interview where it was left. |
 | `site.js` | Rewrites the cross-site links on the static pages (`syntax/`, `doc/`) to the right origin. |
-| `flowchart.js` | The editor's interactive flowchart (draggable nodes and lines (drag a line's label to re-route it, double-click the label to reset it), pan/zoom, PNG and SVG export with transparent backgrounds, styled from the QnA's own settings). Questions are nodes, answers are edges; an X tag's edge is labelled `Input: <variable>`, GOTOs are dashed, pure-GOTO questions collapse into their target; all edges share one colour. |
+| `flowchart.js` | The editor's interactive flowchart (draggable nodes and lines (drag a line's label to re-route it, double-click the label to reset it), pan/zoom, PNG and SVG export with transparent backgrounds, styled from the QnA's own settings). Questions are nodes, answers are edges; an X tag's edge is labelled `Input: <variable>` (`Number: <variable>` for `X:number`), a question with named form fields carries a text-box marker (hover for the names), GOTOs are dashed, pure-GOTO questions collapse into their target; all edges share one colour. |
 | `i/index.html` | Stand-alone viewer. Renders a QnA passed in the link (`#z=…`), a legacy `?markup=…` query, or a remote file (`?source=URL`). |
 | `doc/index.html` | The document editor page (`doc/parse/html/` in the original): CKEditor 4.22.1 loaded from cdn.ckeditor.com, with a plain-textarea fallback. Reads `t` and `i` from the query string, so send documents to it with `GET`. |
 | `syntax/index.html` | The syntax documentation, converted to static HTML and updated for this edition. |
@@ -189,6 +189,25 @@ X:
   in the page but before the first question is drawn. A script in a `Q` runs
   each time its bubble is drawn, which includes the redraw after *GO BACK* and
   when saved progress is restored (`QnA.current.replaying` is `true` then).
+* **Form fields in questions.** Any `<input>`, `<select>` or `<textarea>`
+  with a `name` written in a Q's HTML is a variable of that name: recorded
+  when the bubble is drawn and on every change (so it is in saved progress
+  before the question is answered), fixed on the answer's history entry
+  (`{label, value, fields: {…}}`) and then disabled; GO BACK ONE reopens the
+  exchange with its values. The browser's own validation (`required`, `min`,
+  `pattern`, …) is run before an answer is taken. Values are strings, escaped
+  like X answers; a checkbox group or `<select multiple>` is an array (JSON in
+  `json_str()`, comma-joined in `<x>`, documents and the transcript). The
+  transcript notes them after the answer (`USER: Continue (dob=…; pets=…)`).
+  `submit2()` posts every variable once through the hidden `.qna-vars`
+  textareas (the live controls of an unanswered question are held out).
+  Parser: `q.fields` lists the names; warnings for a nameless control and a
+  name shared with a question. Buttons and file inputs are ignored.
+* `X:number` asks for a number: the field is an HTML number input (`step="any"`,
+  so decimals are accepted; `inputmode="decimal"` for the phone keypad) and the
+  value is stored as typed. Any other text after `X:` is ignored; the parser
+  reports it as a warning (`result.warnings`, shown by the editor above the
+  outputs), no longer as an error, so old QnAs written `X:name` now run.
 * An `X` tag can carry code too: `X[javascript:…]:` or `X:[javascript:…]` (either
   side of the colon, no difference; several lines allowed, as for `A`). It runs
   after the visitor's text has been saved to the question's variable, on Enter

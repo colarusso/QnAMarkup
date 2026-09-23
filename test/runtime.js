@@ -379,7 +379,7 @@ function check(name, cond, info) {
     await loaded(6);
     check('load: the loaded QnA starts where the answer\'s question would be; questions already answered in the host are filled in', (await bubbles()).join('|') === HOST.concat(['B:(Sub) What is your name?', 'U:Earlier you entered: Ada', 'B:(Sub) Cat or dog?', 'U:Earlier you entered: cat', 'B:(Sub) Pick a number under 3.']).join('|'), await bubbles());
     check('load: fetched once, relative to the page; no missing-question bubble; no confirm for an exact match', fetched.join(',') === 'sub/sub.txt' && !/missing/.test((await bubbles()).join('|')) && dialogs.length === 0, [fetched, dialogs]);
-    check('load: filled-in answers ran their scripts; the loaded Before: and Settings: are ignored', await p.evaluate(() => window.subx === 1 && window.subcat === 1 && !document.getElementById('subbefore') && getComputedStyle(document.querySelector('.question_text')).fontSize === '14px' && document.querySelector('.qna-back').textContent === 'GO BACK ONE'), await p.evaluate(() => [window.subx, window.subcat]));
+    check('load: filled-in answers ran their scripts; the loaded Before: and Settings: are ignored', await p.evaluate(() => window.subx === 1 && window.subcat === 1 && !document.getElementById('subbefore') && getComputedStyle(document.querySelector('.question_text')).fontSize === '16px' && document.querySelector('.qna-back').textContent === 'GO BACK ONE'), await p.evaluate(() => [window.subx, window.subcat]));
     check('load: labels prefixed; author names shared; machine names prefixed; json_str() has every unit', await p.evaluate(() => { const i = QnA.current; return i.current === 'L1.1.1.1' && i.byLabel['L1.1'].name === 'name' && i.byLabel['L1.1.1.1'].name === 'n' && JSON.stringify(Object.keys(JSON.parse(json_str())).sort()) === JSON.stringify(['1.1.1.2', 'L1.1.1.3', 'check', 'done', 'end', 'go', 'n', 'name', 'pet']) && JSON.parse(json_str()).pet === 'cat' && i.byLabel['L1.1.1.1.1'].name === 'check'; }), await p.evaluate(() => { const i = QnA.current; return [i.current, i.byLabel['L1.1'].name, i.byLabel['L1.1.1.1'].name, i.byLabel['L1.1.1.1.1'].name, json_str()]; }));
     check('load: the history records the auto answers and the load with its text', await p.evaluate(() => { const h = QnA.current.history; return h.length === 5 && h[2].skip === true && h[2].jumps.length === 1 && h[2].jumps[0].url === 'http://load.test/sub/sub.txt' && /^Title: Sub/.test(h[2].jumps[0].text) && h[2].jumps[0].redirect.done === '2' && h[3].auto === true && h[3].value === 'Ada' && h[4].auto === true && h[4].value === null; }), await p.evaluate(() => JSON.stringify(QnA.current.history.map(e => [e.label, e.value, e.auto, e.skip, (e.jumps || []).map(j => typeof j === 'string' ? j : 'load')]))));
     // a goto() inside a loaded question's script resolves within the loaded QnA
@@ -480,6 +480,60 @@ function check(name, cond, info) {
     await p.evaluate(() => localStorage.clear());
     await p.unroute('http://load.test/**');
   }
+  /* ---- form fields written in questions ---- */
+  {
+    const formQ = 'Q(who): Tell us about you.<br><input type="text" name="fullname" required placeholder="name"> <input type="date" name="dob" value="1990-01-02">' +
+      '<br><input type="checkbox" name="pets" value="cat"> cat <input type="checkbox" name="pets" value="dog"> dog' +
+      '<br><input type="radio" name="size" value="s"> S <input type="radio" name="size" value="m" checked> M' +
+      '<br><select name="state"><option value="">--</option><option value="MA">MA</option><option value="NY">NY</option></select> <input type="text">\n' +
+      'A: Continue\n\tQ(notes): Anything else, <x>fullname</x> (<x>pets</x>)?<br><textarea name="more"></textarea><input type="hidden" name="secret" value="s3">\n\tA: Done\n\t\tQ(end): Thanks.<br><input type="email" name="email">\n' +
+      'Q(other): Unrelated.\nA: k';
+    await p.route('http://form.test/*', r => {
+      if (/\/post$/.test(r.request().url())) return r.fulfill({ contentType: 'text/plain', body: 'posted:' + r.request().postData() });
+      r.fulfill({ contentType: 'text/html', body: page(formQ, 'data-save-progress="true"') });
+    });
+    await p.goto('http://form.test/a'); await p.evaluate(() => localStorage.clear()); await p.goto('http://form.test/b'); await p.waitForSelector('#QandA .question_text');
+    const jsonNow = async () => JSON.parse(await p.evaluate(() => json_str()));
+    let j0 = await jsonNow();
+    check('fields: starting values are variables at once (value=, checked; groups are arrays; unnamed ignored)', j0.dob === '1990-01-02' && JSON.stringify(j0.pets) === '[]' && j0.size === 'm' && j0.state === '' && j0.fullname === '' && j0.more === '' && j0.secret === '' && j0.email === '' && !('' in j0), j0);
+    // required stops the answer with the browser's message; nothing recorded
+    await clickAnswer('Continue');
+    check('fields: an invalid (required, empty) field blocks the answer', (await bubbles()).length === 1 && await p.evaluate(() => QnA.current.history.length) === 0 && await p.evaluate(() => document.activeElement && document.activeElement.name) === 'fullname');
+    // live capture: change -> variable -> saved progress, before any answer
+    await p.fill('input[name=fullname]', 'Ada <L>'); await p.check('input[name=pets][value=dog]'); await p.selectOption('select[name=state]', 'NY'); await p.waitForTimeout(100);
+    j0 = await jsonNow();
+    check('fields: changes are captured live (escaped like X answers)', j0.fullname === 'Ada &lt;L&gt;' && JSON.stringify(j0.pets) === '["dog"]' && j0.state === 'NY', j0);
+    check('fields: … and saved as pending progress before the question is answered', await p.evaluate(() => { const k = Object.keys(localStorage).find(k => /qna/i.test(k)) || Object.keys(localStorage)[0]; const d = JSON.parse(localStorage.getItem(k)); return d.history.length === 0 && d.pending.fullname === 'Ada &lt;L&gt;' && d.pending.pets[0] === 'dog'; }), await p.evaluate(() => JSON.stringify(localStorage)));
+    await p.goto('http://form.test/c'); await p.waitForSelector('#QandA .question_text'); await p.waitForTimeout(500);
+    const restored = await p.evaluate(() => [document.querySelector('input[name=fullname]').value, document.querySelector('input[name=pets][value=dog]').checked, document.querySelector('select[name=state]').value, document.querySelector('input[name=fullname]').disabled, json_str()]);
+    check('fields: a reload puts the unanswered values back, editable, and in the variables', restored[0] === 'Ada <L>' && restored[1] === true && restored[2] === 'NY' && restored[3] === false && /"fullname":"Ada &lt;L&gt;"/.test(restored[4]), restored);
+    await clickAnswer('Continue');
+    const frozen = await p.evaluate(() => Array.from(document.querySelectorAll('#QandA input, #QandA select')).map(c => c.disabled));
+    check('fields: answering freezes the controls (the unnamed one too; the next exchange\'s are live)', frozen.length === 9 && frozen.slice(0, 8).every(Boolean) && frozen[8] === false, frozen);
+    check('fields: <x> substitution of field variables (arrays joined)', (await bubbles()).slice(-1)[0] === 'B:Anything else, Ada <L> (dog)?', await bubbles());
+    const tr1 = await p.evaluate(() => transcript());
+    check('fields: the transcript notes the fields with the answer', /USER: Continue \(fullname=Ada &lt;L&gt;; dob=1990-01-02; pets=dog; size=m; state=NY\)\n/.test(tr1), tr1);
+    check('fields: history entry carries the fields', await p.evaluate(() => JSON.stringify(QnA.current.history[0].fields)) === '{"fullname":"Ada &lt;L&gt;","dob":"1990-01-02","pets":["dog"],"size":"m","state":"NY"}', await p.evaluate(() => JSON.stringify(QnA.current.history[0])));
+    await p.fill('textarea[name=more]', 'nope'); await p.waitForTimeout(100);
+    const j1 = await jsonNow();
+    check('fields: a hidden input is a variable too; a later exchange\'s fields join in', j1.secret === 's3' && j1.more === 'nope' && j1.fullname === 'Ada &lt;L&gt;', j1);
+    // GO BACK ONE: the first exchange is editable again with its values; the second exchange's typing is gone
+    await p.click('#Choices .qna-back'); await p.waitForTimeout(200);
+    const back = await p.evaluate(() => [document.querySelector('input[name=fullname]').value, document.querySelector('input[name=fullname]').disabled, document.querySelector('input[name=pets][value=dog]').checked, document.querySelectorAll('#QandA textarea').length, json_str()]);
+    check('fields: GO BACK ONE re-enables the exchange with its values', back[0] === 'Ada <L>' && back[1] === false && back[2] === true && back[3] === 0 && JSON.parse(back[4]).more === '' && JSON.parse(back[4]).fullname === 'Ada &lt;L&gt;', back);
+    await p.uncheck('input[name=pets][value=dog]'); await p.check('input[name=pets][value=cat]'); await clickAnswer('Continue');
+    check('fields: a changed value is what the new answer records', (await bubbles()).slice(-1)[0] === 'B:Anything else, Ada <L> (cat)?', await bubbles());
+    await p.fill('textarea[name=more]', 'bye'); await clickAnswer('Done'); await p.waitForTimeout(200);
+    // the last question has fields but no answer: submit2 / json_str still see them
+    await p.fill('input[name=email]', 'a@b.co'); await p.waitForTimeout(100);
+    const j2 = await jsonNow();
+    check('fields: fields of the final, unanswered question are in json_str()', j2.email === 'a@b.co' && j2.more === 'bye' && JSON.stringify(j2.pets) === '["cat"]', j2);
+    await p.evaluate(() => submit2('http://form.test/post', 'POST', '', '', 't', 'j'));
+    await p.waitForSelector('body'); await p.waitForTimeout(300);
+    const posted = decodeURIComponent((await p.evaluate(() => document.body.textContent)).replace(/\+/g, ' '));
+    check('fields: submit2() posts every field once (hidden variable textareas; live controls held out) and the JSON with arrays', /^posted:/.test(posted) && (posted.match(/(^|&)email=/g) || []).length === 1 && /email=a@b.co/.test(posted) && /pets=cat/.test(posted) && /"pets":\["cat"\]/.test(posted) && /fullname=Ada &lt;L&gt;/.test(posted), posted.slice(0, 600));
+    await p.goto('http://form.test/d'); await p.evaluate(() => localStorage.clear()); await p.unroute('http://form.test/*');
+  }
   // the parser: an answer that loads may not have a Q beneath it; what it reads from scripts
   {
     const QnA = require('../src/qna.js');
@@ -489,6 +543,9 @@ function check(name, cond, info) {
     check('parse: loadQnA() without a nested Q is fine, beside answers that have one', e('Q: a\nA[javascript:loadQnA("x.txt")]: go\nA: stay\n\tQ: here').length === 0);
     const r = QnA.parse('Q(a): A <script>goto("c")</script>\nA[javascript:loadQnA("f.txt", "done", "c")]: one\nA[javascript:loadQnA(u, {end: "a", x: "zz"})]: two\nA[javascript:goto(3); goto("nope"); goto(\'c\')]: three\n\tQ: under three\nQ(c): C\nA: k');
     check('parse: answers carry loads / returns / jumps as labels; unknown targets dropped', JSON.stringify(r.answers.map(x => [x.loads, x.returns, x.jumps])) === '[["f.txt",["2"],[]],[true,["1"],[]],[null,[],["2"]],[null,[],[]]]' && JSON.stringify(r.questions.map(q => q.jumps)) === '[["2"],[],[]]', [r.answers.map(x => [x.loads, x.returns, x.jumps]), r.questions.map(q => q.jumps)]);
+    const fw = QnA.parse('Q(dob): When?<br><input type="date" name="dob2"> <select name="dob"><option>a</option></select> <input type="text"> <input type=submit name="go">\nA: Continue\n\tQ(x): ok<br><input name="1.1" value="v">\nQ: plain\nA: k');
+    check('parse: fields listed per question; buttons and unnamed ones left out', JSON.stringify(fw.questions.map(q => q.fields)) === '[["dob2","dob"],["1.1"],[]]' && fw.ok, fw.questions.map(q => q.fields));
+    check('parse: warnings for a nameless field and for a name that is also a question\'s name or id', fw.warnings.length === 3 && /no <code>name<\/code> attribute/.test(fw.warnings[1].message) && /same name as a question/.test(fw.warnings[0].message) && fw.warnings[0].line === 1 && /same name as a question/.test(fw.warnings[2].message) && fw.warnings[2].line === 3, fw.warnings.map(w => w.line + ':' + w.message.slice(0, 40)));
     check('normalizeValue: case, spaces, punctuation and tags dropped; letters, digits and emoji kept', QnA.normalizeValue(' <b>Yes</b>, Please!! 👍🏽 #1 ') === 'yesplease👍🏽1' && QnA.normalizeValue('Café') === 'café' && QnA.normalizeValue('&lt;3') === '3', QnA.normalizeValue(' <b>Yes</b>, Please!! 👍🏽 #1 '));
   }
 
