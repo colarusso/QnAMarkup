@@ -529,9 +529,9 @@
     }
     // Saved progress lives in the visitor's browser storage, in the clear, for as long as the browser keeps it.
     if (o && o.saveProgress === true) {
-      blocks.push('<div class="warn-item share-only"><b>Save visitor progress is on.</b> A visitor’s answers are kept in their browser (localStorage) so they can pick up where they left off — and they stay there after the browser is closed, ' +
-        'until the visitor chooses <i>' + esc(o.labelRestart || 'START OVER') + '</i> or clears the site’s data. Anyone who later uses the same browser, on a shared or public computer for instance, can open the QnA and see those answers. ' +
-        'Leave this off for interviews that ask for anything sensitive, or say so in the QnA so visitors know to start over when they are done.</div>');
+      blocks.push('<div class="warn-item share-only"><b>Save visitor progress is on.</b> Replies are stored in the browser (localStorage) and stay there after the browser tab is closed. Meaning anyone who uses the browser can see them ' +
+        'until someone chooses <i>' + esc(o.labelRestart || 'START OVER') + '</i> or clears the site’s data.' +
+        '</div>');
     }
     warn.innerHTML = blocks.join('');
     syncWarnings();

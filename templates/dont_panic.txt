@@ -8,7 +8,9 @@ X[javascript:
 	} else if (getvar('number')<42){
 		goto('low')
 	} else if (getvar('number')>42){
-		goto('high')} else {goto('nan')
+		goto('high')
+	} else {
+		goto('nan')
 	}]:
 Q(right): That's right!
 Q(low): Too low. GOTO:number
