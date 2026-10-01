@@ -2174,6 +2174,13 @@
       // different style options get a scoped override of their own.
       if (!QnA._styleKey || QnA._styleKey === styleKey || el.qnaStyleScope === 'global') {
         QnA.injectCss(o); QnA._styleKey = styleKey; el.qnaStyleScope = 'global';
+        // a page that is nothing but a QnA (viewer, full page) takes the Body Background as its browser theme colour
+        var body = root.document.body;
+        if (body && body.classList.contains('qna-page')) {
+          var meta = root.document.querySelector('meta[name="theme-color"]');
+          if (!meta) { meta = root.document.createElement('meta'); meta.setAttribute('name', 'theme-color'); root.document.head.appendChild(meta); }
+          meta.setAttribute('content', '#' + o.bodyBg);
+        }
         el.classList.remove.apply(el.classList, Array.prototype.filter.call(el.classList, function (c) { return /^qna-s\d+$/.test(c); }));
       } else {
         var scope = el.qnaStyleScope && el.qnaStyleScope !== 'global' ? el.qnaStyleScope : 'qna-s' + (++QnA._scopeSeq);

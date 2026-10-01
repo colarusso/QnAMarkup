@@ -436,6 +436,7 @@
     return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n' +
       '<title>' + esc(h.titleText || 'Untitled QnA') + '</title>\n' +
       '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+      '<meta name="theme-color" content="#' + QnA.normalizeOptions(o).bodyBg + '">\n' +   // (the library keeps it in step with the Body Background when it renders)
       '<meta property="og:type" content="website">\n' +
       (h.titleText ? '<meta property="og:title" content="' + esc(h.titleText) + '">\n' : '') +
       (h.descriptionText ? '<meta property="og:description" content="' + esc(h.descriptionText) + '">\n' : '') +

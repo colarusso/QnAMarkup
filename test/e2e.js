@@ -89,6 +89,7 @@ server.listen(0, async () => {
     const snippet = await page.inputValue('#embed_text');
     check('editor: embed code has data attrs + markup', /data-comp-bg="336699"/.test(snippet) && /data-font-size="18"/.test(snippet) && /Q\(hello\): Hello/.test(snippet) && snippet.indexOf('<script src="' + base + 'dist/qna.min.js" integrity="sha384-') > 0 && /crossorigin="anonymous"/.test(snippet), snippet);
     const html = await page.inputValue('#html_text');
+    check('editor: the full page carries a theme-color meta equal to the Body Background', /<meta name="theme-color" content="#ffffff">/.test(html), html.slice(0, 500));
     check('editor: full page has title/og', /<title>Styled<\/title>/.test(html) && /og:description" content="A test."/.test(html), html.slice(0, 400));
     await page.selectOption('#output', 'html');
     await page.uncheck('#inline_lib'); await page.waitForTimeout(100);
@@ -312,6 +313,18 @@ server.listen(0, async () => {
     await (await pv()).fill('input.xinput', '41.5'); await (await pv()).click('.xbutton'); await page.waitForTimeout(500);
     check('x number: the value is stored and shown', /Thanks, 41\.5\./.test(await (await pv()).$eval('#qna', e => e.innerText)));
     check('x number: embed code carries X:number', /\nX:number\n/.test(await page.evaluate(() => document.getElementById('embed_text').value)));
+
+    /* ---- theme-color follows the Body Background on pages that are nothing but a QnA ---- */
+    {
+      const vt = await ctx.newPage();
+      await vt.goto(base + 'i/?markup=' + encodeURIComponent('Q: t\nA: k') + '&body_bg=333333'); await vt.waitForSelector('#qna .question_text');
+      const tc = async () => vt.$eval('meta[name="theme-color"]', m => m.content);
+      check('theme-color: the viewer sets it from body_bg', await tc() === '#333333', await tc());
+      await vt.goto(base + 'i/?markup=' + encodeURIComponent('Q: t\nA: k')); await vt.waitForSelector('#qna .question_text');
+      check('theme-color: … and to the default white without one', await tc() === '#ffffff' && await vt.$$eval('meta[name="theme-color"]', m => m.length) === 1, await tc());
+      await vt.close();
+      check('theme-color: the editor page itself is left alone', await page.$$eval('meta[name="theme-color"]', m => m.length) === 0);
+    }
 
     /* ---- ?source= pointing at a file that holds a #z= hash or a link ---- */
     {

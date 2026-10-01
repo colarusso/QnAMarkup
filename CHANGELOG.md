@@ -31,6 +31,13 @@ changes.
   in the library as `QnA.LINK_MAX` (`{plain: 8000, z: 32000}`) and the
   editor's Link pane reads them from there.
 
+* **`theme-color` follows the Body Background.** On a page that is nothing
+  but a QnA (`<body class="qna-page">`: the viewer, the editor's *HTML full
+  page* output) the library sets `<meta name="theme-color">` to `bodyBg` when
+  it renders, so the browser chrome on phones matches the page. The full-page
+  output also carries the tag statically. Embedded QnAs leave the host page's
+  meta alone.
+
 ### Editor
 
 * The Link pane's length limits come from `QnA.LINK_MAX` instead of a copy in
