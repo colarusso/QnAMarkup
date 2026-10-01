@@ -1,0 +1,36 @@
+Title: Can I return this?
+Author: Example shop
+Description: A small decision tree: named questions, shared endings via GOTO, a variable shown back.
+
+Q(item): What did you buy?
+A(clothing): Clothing or shoes
+	Q: GOTO:when
+A(electronics): Electronics
+	Q: GOTO:when
+A(food): Food or drink
+	Q(food_no): Sorry, food and drink can't be returned once they leave the shop. GOTO:help
+Q(when): When did you buy it?
+A(week): In the last 14 days
+	Q: GOTO:receipt
+A(month): 15 to 30 days ago
+	Q(month_check): After 14 days we can only exchange, not refund. Is an exchange OK?
+	A: Yes
+		Q: GOTO:receipt
+	A: No
+		Q: Then we can't help with a refund, sorry. GOTO:help
+A(older): More than 30 days ago
+	Q: Returns close after 30 days. GOTO:help
+Q(receipt): Do you have the receipt or order number?
+A: Yes
+	Q(yes_end): Great. Bring the <x>item</x> and the receipt to any shop, or reply to your order email to start a postal return. GOTO:help
+A: No
+	Q: Without a receipt we can offer store credit at the current price. Is that OK?
+	A: Yes
+		Q: Bring the <x>item</x> to any shop and ask for a credit note. GOTO:help
+	A: No
+		Q: Understood. GOTO:help
+Q(help): Anything else?
+A: Start again
+	Q: GOTO:item
+A: No, thanks
+	Q: Thanks for shopping with us.

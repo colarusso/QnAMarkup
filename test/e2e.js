@@ -313,6 +313,29 @@ server.listen(0, async () => {
     check('x number: the value is stored and shown', /Thanks, 41\.5\./.test(await (await pv()).$eval('#qna', e => e.innerText)));
     check('x number: embed code carries X:number', /\nX:number\n/.test(await page.evaluate(() => document.getElementById('embed_text').value)));
 
+    /* ---- ?source= pointing at a file that holds a #z= hash or a link ---- */
+    {
+      const MK = 'Title: Packed\nQ(a): From a hash?\nA: Yes\n\tQ: Indeed.';
+      const z = await page.evaluate(m => QnA.encodeHash({ markup: m, fontSize: 21, compBg: '112233' }), MK);
+      const bodies = { 'packed_hash.txt': '#' + z, 'packed_link.txt': 'https://www.qnamarkup.net/i/#' + z, 'packed_plain.txt': MK + '\n' };
+      const serve = async pg => { await pg.route('**/packed_*.txt', r => r.fulfill({ contentType: 'text/plain', headers: { 'Access-Control-Allow-Origin': '*' }, body: bodies[r.request().url().split('/').pop()] })); };
+      const vz = await ctx.newPage(); await serve(vz);
+      await vz.goto(base + 'i/?source=' + encodeURIComponent(base + 'packed_hash.txt')); await vz.waitForSelector('#qna .question_text');
+      const vzs = await vz.evaluate(() => [document.querySelector('.question_text').textContent.trim(), getComputedStyle(document.querySelector('.question_text')).fontSize, getComputedStyle(document.querySelector('.question_text')).backgroundColor, document.title]);
+      check('source: the viewer unpacks a file holding a #z= hash, settings included', vzs[0] === 'From a hash?' && vzs[1] === '21px' && vzs[2] === 'rgb(17, 34, 51)' && vzs[3] === 'Packed', vzs);
+      await vz.goto(base + 'i/?source=' + encodeURIComponent(base + 'packed_link.txt') + '&font_size=30'); await vz.waitForSelector('#qna .question_text');
+      check('source: … or a whole link; options in the viewer URL still win', await vz.evaluate(() => getComputedStyle(document.querySelector('.question_text')).fontSize) === '30px');
+      await vz.close();
+      const ez = await ctx.newPage(); await serve(ez);
+      await ez.goto(base + '?source=' + encodeURIComponent(base + 'packed_hash.txt')); await ez.waitForTimeout(1500);
+      check('source: the editor unpacks it too, settings onto the Settings screen', /^Title: Packed\nQ\(a\): From a hash\?/.test(await ez.inputValue('#markup')) && await ez.inputValue('#fontSize') === '21' && await ez.inputValue('#compBg') === '112233', [await ez.inputValue('#markup'), await ez.inputValue('#fontSize')]);
+      await ez.evaluate(() => localStorage.clear()); await ez.close();
+      // Load File with such a file
+      await page.setInputFiles('#upload', { name: 'packed.txt', mimeType: 'text/plain', buffer: Buffer.from('#' + z) }); await page.waitForTimeout(800);
+      check('source: Load File unpacks a file holding a hash as well', /From a hash\?/.test(await page.inputValue('#markup')) && await page.inputValue('#fontSize') === '21');
+      await page.click('.tab[data-tab=styleblock]'); await page.click('#restore'); await page.waitForTimeout(300); await page.click('.tab[data-tab=codeblock]');
+    }
+
     /* ---- form fields in questions: warnings and the flowchart marker ---- */
     await page.fill('#markup', 'Q(dob): Details<br><input type="date" name="dob"> <input type="text"> <select name="state"><option>MA</option></select>\nA: Go\n\tQ: ok'); await page.click('#update'); await page.waitForTimeout(400);
     const fwarn = await page.$eval('#warn', e => e.className + '|' + [...e.querySelectorAll('.warn-item.parser')].map(i => i.textContent.replace(/\s+/g, ' ')).join(' || '));

@@ -6,7 +6,7 @@ interpreter plus a new editor: no server-side code, so a QnA can be hosted on
 any static host or dropped into an existing page with two `<script>` tags.
 
 ```html
-<script src="https://www.qnamarkup.org/dist/2.5.0/qna.min.js"></script>
+<script src="https://www.qnamarkup.org/dist/2.6.0/qna.min.js"></script>
 <script type="text/qna">
 Q: Would you like to embed a QnA?
 A: Yes.
@@ -31,7 +31,7 @@ parses the markup and renders the conversation right where the tag sits.
 | `preview.html` | The editor's live preview, loaded in an iframe sandboxed without `allow-same-origin`, so the QnA being edited runs in an opaque origin and cannot touch the editor's storage or DOM. If the interview navigates the frame somewhere else (an `A[href]:` button, a link), the editor shows a full-width BACK bar above it that returns to the interview where it was left. |
 | `site.js` | Rewrites the cross-site links on the static pages (`syntax/`, `doc/`) to the right origin. |
 | `flowchart.js` | The editor's interactive flowchart (draggable nodes and lines (drag a line's label to re-route it, double-click the label to reset it), pan/zoom, PNG and SVG export with transparent backgrounds, styled from the QnA's own settings). Questions are nodes, answers are edges; an X tag's edge is labelled `Input: <variable>` (`Number: <variable>` for `X:number`), a question with named form fields carries a text-box marker (hover for the names), GOTOs are dashed, pure-GOTO questions collapse into their target; all edges share one colour. |
-| `i/index.html` | Stand-alone viewer. Renders a QnA passed in the link (`#z=…`), a legacy `?markup=…` query, or a remote file (`?source=URL`). |
+| `i/index.html` | Stand-alone viewer. Renders a QnA passed in the link (`#z=…`), a legacy `?markup=…` query, or a remote file (`?source=URL`; the file may hold markup, or a link / `#z=…` hash made by the editor, which is unpacked with its settings — `QnA.unpackText`). |
 | `doc/index.html` | The document editor page (`doc/parse/html/` in the original): CKEditor 4.22.1 loaded from cdn.ckeditor.com, with a plain-textarea fallback. Reads `t` and `i` from the query string, so send documents to it with `GET`. |
 | `syntax/index.html` | The syntax documentation, converted to static HTML and updated for this edition. |
 | `templates/` | Editor templates: one `*.txt` per template, `templates.json` for menu order and labels, and the generated `templates.js`. See `templates/README.md` for how to edit or add one. |

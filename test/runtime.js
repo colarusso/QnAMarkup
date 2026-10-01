@@ -480,6 +480,39 @@ function check(name, cond, info) {
     await p.evaluate(() => localStorage.clear());
     await p.unroute('http://load.test/**');
   }
+  /* ---- footer edit link: hidden when the QnA is too big for a link ---- */
+  {
+    await p.setContent(page('Title: Small\nQ: Short?\nA: Yes\n\tQ: ok'));
+    await p.waitForSelector('#QandA .question_text'); await p.waitForTimeout(300);
+    const small = await p.evaluate(() => [document.querySelector('.qna-footer a.qna-edit-link').href, document.querySelector('.qna-footer > p').textContent.replace(/\s+/g, ' ').trim()]);
+    check('footer: a small QnA has an edit link carrying it (#z=)', /#z=/.test(small[0]) && small[1] === 'credits | edit | code your own', small);
+    let big = ''; for (let i = 0; i < 9000; i++) big += Math.random().toString(36).slice(2) + ' ';   // incompressible: well past LINK_MAX.z
+    await p.setContent(page('Title: Big\nQ: ' + big + '\nA: Yes\n\tQ: ok'));
+    await p.waitForSelector('#QandA .question_text'); await p.waitForTimeout(600);
+    const bigF = await p.evaluate(() => [document.querySelector('.qna-footer a.qna-edit-link'), document.querySelector('.qna-footer > p').textContent.replace(/\s+/g, ' ').trim(), QnA.LINK_MAX.z]);
+    check('footer: a QnA too big for a link loses its edit link (credits and code your own stay)', bigF[0] === null && bigF[1] === 'credits | code your own' && bigF[2] === 32000, bigF);
+  }
+
+  /* ---- a file that holds a link or a compressed hash instead of markup ---- */
+  {
+    await p.setContent(page('Q: host\nA: k'));
+    await p.waitForSelector('#QandA .question_text');
+    const MK = 'Title: Packed\nQ(a): From a hash?\nA: Yes\n\tQ: Indeed.';
+    const z = await p.evaluate(m => QnA.encodeHash({ markup: m, fontSize: 21, compBg: '112233' }), MK);
+    const forms = { 'z=': z, '#z=': '#' + z, 'link': 'https://www.qnamarkup.net/i/#' + z, 'bare': z.slice(2), 'spaced': '  ' + z + '\n', 'j=': 'j=' + encodeURIComponent(JSON.stringify({ markup: MK, radius: 3 })),
+      'plain link': 'https://www.qnamarkup.net/i/?markup=' + encodeURIComponent(MK) + '&font_size=19' };
+    const out = {};
+    for (const [k, v] of Object.entries(forms)) out[k] = await p.evaluate(t => QnA.unpackText(t), v);
+    check('unpack: z=, #z=, a whole link, the bare token and padding all give the markup and the settings', ['z=', '#z=', 'link', 'bare', 'spaced'].every(k => out[k].markup === MK && out[k].fontSize === 21 && out[k].compBg === '112233'), out);
+    check('unpack: j= and a plain ?markup= link too', out['j='].markup === MK && out['j='].radius === 3 && out['plain link'].markup === MK && out['plain link'].fontSize === '19', [out['j='], out['plain link']]);
+    const plain = await p.evaluate(() => Promise.all(['Q: one line only', 'Q: a\nA: b', 'Verylongwordwithoutanyspaces_butnotahash1234', 'https://example.com/file.txt', ''].map(t => QnA.unpackText(t))));
+    check('unpack: markup, a one-line QnA, a long word, a link with nothing in it and an empty file stay as they are', plain.every((o, i) => o.markup === ['Q: one line only', 'Q: a\nA: b', 'Verylongwordwithoutanyspaces_butnotahash1234', 'https://example.com/file.txt', ''][i] && Object.keys(o).length === 1), plain);
+    await p.route('http://packed.test/*', r => r.fulfill({ contentType: 'text/plain', body: /hash\.txt$/.test(r.request().url()) ? '#' + z : (/link\.txt$/.test(r.request().url()) ? 'https://www.qnamarkup.net/i/#' + z : MK) }));
+    const fm = await p.evaluate(() => Promise.all(['http://packed.test/hash.txt', 'http://packed.test/link.txt', 'http://packed.test/plain.txt'].map(u => QnA.fetchMarkup(u))));
+    check('unpack: fetchMarkup() (loadQnA) reads a file holding a hash or a link', fm.every(m => m === MK), fm);
+    await p.unroute('http://packed.test/*');
+  }
+
   /* ---- form fields written in questions ---- */
   {
     const formQ = 'Q(who): Tell us about you.<br><input type="text" name="fullname" required placeholder="name"> <input type="date" name="dob" value="1990-01-02">' +

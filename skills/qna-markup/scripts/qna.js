@@ -25,7 +25,7 @@
 })(typeof window !== 'undefined' ? window : this, function (root) {
   'use strict';
  
-  var QnA = { version: '2.5.0' };
+  var QnA = { version: '2.6.0' };
  
   /* ------------------------------------------------------------------ */
   /*  Defaults                                                           */
@@ -92,6 +92,11 @@
     label_empty: 'labelEmpty', label_edit_warn: 'labelEditWarn'
   };
   var LABEL_KEYS = ['labelSave', 'labelEmpty', 'labelBack', 'labelRestart', 'labelCredits', 'labelEdit', 'labelEditWarn', 'labelCode', 'labelEarlier', 'labelConfirm'];
+  // How long a link that carries a whole QnA can be before it is likely not to open. `plain` (?markup=…) is a
+  // query string, sent to the web server, which commonly refuses a request line beyond about 8 KB; `z` (#z=…)
+  // rides in the fragment, never sent, so only browser limits apply. The editor's Link pane and the footer's
+  // edit link both go by these.
+  QnA.LINK_MAX = { plain: 8000, z: 32000 };
  
   function normalizeOptions(opts) {
     var o = {}, k;
@@ -805,7 +810,8 @@
   }
   function pipe(bytes, stream) {
     var writer = stream.writable.getWriter();
-    writer.write(bytes); writer.close();
+    // (the write/close promises reject too when the data is bad; the read below reports it, so these are observed quietly)
+    writer.write(bytes).catch(function () {}); writer.close().catch(function () {});
     return new Response(stream.readable).arrayBuffer().then(function (ab) { return new Uint8Array(ab); });
   }
   var hasStreams = typeof root.CompressionStream === 'function' && typeof root.DecompressionStream === 'function';
@@ -984,7 +990,7 @@
     }
     html += '<p>';
     if (hasCredits) html += '<a href="javascript:void(\'\');" class="qna-credits-link">' + escapeHtml(this.options.labelCredits) + '</a> | ';
-    html += '<a href="' + escapeHtml(this.options.editorUrl) + '" class="qna-edit-link" target="_top">' + escapeHtml(this.options.labelEdit) + '</a> | ';
+    html += '<span class="qna-edit-wrap"><a href="' + escapeHtml(this.options.editorUrl) + '" class="qna-edit-link" target="_top">' + escapeHtml(this.options.labelEdit) + '</a> | </span>';
     html += '<a href="' + escapeHtml(this.options.editorUrl) + '" class="qna-code-link" target="_top">' + escapeHtml(this.options.labelCode) + '</a></p>';
     this.footer.innerHTML = html;
     var cl = this.footer.querySelector('.qna-credits-link');
@@ -999,7 +1005,10 @@
       if (k !== 'footer' && self.options[k] !== QnA.defaults[k]) payload[k] = self.options[k];
     });
     QnA.encodeHash(payload).then(function (hash) {
-      edit.href = self.options.editorUrl + '#' + hash;
+      var url = self.options.editorUrl + '#' + hash;
+      // a QnA too large for a link (the editor's own limit) has no edit link: it would not open
+      if (url.length > QnA.LINK_MAX.z) { var w = edit.parentNode; if (w) w.parentNode.removeChild(w); return; }
+      edit.href = url;
     }).catch(function () {});
     edit.addEventListener('click', function () {
       alert(self.options.labelEditWarn);
@@ -1860,6 +1869,31 @@
    * The markup behind `url`: a raw markup file; an HTML page with a <script type="text/qna"> (the first);
    * a viewer / editor link, ?source= followed, #z= / #j= / ?markup= decoded here without a request.
    */
+  /**
+   * The contents of a fetched QnA file, unpacked. A file normally holds markup, but it may instead hold what
+   * the editor's Link output produces: a whole link, its fragment (#z=… / #j=…, with or without the #), or just
+   * the compressed token (the part after z=). Those are decoded, settings included, so the file can be made by
+   * copying a link. Resolves to {markup, …options}. Anything else is the markup itself.
+   */
+  QnA.unpackText = function (text) {
+    var t = trim(String(text == null ? '' : text));
+    var asIs = Promise.resolve({ markup: String(text == null ? '' : text) });
+    if (!t || /[\r\n]/.test(t)) return asIs;   // several lines: markup
+    var m;
+    if ((m = /^https?:\/\/\S+$/i.exec(t))) {   // a link: whatever QnA it carries
+      var u; try { u = new root.URL(t); } catch (e) { return asIs; }
+      var h = u.hash.replace(/^#/, '');
+      if (/^(z|j|markup|m|q)=/.test(h)) return QnA.decodeHash(h).then(function (p) { return p && p.markup !== undefined ? p : { markup: text }; }, function () { return { markup: text }; });
+      if (u.searchParams.has('markup') || u.searchParams.has('m') || u.searchParams.has('q')) return QnA.decodeHash(u.search).then(function (p) { return p && p.markup !== undefined ? p : { markup: text }; }, function () { return { markup: text }; });
+      return asIs;
+    }
+    if (/^#?(z|j)=\S+$/.test(t)) return QnA.decodeHash(t).then(function (p) { return p && p.markup !== undefined ? p : { markup: text }; }, function () { return { markup: text }; });
+    if (/^[A-Za-z0-9_-]{16,}$/.test(t)) {   // a bare compressed token (no markup is a single word this long): try it, else it is markup
+      return QnA.decodeHash('z=' + t).then(function (p) { return p && p.markup !== undefined ? p : { markup: text }; }, function () { return { markup: text }; });
+    }
+    return asIs;
+  };
+
   QnA.fetchMarkup = function (url) {
     var u;
     try { u = new root.URL(String(url), root.location.href); } catch (e) { return Promise.reject(new Error('not a valid URL')); }
@@ -1871,7 +1905,7 @@
       var m = /<script\b[^>]*\btype\s*=\s*["']?text\/qna["']?[^>]*>([\s\S]*?)<\/script\s*>/i.exec(text);
       if (m) return m[1].replace(/<\\\/script/gi, '<' + '/script');
       if (/^\s*(<!doctype\s+html|<html)/i.test(text)) throw new Error('the page has no <script type="text/qna">');
-      return text;
+      return QnA.unpackText(text).then(function (p) { return p.markup; });   // a file holding a link or its compressed hash
     });
   };
  

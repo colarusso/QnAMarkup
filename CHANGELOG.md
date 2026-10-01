@@ -6,6 +6,36 @@ plus `js/interactive.js` at github.com/colarusso/QnAMarkup). Everything below
 is measured against that version; the markup language itself is unchanged,
 and QnAs written for the old editor run as they did before.
 
+## 2.6.0 — no edit link for a QnA too big to link
+
+Changes since 2.5.0. The library is published at `dist/2.6.0/`; earlier
+versions are untouched. Nothing about parsing, rendering or saved progress
+changes.
+
+### Library
+
+* **A `?source=` file may hold a link instead of markup.** `QnA.unpackText(text)`
+  recognises a file whose whole content is a link produced by the editor's
+  Link output, its `#z=…` / `#j=…` fragment (with or without the `#`), the
+  bare compressed token after `z=`, or a plain `?markup=` link, and unpacks
+  the QnA and its settings from it (`{markup, …options}`); anything else is
+  returned as the markup. The viewer and the editor use it for `?source=`
+  (options on the viewer's own URL still win), the editor's *Load File* uses
+  it for uploaded files, and `QnA.fetchMarkup()` — so `loadQnA()` — for
+  fetched files. A one-line word that is not a valid token is left alone.
+  (Unobserved stream rejections from a bad token are now caught.)
+* **The footer's edit link is dropped when the QnA is too big for a link.**
+  It carries the whole QnA compressed in a `#z=` fragment; past the editor's
+  own compressed-link limit (32,000 characters) it would be unlikely to open,
+  so "credits | code your own" is shown without "edit". The limits live
+  in the library as `QnA.LINK_MAX` (`{plain: 8000, z: 32000}`) and the
+  editor's Link pane reads them from there.
+
+### Editor
+
+* The Link pane's length limits come from `QnA.LINK_MAX` instead of a copy in
+  `editor.js`, so the editor and the footer can never disagree.
+
 ## 2.5.0 — form fields in questions, X:number, system font by default, a fully draggable flowchart, warnings above the outputs
 
 Changes since 2.4.0. The library is published at `dist/2.5.0/`; earlier

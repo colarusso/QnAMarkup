@@ -1,0 +1,18 @@
+Title: Guess the number
+Description: Logic in an X tag's script: getvar() reads the typed answer, goto() picks the branch.
+
+Q(number): I'm thinking of a number between 1 and 100. What is it?
+X[javascript:
+	// runs after the typed text is saved as "number"
+	var n = Number(getvar('number'));
+	if (isNaN(n)) { goto('nan') }
+	else if (n === 42) { goto('right') }
+	else if (n < 42) { goto('low') }
+	else { goto('high') }
+]:
+Q(right): That's it! You got it.
+A: Play again
+	Q: GOTO:number
+Q(low): Too low. GOTO:number
+Q(high): Too high. GOTO:number
+Q(nan): That's not a number. GOTO:number
