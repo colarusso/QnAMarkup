@@ -1,2 +1,0 @@
-Header always set Access-Control-Allow-Origin "*"
-Header always unset Content-Security-Policy
